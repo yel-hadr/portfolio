@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import * as THREE from 'three';
 
 /**
  * Disposes a Three.js material and all its textures
