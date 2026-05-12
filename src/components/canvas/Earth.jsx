@@ -11,16 +11,19 @@ const Earth = () => {
   useEffect(() => {
     return () => {
       earth.scene.traverse((child) => {
-        if (child.isMesh) {
-          child.geometry.dispose();
-          if (child.material.isMaterial) {
-            child.material.dispose();
-          } else {
-            for (const material of child.material) {
-              material.dispose();
-            }
-          }
-        }
+        if (!child.isMesh) return;
+
+        child.geometry?.dispose?.();
+
+        const materials = Array.isArray(child.material)
+          ? child.material
+          : child.material
+            ? [child.material]
+            : [];
+
+        materials.forEach((material) => {
+          material?.dispose?.();
+        });
       });
     };
   }, [earth]);

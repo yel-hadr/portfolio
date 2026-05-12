@@ -39,13 +39,13 @@ const Ball = (props) => {
   );
 };
 
-const BallCanvas = ({ icon }) => {
+const BallCanvas = ({ icon, label }) => {
   return (
     <Canvas
       frameloop='demand'
       dpr={[1, 2]}
       gl={{ preserveDrawingBuffer: true }}
-      aria-label={`3D icon for ${icon}`}
+      aria-label={label ?? '3D technology icon'}
       role="img"
     >
       <Suspense fallback={<CanvasLoader />}>
