@@ -71,7 +71,7 @@ const WebGLFallback = ({ onRetry }) => {
 
         <div className="mt-8 pt-6 border-t border-white/10">
           <p className="text-sm text-gray-400">
-            You can still view my resume and contact information below.
+            This 3D experience isn't available on your current device or browser. After enabling WebGL support, try the detection again.
           </p>
         </div>
       </motion.div>
