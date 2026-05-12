@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 /**
  * Checks if WebGL is available in the current browser environment.
  * @returns {boolean} True if WebGL is supported, false otherwise.
