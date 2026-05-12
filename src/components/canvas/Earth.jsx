@@ -1,67 +1,27 @@
-import React, { Suspense, useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Preload, useGLTF } from "@react-three/drei";
+import { useRef } from "react";
+import { useGLTF } from "@react-three/drei";
 
-import CanvasLoader from "../Loader";
+import { useCleanup } from "../../hooks/useCleanup";
 
 const Earth = () => {
-  const earth = useGLTF("./planet/scene.gltf");
+  const ref = useRef();
+  const { scene } = useGLTF("./planet/scene.gltf");
+  
+  // Use cleanup hook for proper disposal on unmount
+  useCleanup(ref, [scene]);
 
-  // Cleanup geometries and materials on unmount to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      earth.scene.traverse((child) => {
-        if (!child.isMesh) return;
-
-        child.geometry?.dispose?.();
-
-        const materials = Array.isArray(child.material)
-          ? child.material
-          : child.material
-            ? [child.material]
-            : [];
-
-        materials.forEach((material) => {
-          material?.dispose?.();
-        });
-      });
-    };
-  }, [earth]);
-
-  return <primitive object={earth.scene} scale={2.5} position-y={0} rotation-y={0} dispose={null} />;
-};
-
-const EarthCanvas = () => {
   return (
-    <Canvas
-      shadows
-      frameloop='demand'
-      dpr={[1, 2]}
-      gl={{ preserveDrawingBuffer: true }}
-      camera={{
-        fov: 45,
-        near: 0.1,
-        far: 200,
-        position: [-4, 3, 6],
-      }}
-      aria-label="Interactive 3D Earth model"
-      role="img"
-    >
-      <Suspense fallback={<CanvasLoader />}>
-        <OrbitControls
-          autoRotate
-          enableZoom={false}
-          maxPolarAngle={Math.PI / 2}
-          minPolarAngle={Math.PI / 2}
-          enablePan={false}
-          autoRotateSpeed={1}
-        />
-        <Earth />
-
-        <Preload all />
-      </Suspense>
-    </Canvas>
+    <primitive 
+      ref={ref} 
+      object={scene} 
+      scale={2.5} 
+      position-y={0} 
+      rotation-y={0} 
+    />
   );
 };
 
-export default EarthCanvas;
+// Preload the model for faster initial load
+useGLTF.preload("./planet/scene.gltf");
+
+export default Earth;

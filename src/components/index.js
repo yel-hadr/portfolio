@@ -1,4 +1,4 @@
-import { EarthCanvas, BallCanvas, ComputersCanvas, StarsCanvas } from './canvas';
+import { Earth, Computers, BallCanvas, Stars as StarsCanvas } from './canvas';
 import Hero from './Hero';
 import Navbar from './Navbar';
 import About from './About';
@@ -8,6 +8,9 @@ import Works from './Works';
 import Contact from './Contact';
 import ErrorBoundary from './ErrorBoundary';
 import ErrorFallback from './ErrorFallback';
+import WebGLFallback from './WebGLFallback';
+import CanvasErrorBoundary from './CanvasErrorBoundary';
+import LoadingProgress from './LoadingProgress';
 
 export {
   Hero,
@@ -17,10 +20,13 @@ export {
   Experience,
   Works,
   Contact,
-  EarthCanvas,
+  Earth,
+  Computers,
   BallCanvas,
-  ComputersCanvas,
   StarsCanvas,
   ErrorBoundary,
-  ErrorFallback
+  ErrorFallback,
+  WebGLFallback,
+  CanvasErrorBoundary,
+  LoadingProgress
 };
