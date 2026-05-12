@@ -1,6 +1,5 @@
-
-import { BrowserRouter } from "react-router-dom"
-import { About, Contact, Experience, Hero, Navbar, Tech, Works, StarsCanvas } from "./components";
+import { BrowserRouter } from "react-router-dom";
+import { About, Contact, Experience, Hero, Navbar, Tech, Works, StarsCanvas, ErrorBoundary } from "./components";
 
 function App() {
   return (
@@ -15,17 +14,32 @@ function App() {
           <Navbar />
           <Hero />
         </div>
-        <About />
-        <Experience />
-        <Tech />
-        <Works />
+        
+        <ErrorBoundary sectionName="about">
+          <About />
+        </ErrorBoundary>
+        
+        <ErrorBoundary sectionName="experience">
+          <Experience />
+        </ErrorBoundary>
+        
+        <ErrorBoundary sectionName="tech">
+          <Tech />
+        </ErrorBoundary>
+        
+        <ErrorBoundary sectionName="works">
+          <Works />
+        </ErrorBoundary>
+        
         <div className="relative z-0">
           <StarsCanvas />
-          <Contact />
+          <ErrorBoundary sectionName="contact">
+            <Contact />
+          </ErrorBoundary>
         </div>
       </div>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;
