@@ -28,12 +28,25 @@ const Contact = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate required environment variables
+    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+    
+    if (!serviceId || !templateId || !publicKey) {
+      console.error('Missing EmailJS configuration. Please set VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID, and VITE_EMAILJS_PUBLIC_KEY in your .env file.');
+      alert('Configuration error: EmailJS credentials are missing. Please contact the site administrator.');
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
 
     try {
       await emailjs.send(
-        import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_rpx0yab',
-        import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_tkhvewn',
+        serviceId,
+        templateId,
         {
           from_name: form.name,
           to_name: "Youssef El hadraoui",
@@ -41,7 +54,7 @@ const Contact = () => {
           to_email: "yousefelhadraoui99@gmail.com",
           message: form.message,
         },
-        import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'llePuAiq2HHV6RyjV'
+        publicKey
       );
 
       alert("Thank you. I will get back to you as soon as possible.");

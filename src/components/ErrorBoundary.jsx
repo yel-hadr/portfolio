@@ -25,6 +25,7 @@ class ErrorBoundary extends React.Component {
         <ErrorFallback
           error={this.state.error}
           resetErrorBoundary={this.resetErrorBoundary}
+          sectionName={this.props.sectionName}
         />
       );
     }

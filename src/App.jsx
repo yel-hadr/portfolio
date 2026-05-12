@@ -15,25 +15,25 @@ function App() {
           <Hero />
         </div>
         
-        <ErrorBoundary>
+        <ErrorBoundary sectionName="about">
           <About />
         </ErrorBoundary>
         
-        <ErrorBoundary>
+        <ErrorBoundary sectionName="experience">
           <Experience />
         </ErrorBoundary>
         
-        <ErrorBoundary>
+        <ErrorBoundary sectionName="tech">
           <Tech />
         </ErrorBoundary>
         
-        <ErrorBoundary>
+        <ErrorBoundary sectionName="works">
           <Works />
         </ErrorBoundary>
         
         <div className="relative z-0">
           <StarsCanvas />
-          <ErrorBoundary>
+          <ErrorBoundary sectionName="contact">
             <Contact />
           </ErrorBoundary>
         </div>

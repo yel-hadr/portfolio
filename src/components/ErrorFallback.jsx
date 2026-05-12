@@ -1,6 +1,8 @@
 import React from 'react';
 
-const ErrorFallback = ({ error, resetErrorBoundary }) => {
+const ErrorFallback = ({ error, resetErrorBoundary, sectionName }) => {
+  const is3DSection = ['hero', 'about', 'tech', 'works', 'contact'].includes(sectionName);
+  
   return (
     <div 
       role="alert" 
@@ -9,14 +11,22 @@ const ErrorFallback = ({ error, resetErrorBoundary }) => {
       <h2 className="text-2xl font-bold text-white mb-4">
         Something went wrong
       </h2>
-      <p className="text-secondary mb-6 text-center max-w-md">
-        We're sorry, but the 3D content failed to load. This could be due to:
-      </p>
-      <ul className="text-secondary mb-6 space-y-2">
-        <li>• WebGL not supported in your browser</li>
-        <li>• Outdated graphics drivers</li>
-        <li>• Hardware acceleration disabled</li>
-      </ul>
+      {is3DSection ? (
+        <>
+          <p className="text-secondary mb-6 text-center max-w-md">
+            We're sorry, but the 3D content failed to load. This could be due to:
+          </p>
+          <ul className="text-secondary mb-6 space-y-2">
+            <li>• WebGL not supported in your browser</li>
+            <li>• Outdated graphics drivers</li>
+            <li>• Hardware acceleration disabled</li>
+          </ul>
+        </>
+      ) : (
+        <p className="text-secondary mb-6 text-center max-w-md">
+          We're sorry, but this section failed to load. Please try again.
+        </p>
+      )}
       <button
         onClick={resetErrorBoundary}
         className="bg-tertiary py-3 px-8 rounded-xl text-white font-bold hover:bg-tertiary/80 transition-colors"
