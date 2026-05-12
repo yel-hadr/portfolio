@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Preload, useGLTF } from "@react-three/drei";
 
@@ -6,29 +6,10 @@ import CanvasLoader from "../Loader";
 
 const Earth = () => {
   const earth = useGLTF("./planet/scene.gltf");
-
-  // Cleanup geometries and materials on unmount to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      earth.scene.traverse((child) => {
-        if (!child.isMesh) return;
-
-        child.geometry?.dispose?.();
-
-        const materials = Array.isArray(child.material)
-          ? child.material
-          : child.material
-            ? [child.material]
-            : [];
-
-        materials.forEach((material) => {
-          material?.dispose?.();
-        });
-      });
-    };
-  }, [earth]);
-
-  return <primitive object={earth.scene} scale={2.5} position-y={0} rotation-y={0} dispose={null} />;
+  if (!earth) return null;
+  return (
+    <primitive object={earth.scene} scale={2.5} position-y={0} rotation-y={0} />
+  );
 };
 
 const EarthCanvas = () => {
@@ -44,8 +25,6 @@ const EarthCanvas = () => {
         far: 200,
         position: [-4, 3, 6],
       }}
-      aria-label="Interactive 3D Earth model"
-      role="img"
     >
       <Suspense fallback={<CanvasLoader />}>
         <OrbitControls
@@ -53,8 +32,6 @@ const EarthCanvas = () => {
           enableZoom={false}
           maxPolarAngle={Math.PI / 2}
           minPolarAngle={Math.PI / 2}
-          enablePan={false}
-          autoRotateSpeed={1}
         />
         <Earth />
 

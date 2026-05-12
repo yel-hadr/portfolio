@@ -6,8 +6,6 @@ import Tech from './Tech';
 import Experience from './Experience';
 import Works from './Works';
 import Contact from './Contact';
-import ErrorBoundary from './ErrorBoundary';
-import ErrorFallback from './ErrorFallback';
 
 export {
   Hero,
@@ -17,10 +15,8 @@ export {
   Experience,
   Works,
   Contact,
-  EarthCanvas,
-  BallCanvas,
-  ComputersCanvas,
-  StarsCanvas,
-  ErrorBoundary,
-  ErrorFallback
-};
+  EarthCanvas, 
+  BallCanvas, 
+  ComputersCanvas, 
+  StarsCanvas
+}
