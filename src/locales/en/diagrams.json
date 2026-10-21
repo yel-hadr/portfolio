@@ -1,1 +1,448 @@
-{}
+{
+  "modal": {
+    "close": "Close the diagram",
+    "intro": "Hover, focus or select a component to see what it does and how it connects.",
+    "detailsLabel": "Component details",
+    "connections": "Connections",
+    "to": "to",
+    "from": "from",
+    "with": "with",
+    "legend": "Legend",
+    "scrollHint": "Scroll sideways to see the whole diagram, or open the list below.",
+    "diagramLabel": "Interactive diagram: {name}. Each component is a button that shows its details.",
+    "list": "All components as a list ({count})",
+    "flows": {
+      "request": "Request path",
+      "control": "Control and GitOps",
+      "network": "Cluster network"
+    },
+    "pauseAnimation": "Pause animation"
+  },
+  "cloud1": {
+    "title": "Cloud-1 architecture",
+    "description": "Terraform provisions the AWS infrastructure, Ansible configures the host over SSH, and Docker Compose runs WordPress behind nginx. Orange arrows follow a visitor's request; violet arrows show provisioning.",
+    "legend": {
+      "control": "Provisioning"
+    },
+    "groups": {
+      "aws": {
+        "name": "AWS (eu-west-3)",
+        "label": "AWS eu-west-3 (Paris) · VPC 10.0.0.0/16"
+      },
+      "ec2": {
+        "name": "EC2 instance",
+        "label": "EC2 t3.micro · Ubuntu 22.04 · Elastic IP"
+      },
+      "frontend": {
+        "name": "frontend network",
+        "label": "frontend network"
+      },
+      "backend": {
+        "name": "backend network",
+        "label": "backend network · internal: true"
+      }
+    },
+    "nodes": {
+      "make": {
+        "name": "make up",
+        "role": "Operator machine",
+        "description": "One command runs the whole pipeline in order, each stage using what the previous one produced. make down destroys the infrastructure but keeps the Elastic IP.",
+        "facts": [
+          "provision: terraform apply",
+          "inventory: writes inventory.yaml from the Terraform output",
+          "dns: checks that the apex, www and pma A records point at the instance",
+          "wait: waits up to 300 s for SSH",
+          "configure: ansible-playbook site.yml"
+        ]
+      },
+      "terraform": {
+        "name": "Terraform",
+        "role": "Infrastructure as code",
+        "description": "Builds everything the playbook then configures, and tracks it in its state: a VPC with one public subnet, an internet gateway and route table, the cloud1-web security group, the cloud1-key key pair, the instance and its Elastic IP association.",
+        "facts": [
+          "Region eu-west-3 (Paris)",
+          "VPC 10.0.0.0/16, public subnet 10.0.1.0/24",
+          "t3.micro running Ubuntu 22.04, encrypted 16 GB gp3 disk, IMDSv2 only",
+          "The Elastic IP is reserved in its own module (terraform/eip), so the DNS records survive a rebuild"
+        ]
+      },
+      "ansible": {
+        "name": "Ansible",
+        "role": "Configuration over SSH",
+        "description": "Connects to the instance over SSH as ubuntu and applies site.yml. It is idempotent: a second run reports changed=0. Secrets are encrypted with ansible-vault, and the vault password is never committed.",
+        "facts": [
+          "Roles: common, security, docker, wordpress",
+          "Targets the webservers group in inventory.yaml",
+          "Renders docker-compose.yml to /opt/cloud1 and starts the stack",
+          "Issues the Let's Encrypt certificate with a one-shot certbot container"
+        ]
+      },
+      "visitor": {
+        "name": "Visitor",
+        "role": "Web browser",
+        "description": "Reaches the site by name. Both names resolve to the Elastic IP, and nginx picks the virtual host from the Host header.",
+        "facts": [
+          "https://youssefelhadraoui.tech -> WordPress",
+          "https://pma.youssefelhadraoui.tech -> phpMyAdmin"
+        ]
+      },
+      "sg": {
+        "name": "Security group",
+        "role": "cloud1-web",
+        "description": "The first firewall, at the AWS edge, separate from ufw on the host. Opening a port in ufw is not enough: the security group must allow 22, 80 and 443 too, or AWS drops the packets before they reach the instance.",
+        "facts": [
+          "Inbound TCP 22 (SSH), 80 (HTTP) and 443 (HTTPS) only",
+          "Port 80 must stay open: Let's Encrypt validates the domain over HTTP-01"
+        ]
+      },
+      "ufw": {
+        "name": "ufw",
+        "role": "Host firewall",
+        "description": "Set up by the security role: deny all incoming traffic, then allow only SSH, HTTP and HTTPS. The same role installs fail2ban and unattended upgrades, and hardens sshd.",
+        "facts": [
+          "Allows 22 (OpenSSH), 80/tcp and 443/tcp",
+          "Default policy: deny incoming, allow outgoing",
+          "sshd: key-only login, no root login",
+          "fail2ban sshd jail: 5 attempts, 10-minute ban"
+        ]
+      },
+      "nginx": {
+        "name": "nginx",
+        "role": "TLS reverse proxy",
+        "description": "The only container that publishes ports. Port 80 answers with a 301 redirect to HTTPS (except the ACME challenge); port 443 terminates TLS 1.2/1.3 and routes by name. Unknown names get a 444.",
+        "facts": [
+          "Image nginx:1.27-alpine, on the frontend network",
+          "Virtual hosts: youssefelhadraoui.tech, www and pma",
+          "Let's Encrypt certificate: a systemd timer checks it twice a day and renews it within 30 days of expiry; a self-signed one bootstraps the first start",
+          "Resolves the PHP upstreams per request through Docker's DNS (127.0.0.11)"
+        ]
+      },
+      "wordpress": {
+        "name": "WordPress",
+        "role": "php-fpm pool",
+        "description": "Publishes no ports: only nginx reaches it, over FastCGI on port 9000. It reads and writes its data in MariaDB over the backend network.",
+        "facts": [
+          "Image wordpress:6.8-fpm-alpine",
+          "Networks: frontend and backend",
+          "Named volume wp_data (/var/www/html)",
+          "Memory limit 256 MB"
+        ]
+      },
+      "phpmyadmin": {
+        "name": "phpMyAdmin",
+        "role": "php-fpm pool",
+        "description": "The database admin interface, served at pma.youssefelhadraoui.tech. Like WordPress, a php-fpm pool with no published ports.",
+        "facts": [
+          "Image phpmyadmin:5-fpm-alpine",
+          "Networks: frontend and backend",
+          "Named volume pma_data",
+          "Memory limit 128 MB"
+        ]
+      },
+      "mariadb": {
+        "name": "MariaDB",
+        "role": "Database",
+        "description": "Sits only on the backend network, declared internal: true, so it has no route off the host and stays unreachable from the internet, even if a port were published by mistake.",
+        "facts": [
+          "Image mariadb:11.4, port 3306",
+          "Database wordpress, user wpuser, credentials from the vault",
+          "Named volume db_data, which survives reboots",
+          "Memory limit 384 MB"
+        ]
+      }
+    },
+    "edges": {
+      "apply": "terraform apply",
+      "inventory": "IP -> inventory.yaml",
+      "awsApi": "AWS API",
+      "ssh": "SSH :22",
+      "visit": "HTTP :80 · HTTPS :443",
+      "sgUfw": ":80 · :443",
+      "sshUfw": ":22",
+      "ufwNginx": ":80 -> 301 · :443 TLS",
+      "fcgiWp": "FastCGI :9000",
+      "fcgiPma": "FastCGI :9000",
+      "wpDb": "MySQL :3306",
+      "pmaDb": "MySQL :3306"
+    }
+  },
+  "iot": {
+    "title": "Inception-of-Things architecture",
+    "description": "Four parts, from a two-node K3s cluster on Vagrant to GitOps with Argo CD and a local Gitea. Pick a part, then explore its components.",
+    "tabsLabel": "Project parts",
+    "parts": {
+      "p1": {
+        "tab": "Part 1",
+        "short": "K3s + Vagrant",
+        "title": "Part 1: K3s and Vagrant",
+        "summary": "Two Debian 12 Vagrant VMs on a VirtualBox private network form a two-node K3s cluster: a server (control plane) and an agent (worker).",
+        "groups": {
+          "net": {
+            "name": "Private network",
+            "label": "VirtualBox private network · eth1"
+          }
+        },
+        "nodes": {
+          "vagrant": {
+            "name": "Vagrant",
+            "role": "VirtualBox provider",
+            "meta": ["debian/bookworm64"],
+            "description": "Creates both VMs, sets their hostnames and private IPs, and runs the provisioning scripts. Both machines are reachable through passwordless vagrant ssh.",
+            "facts": [
+              "vagrant up creates yelhadrS, then yelhadrSW",
+              "Each VM: 1 CPU and 1024 MB of RAM",
+              "Server: setup_server.sh, worker: setup_worker.sh"
+            ]
+          },
+          "server": {
+            "name": "yelhadrS",
+            "role": "K3s server",
+            "meta": ["192.168.56.110"],
+            "description": "The control-plane node. setup_server.sh installs K3s in server mode, bound to the private network, with its API advertised on 192.168.56.110.",
+            "facts": [
+              "k3s server --node-ip 192.168.56.110 --advertise-address 192.168.56.110",
+              "--flannel-iface eth1 --tls-san 192.168.56.110",
+              "Kubernetes API on port 6443",
+              "Check: sudo kubectl get nodes -o wide"
+            ]
+          },
+          "agent": {
+            "name": "yelhadrSW",
+            "role": "K3s agent",
+            "meta": ["192.168.56.111"],
+            "description": "The worker node. setup_worker.sh waits until the server API answers, then installs K3s in agent mode and joins the cluster with the shared token.",
+            "facts": [
+              "K3S_URL=https://192.168.56.110:6443",
+              "k3s agent --node-ip 192.168.56.111 --flannel-iface eth1",
+              "Retries the server API up to 120 times before giving up"
+            ]
+          }
+        },
+        "edges": {
+          "sshServer": "vagrant ssh",
+          "sshAgent": "vagrant ssh",
+          "join": "join · HTTPS :6443 · token",
+          "flannel": "flannel · eth1"
+        }
+      },
+      "p2": {
+        "tab": "Part 2",
+        "short": "Ingress",
+        "title": "Part 2: K3s and three applications",
+        "summary": "One VM runs K3s in server mode. Traefik, the ingress controller bundled with K3s, routes each request to one of three apps based on its Host header.",
+        "groups": {
+          "vm": {
+            "name": "yelhadrS",
+            "label": "yelhadrS · 192.168.56.110 · K3s server"
+          }
+        },
+        "nodes": {
+          "client": {
+            "name": "curl",
+            "role": "Host machine",
+            "description": "Sends requests to the VM's private IP with a Host header, for example curl -H \"Host: app1.com\" http://192.168.56.110.",
+            "facts": ["Host: app1.com -> app1", "Host: app2.com -> app2", "Any other host -> app3"]
+          },
+          "traefik": {
+            "name": "Traefik",
+            "role": "Ingress controller",
+            "meta": ["apps-ingress"],
+            "description": "The apps-ingress Ingress (class traefik, entrypoint web) holds three rules: two host rules and a default rule with no host.",
+            "facts": [
+              "Entrypoint web, HTTP port 80",
+              "app1.com -> app1-svc:80",
+              "app2.com -> app2-svc:80",
+              "Any other host -> app3-svc:80"
+            ]
+          },
+          "app1": {
+            "name": "app1",
+            "role": "app1-svc :80",
+            "meta": ["1 replica"],
+            "description": "A Deployment of nginxdemos/hello, a small page that shows which pod answered, behind the app1-svc Service.",
+            "facts": [
+              "Image nginxdemos/hello, container port 80",
+              "Replicas: 1",
+              "Service app1-svc: port 80 -> targetPort 80"
+            ]
+          },
+          "app2": {
+            "name": "app2",
+            "role": "app2-svc :80",
+            "meta": ["3 replicas"],
+            "description": "Same image with three replicas, as the subject requires; the Service spreads requests across the three pods.",
+            "facts": [
+              "Image nginxdemos/hello, container port 80",
+              "Replicas: 3",
+              "Check: kubectl get pods -l app=app2"
+            ]
+          },
+          "app3": {
+            "name": "app3",
+            "role": "app3-svc :80",
+            "meta": ["1 replica"],
+            "description": "The default backend: any host other than app1.com or app2.com lands here.",
+            "facts": [
+              "Image nginxdemos/hello, container port 80",
+              "Replicas: 1",
+              "curl -H \"Host: anything.local\" http://192.168.56.110 -> app3"
+            ]
+          }
+        },
+        "edges": {
+          "http": "HTTP :80",
+          "toApp1": "Host: app1.com",
+          "toApp2": "Host: app2.com",
+          "toApp3": "default rule"
+        }
+      },
+      "p3": {
+        "tab": "Part 3",
+        "short": "K3d + Argo CD",
+        "title": "Part 3: K3d and Argo CD",
+        "summary": "K3d runs K3s inside Docker. Argo CD watches a public GitHub repository and keeps the dev namespace in sync with it: changing the image tag from v1 to v2 in Git updates the running app.",
+        "groups": {
+          "cluster": {
+            "name": "iotcluster",
+            "label": "K3d cluster iotcluster · API 127.0.0.1:6550"
+          }
+        },
+        "nodes": {
+          "you": {
+            "name": "You",
+            "role": "Host machine",
+            "description": "Changes the image tag in Git, then checks the result with curl.",
+            "facts": [
+              "git push: wil42/playground:v1 -> v2",
+              "curl http://localhost:8888/ -> {\"status\":\"ok\", \"message\": \"v1\"}"
+            ]
+          },
+          "github": {
+            "name": "GitHub",
+            "role": "Public Git repository",
+            "meta": ["yel-hadr/mdouzi"],
+            "description": "The source of truth: it holds the playground Deployment and Service, which Argo CD reads at HEAD from the repository root.",
+            "facts": ["repoURL https://github.com/yel-hadr/mdouzi", "targetRevision HEAD, path ."]
+          },
+          "argocd": {
+            "name": "Argo CD",
+            "role": "namespace argocd",
+            "meta": ["Application playground"],
+            "description": "Installed from the upstream stable manifests. The playground Application syncs automatically, prunes deleted resources and reverts drift (selfHeal), so the cluster always matches Git.",
+            "facts": [
+              "syncPolicy automated: prune, selfHeal",
+              "Destination: https://kubernetes.default.svc, namespace dev",
+              "UI: kubectl port-forward svc/argocd-server -n argocd 8080:443"
+            ]
+          },
+          "playground": {
+            "name": "playground",
+            "role": "namespace dev",
+            "meta": ["wil42/playground:v1"],
+            "description": "The application Argo CD deploys: one replica that answers on port 8888 with its version, v1 or v2.",
+            "facts": [
+              "Deployment playground, container port 8888",
+              "Service playground-svc, type LoadBalancer, port 8888",
+              "After the update: {\"status\":\"ok\", \"message\": \"v2\"}"
+            ]
+          },
+          "lb": {
+            "name": "Load balancer",
+            "role": "k3d",
+            "meta": ["8888:8888"],
+            "description": "k3d's load balancer maps a host port to the cluster, so localhost:8888 reaches the playground Service.",
+            "facts": [
+              "k3d cluster create iotcluster --port 8888:8888@loadbalancer",
+              "API server on 127.0.0.1:6550"
+            ]
+          }
+        },
+        "edges": {
+          "push": "git push · v1 -> v2",
+          "pull": "pull · HEAD",
+          "sync": "auto-sync · prune · selfHeal",
+          "curl": "curl localhost:8888",
+          "svc": "playground-svc :8888"
+        }
+      },
+      "bonus": {
+        "tab": "Bonus",
+        "short": "Local Gitea",
+        "title": "Bonus: local Gitea",
+        "summary": "The same GitOps flow as Part 3, but the Git repository lives in a local Gitea, installed with Helm in its own namespace. Gitea replaces GitLab because it is much lighter on a laptop.",
+        "groups": {
+          "cluster": {
+            "name": "iotbonus",
+            "label": "K3d cluster iotbonus · API 127.0.0.1:6551"
+          }
+        },
+        "nodes": {
+          "you": {
+            "name": "You",
+            "role": "Browser and curl",
+            "description": "Edits the image tag in the Gitea web interface, then checks the app with curl.",
+            "facts": [
+              "Gitea: http://gitea.localhost:8081",
+              "App: http://localhost:8888",
+              "The script adds 127.0.0.1 gitea.localhost to /etc/hosts"
+            ]
+          },
+          "lb": {
+            "name": "Load balancer",
+            "role": "k3d",
+            "meta": ["8081 -> 80 · 8888 -> 8888"],
+            "description": "k3d maps two host ports: 8081 to the cluster ingress on port 80, and 8888 to the playground LoadBalancer Service.",
+            "facts": ["--port 8081:80@loadbalancer", "--port 8888:8888@loadbalancer"]
+          },
+          "traefik": {
+            "name": "Traefik",
+            "role": "Ingress controller",
+            "meta": ["gitea.localhost"],
+            "description": "The ingress controller bundled with K3s. The Gitea Helm chart creates an Ingress for gitea.localhost (class traefik).",
+            "facts": ["Host: gitea.localhost -> gitea-http:3000"]
+          },
+          "gitea": {
+            "name": "Gitea",
+            "role": "namespace gitea",
+            "meta": ["gitea_admin/playground"],
+            "description": "A lightweight Git server installed with the gitea-charts/gitea Helm chart. The setup script creates the playground repository and pushes the initial manifest (v1).",
+            "facts": [
+              "Rootless image, SQLite, in-memory cache, SSH disabled",
+              "HTTP on port 3000 (Service gitea-http)",
+              "Admin account from the gitea-admin-secret Secret",
+              "5 Gi persistent volume"
+            ]
+          },
+          "argocd": {
+            "name": "Argo CD",
+            "role": "namespace argocd",
+            "meta": ["Application playground-gitea"],
+            "description": "Works as in Part 3, but its Application points at the in-cluster Gitea service instead of GitHub.",
+            "facts": [
+              "repoURL http://gitea-http.gitea.svc.cluster.local:3000/gitea_admin/playground.git",
+              "Automated sync: prune, selfHeal; destination namespace dev"
+            ]
+          },
+          "playground": {
+            "name": "playground",
+            "role": "namespace dev",
+            "meta": ["wil42/playground:v1"],
+            "description": "The same application as in Part 3, now deployed from the local Gitea repository.",
+            "facts": [
+              "Deployment playground, container port 8888",
+              "Service playground-svc, type LoadBalancer, port 8888"
+            ]
+          }
+        },
+        "edges": {
+          "ports": ":8081 · :8888",
+          "ingress": ":80",
+          "gitea": "gitea-http :3000",
+          "app": ":8888",
+          "pull": "git pull · :3000",
+          "sync": "auto-sync"
+        }
+      }
+    }
+  }
+}
