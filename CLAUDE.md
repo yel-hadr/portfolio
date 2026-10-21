@@ -48,7 +48,7 @@ There is no test suite. Prettier style is semicolons, single quotes in JS and JS
 
 **Design system.** Tokens live in `tailwind.config.js`:
 - Colors: `background`, `surface` / `surface-raised`, `foreground` / `foreground-muted`, `primary` (brand orange #FF6500 plus 400/600), `secondary`, `line` / `line-strong`. All text pairs meet WCAG AA. Put dark text on orange; white on orange is only 2.95:1.
-- Type: role presets in `src/styles.js` use Tailwind's default scale. Don't add arbitrary `text-[Npx]` sizes or hardcoded hexes.
+- Type: Poppins is self-hosted with `@fontsource/poppins`, imported in `src/main.jsx`: the latin subset, weights 400/500/600/700/900, `font-display: swap`. Don't add a Google Fonts `<link>`; that third-party, render-blocking stylesheet doubled phone LCP in measurements. Role presets in `src/styles.js` use Tailwind's default scale. Don't add arbitrary `text-[Npx]` sizes or hardcoded hexes.
 - Motion: one shared reveal in `src/utils/motion.js`. `<MotionConfig reducedMotion="user">` at the root drops transform animations for reduced-motion users.
 
 **3D rendering: one Canvas, many inline Views.**
