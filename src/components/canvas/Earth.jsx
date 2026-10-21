@@ -3,7 +3,7 @@ import { useGLTF } from "@react-three/drei";
 
 import { AutoRotate, ViewCamera } from "./helpers";
 
-const MODEL = "./planet/scene.gltf";
+const MODEL = "./planet/scene.glb";
 
 const Earth = () => {
   const { scene } = useGLTF(MODEL);

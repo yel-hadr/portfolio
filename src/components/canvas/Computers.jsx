@@ -7,7 +7,11 @@ import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 import { AutoRotate, ViewCamera } from "./helpers";
 
-const MODEL = "./desktop_pc/scene.gltf";
+// Meshopt + WebP GLBs (gltf-transform optimize, see CLAUDE.md). Phones get the 512px-texture
+// variant; decided once at module load so the preload and useGLTF use the same file.
+const MODEL = window.matchMedia("(max-width: 768px)").matches
+  ? "./desktop_pc/scene-512.glb"
+  : "./desktop_pc/scene.glb";
 
 const Computers = () => {
   const { scene } = useGLTF(MODEL);

@@ -64,7 +64,9 @@ There is no test suite and no Prettier config yet.
 
 **GPU resources.** `useGLTF` / `useTexture` results are cached and shared. **Clone a cached scene per mount** (`Earth` does `scene.clone()`), because an Object3D has one parent. **Never dispose cached geometry, materials or textures** on unmount; the old `useCleanup` hook did, which blanked the Contact globe, and it was removed. R3F disposes the objects it creates declaratively.
 
-**Models** are gltf + textures in `public/desktop_pc/` and `public/planet/`, loaded with `useGLTF` plus `useGLTF.preload`. Compression is planned for Phase 3.
+**Models** are meshopt-compressed GLBs with WebP textures in `public/desktop_pc/` (`scene.glb`, plus `scene-512.glb` for phones ≤768px) and `public/planet/scene.glb`. They're loaded with `useGLTF` + `useGLTF.preload`; drei's bundled MeshoptDecoder means no CDN decoder is needed. Keep each folder's `license.txt` (Sketchfab attribution). To regenerate from a source gltf, run:
+`npx --yes @gltf-transform/cli@4.5.1 optimize <in>.gltf <out>.glb --compress meshopt --texture-compress webp --texture-size 1024 --simplify false`
+Use `--texture-size 512` for the phone variant. Leave `--simplify false`: simplify removes a third of the triangles to save only about 120 KB.
 
 ## ESLint
 
