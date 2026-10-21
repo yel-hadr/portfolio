@@ -27,6 +27,7 @@ const Contact = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
 
     const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
     const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
@@ -70,7 +71,8 @@ const Contact = () => {
 
       <div className='mt-12 grid gap-10 xl:grid-cols-2'>
         <motion.div variants={reveal()} className='rounded-3xl border border-line bg-surface p-6 sm:p-8'>
-          <form onSubmit={handleSubmit} className='flex flex-col gap-6'>
+          <p id='contact-hint' className='mb-6 text-sm text-foreground-muted'>All fields are required.</p>
+          <form onSubmit={handleSubmit} aria-describedby='contact-hint' className='flex flex-col gap-6'>
             <div className='flex flex-col gap-2'>
               <label htmlFor='contact-name' className='font-medium text-foreground'>Name</label>
               <input
@@ -113,25 +115,26 @@ const Contact = () => {
             </div>
 
             <div className='flex flex-wrap items-center gap-4'>
+              {/* aria-disabled instead of disabled: a disabled button would drop keyboard focus to <body> */}
               <button
                 type='submit'
-                disabled={loading}
-                className='rounded-xl bg-primary px-8 py-3 font-bold text-background transition-colors hover:bg-primary-400 disabled:cursor-wait disabled:opacity-70 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface'
+                aria-disabled={loading || undefined}
+                className='rounded-xl border-2 border-transparent bg-primary px-8 py-3 font-bold text-background transition-colors hover:bg-primary-400 aria-disabled:cursor-wait focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface'
               >
                 {loading ? 'Sending…' : 'Send message'}
               </button>
-              <p
-                role='status'
-                className={`text-sm font-medium ${status?.type === 'error' ? 'text-pink-300' : 'text-emerald-300'}`}
-              >
-                {status?.message}
+              <p role='status' className='text-sm font-medium text-emerald-300'>
+                {status?.type === 'success' ? status.message : ''}
+              </p>
+              <p role='alert' className='text-sm font-medium text-pink-300'>
+                {status?.type === 'error' ? status.message : ''}
               </p>
             </div>
           </form>
         </motion.div>
 
         <motion.div variants={reveal(0.1)} className='h-80 md:h-96 xl:h-auto'>
-          <SceneView sectionType='earth' label='Rotating 3D globe' className='h-full w-full'>
+          <SceneView sectionType='earth' className='h-full w-full'>
             <Earth />
           </SceneView>
         </motion.div>

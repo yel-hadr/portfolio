@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
-import { useReducedMotion } from "framer-motion";
 import { MathUtils } from "three";
 
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 import { AutoRotate, ViewCamera } from "./helpers";
 
 const MODEL = "./desktop_pc/scene.gltf";
@@ -12,7 +12,7 @@ const MODEL = "./desktop_pc/scene.gltf";
 const Computers = () => {
   const { scene } = useGLTF(MODEL);
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const reduced = useReducedMotion();
+  const reduced = usePrefersReducedMotion();
   const parallaxRef = useRef();
   const pointerX = useRef(0);
 

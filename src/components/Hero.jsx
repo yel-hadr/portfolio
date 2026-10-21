@@ -7,14 +7,6 @@ import { Computers, SceneView } from './canvas';
 const Hero = () => {
   return (
     <section id="hero" aria-labelledby="hero-title" className="relative w-full min-h-screen">
-      <SceneView
-        sectionType="hero"
-        label="3D model of a desk setup with a computer, keyboard and monitor"
-        className="absolute inset-0 pointer-events-none"
-      >
-        <Computers />
-      </SceneView>
-
       {/* The page's one orchestrated entrance: heading, then the introduction. */}
       <motion.div
         variants={staggerContainer(0.12, 0.1)}
@@ -37,6 +29,15 @@ const Hero = () => {
           </motion.p>
         </div>
       </motion.div>
+
+      {/* After the text in DOM order so it is read after the heading; absolutely positioned behind it */}
+      <SceneView
+        sectionType="hero"
+        label="3D model of a desk setup with a computer, keyboard and monitor"
+        className="absolute inset-0 pointer-events-none"
+      >
+        <Computers />
+      </SceneView>
     </section>
   );
 };

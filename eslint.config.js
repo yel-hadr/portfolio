@@ -19,15 +19,6 @@ const R3F_PROPS = [
   'emissive', 'emissiveIntensity', 'metalness', 'roughness',
 ]
 
-// Legacy lint debt, downgraded to warnings per file so `npm run lint` and the
-// PostToolUse hook pass on the current baseline. Delete entries as files are cleaned up.
-const LEGACY = [
-  {
-    files: ['src/components/Navbar.jsx'],
-    rules: { 'no-unused-vars': 'warn', 'react/display-name': 'warn' },
-  },
-]
-
 export default [
   { ignores: ['dist'] },
   {
@@ -67,5 +58,4 @@ export default [
       'react/no-unknown-property': ['error', { ignore: R3F_PROPS }],
     },
   },
-  ...LEGACY,
 ]

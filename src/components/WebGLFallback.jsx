@@ -53,7 +53,7 @@ const WebGLFallback = ({ onRetry }) => {
           {onRetry && (
             <button
               onClick={onRetry}
-              className="px-6 py-3 bg-primary hover:bg-primary-400 text-background font-semibold rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="px-6 py-3 border-2 border-transparent bg-primary hover:bg-primary-400 text-background font-semibold rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               Retry detection
             </button>

@@ -3,12 +3,34 @@
 @tailwind utilities;
 
 @layer base {
+  /* No global smooth scrolling: it also animated scrolling to keyboard focus. Nav links
+     smooth-scroll explicitly (Navbar goTo) unless reduced motion is preferred. */
   html {
     color-scheme: dark;
-    scroll-behavior: smooth;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* One visible focus style for every keyboard-focusable element (6.8:1 on background). */
+  :focus-visible {
+    outline: 2px solid theme("colors.primary.DEFAULT");
+    outline-offset: 3px;
+  }
+
+  /* Programmatic focus targets (main, sections after a nav jump) get no ring. */
+  [tabindex="-1"]:focus {
+    outline: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

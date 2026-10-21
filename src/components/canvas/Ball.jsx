@@ -1,11 +1,11 @@
 import { Decal, Float, useTexture } from '@react-three/drei';
-import { useReducedMotion } from 'framer-motion';
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 
 // Rendered through a SceneView, so it shares the root camera (fov 75 at z=5), like the old per-icon Canvas.
 // No continuous spin: the logo decal is only on the front face, so the ball floats in place.
 const Ball = ({ imgUrl }) => {
   const decal = useTexture(imgUrl);
-  const reduced = useReducedMotion();
+  const reduced = usePrefersReducedMotion();
 
   return (
     <Float speed={reduced ? 0 : 1.75} rotationIntensity={reduced ? 0 : 1} floatIntensity={reduced ? 0 : 2}>

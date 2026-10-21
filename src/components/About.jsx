@@ -36,7 +36,7 @@ const About = () => {
           </motion.p>
         </div>
         {showGlobe && (
-          <SceneView sectionType='earth' label='Rotating 3D globe' className='h-[360px] w-full'>
+          <SceneView sectionType='earth' className='h-[360px] w-full'>
             <Earth />
           </SceneView>
         )}

@@ -5,11 +5,16 @@ const ErrorFallback = ({ error, resetErrorBoundary, sectionName }) => {
   const is3DSection = SECTIONS_WITH_3D.includes(sectionName);
 
   return (
-    <div
-      role="alert"
-      className="max-w-7xl mx-auto my-10 flex flex-col items-center justify-center min-h-[25rem] p-8 bg-surface border border-line rounded-3xl"
+    // Keeps the section id so nav links still land here (sectionName values match section ids)
+    <section
+      id={sectionName}
+      aria-labelledby={`${sectionName}-error`}
+      className="max-w-7xl mx-auto my-10 min-h-[25rem] p-8 bg-surface border border-line rounded-3xl scroll-mt-20 flex"
     >
-      <h2 className="text-2xl font-bold text-foreground mb-4">This section failed to load</h2>
+      <div role="alert" className="m-auto flex flex-col items-center justify-center">
+      <h2 id={`${sectionName}-error`} className="text-2xl font-bold text-foreground mb-4">
+        The {sectionName} section failed to load
+      </h2>
       {is3DSection ? (
         <>
           <p className="text-foreground-muted mb-6 text-center max-w-md">
@@ -36,7 +41,8 @@ const ErrorFallback = ({ error, resetErrorBoundary, sectionName }) => {
           <pre className="mt-2 p-4 bg-background rounded-xl overflow-auto max-h-40">{error.message}</pre>
         </details>
       )}
-    </div>
+      </div>
+    </section>
   );
 };
 
