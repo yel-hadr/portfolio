@@ -23,10 +23,10 @@ You are the accessibility reviewer for a Vite 5 + React 18 (JSX only) 3D portfol
 If the caller names files or a diff, start there (`git diff --name-only`, `git diff`), then check the shared pieces they touch. Otherwise audit everything below:
 
 - `src/App.jsx`: skip link, landmarks, lazy 3D layer, `WebGLContext`, `WebGLFallback` notice
-- `src/components/`: `Navbar.jsx`, `Hero.jsx`, `About.jsx`, `Experience.jsx`, `Tech.jsx`, `Works.jsx`, `Contact.jsx`, `SectionHeader.jsx`, `Footer.jsx`, `CanvasErrorBoundary.jsx`, `WebGLFallback.jsx`, `ErrorBoundary.jsx`, `ErrorFallback.jsx`
-- `src/components/canvas/`: `SceneView.jsx` (the DOM slot every 3D scene uses), `Scene3D.jsx` (Canvas, `FrameDriver`, loading bar via `LoadingProgress.jsx`), `helpers.jsx` (`AutoRotate`, `ViewCamera`), `Ball.jsx`, `Computers.jsx`, `Earth.jsx`, `Stars.jsx`
+- `src/components/`: `Navbar.jsx`, `Hero.jsx`, `About.jsx`, `Experience.jsx`, `Tech.jsx`, `Works.jsx`, `Education.jsx`, `Contact.jsx`, `WavesBackground.jsx`, `SectionHeader.jsx`, `Footer.jsx`, `CanvasErrorBoundary.jsx`, `WebGLFallback.jsx`, `ErrorBoundary.jsx`, `ErrorFallback.jsx`
+- `src/components/canvas/`: `SceneView.jsx` (the DOM slot every 3D scene uses), `Scene3D.jsx` (Canvas, `FrameDriver`, loading bar via `LoadingProgress.jsx`), `helpers.jsx` (`AutoRotate`, `ViewCamera`), `Ball.jsx`, `Earth.jsx`
 - `src/hoc/sectionWrapper.jsx`, `src/utils/motion.js`, `src/hooks/`, `src/styles.js`, `src/index.css`, `tailwind.config.js`, `index.html`
-- Content: `src/constans/index.js` (`navLinks`, `services`, `technologies`, `experiences`, `projects`)
+- Content: `src/constans/index.js` (`person`, `navLinks`, `services`, `technologies`, `experiences`, `projects`, `education`)
 
 ## Checklist
 
@@ -34,8 +34,8 @@ Each item names what the code should do today. Report any drift as a finding.
 
 **1. Reduced motion (2.3.3 Animation from Interactions, 2.2.2 Pause, Stop, Hide)**
 - `<MotionConfig reducedMotion="user">` wraps the whole app in `App.jsx`, so framer-motion reveals (`src/utils/motion.js` `reveal`, `SectionWrapper` stagger, the hero entrance) drop transforms and keep only opacity.
-- 3D motion stops under `usePrefersReducedMotion()`: `AutoRotate` (`helpers.jsx`), `Float` in `Ball.jsx`, `useFrame` rotation in `Stars.jsx` and parallax in `Computers.jsx`. `FrameDriver` in `Scene3D.jsx` then redraws only on scroll and resize, never on a timer.
-- No infinite loops; the `@media (prefers-reduced-motion: reduce)` block in `src/index.css` neutralises CSS animation and transitions. Nav smooth scrolling uses `'auto'` when reduced, and there is no global `scroll-behavior: smooth`.
+- 3D motion stops under `usePrefersReducedMotion()`: `AutoRotate` (`helpers.jsx`), `Float` in `Ball.jsx`, and the waves animation (`WavesBackground.jsx` draws one still frame). `FrameDriver` in `Scene3D.jsx` then redraws only on scroll and resize, never on a timer.
+- No infinite loops; the `@media (prefers-reduced-motion: reduce)` block in `src/index.css` neutralises CSS animation and transitions. Nav smooth scrolling uses `'auto'` when reduced, and the global `scroll-behavior: smooth` in `index.css` applies only under `prefers-reduced-motion: no-preference`. Text over the waves background must keep AA contrast (glass cards or the dark overlays).
 
 **2. Text alternatives (1.1.1 Non-text Content)**
 - Every `<img>` is decorative or sits next to text that names it, so `alt=""` is expected (logo next to the name, service icons next to their titles, project images next to the card title, the GitHub icon inside "View source", tech icons above their names).

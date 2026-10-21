@@ -26,7 +26,7 @@ Work out the entry type: `project`, `experience` or `tech`. Then confirm you hav
 
 | Type | Required | Optional |
 |---|---|---|
-| project | name, description, image path, `source_code_link` (full `https://` URL), 1+ tags | tag colors |
+| project | name, description, 1+ tags | image path (cards render text-only without one), `source_code_link` (full `https://` URL; omit while the repo is private), tag colors |
 | experience | title, date (match the existing `"Month YYYY - Month YYYY"` style), 1+ points | company_name, logo image path, iconBg (default `"#383E56"`) |
 | tech | name, icon image path | — |
 

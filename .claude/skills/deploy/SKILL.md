@@ -35,10 +35,10 @@ gh auth status 2>&1 | grep -E 'Logged in|not logged'   # needed for steps 7-8; n
 
 ```bash
 grep -n "base:" vite.config.js                                   # must be: base: '/portfolio/'
-grep -rnE "[\"'\`(]/(desktop_pc|planet|logo\.svg|vite\.svg)" src  # must print nothing
+grep -rnE "[\"'\`(]/(planet|logo\.svg|vite\.svg)" src  # must print nothing
 ```
 
-Files in `public/` (`desktop_pc/`, `planet/`, `logo.svg`, `vite.svg`) must be referenced relatively (`./planet/scene.glb`, `./desktop_pc/scene.glb`, as in `canvas/Earth.jsx` and `canvas/Computers.jsx`) or through `import.meta.env.BASE_URL`. A leading `/` 404s in production. `index.html` uses `/src/...` paths, which is fine because Vite rewrites them. If any check fails, **stop** and show the offending lines.
+Files in `public/` (`planet/`, `logo.svg`, `vite.svg`) must be referenced relatively (`./planet/scene.glb`, as in `canvas/Earth.jsx`) or through `import.meta.env.BASE_URL`. A leading `/` 404s in production. `index.html` uses `/src/...` paths, which is fine because Vite rewrites them. If any check fails, **stop** and show the offending lines.
 
 ## 3. EmailJS env (names and counts only)
 
@@ -151,8 +151,6 @@ done
 ```bash
 curl -sI https://yel-hadr.github.io/portfolio/ | head -1                      # expect 200
 curl -sI https://yel-hadr.github.io/portfolio/planet/scene.glb | head -1         # expect 200
-curl -sI https://yel-hadr.github.io/portfolio/desktop_pc/scene.glb | head -1     # expect 200
-curl -sI https://yel-hadr.github.io/portfolio/desktop_pc/scene-512.glb | head -1 # expect 200 (phones)
 ```
 
 Then use the `playwright` MCP server at each viewport, 390x844 (mobile) and 1440x900 (desktop):
