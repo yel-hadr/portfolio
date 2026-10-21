@@ -1,1 +1,36 @@
-{}
+{
+  "title": "Today I learned.",
+  "lead": "Short notes from building and running backends and infrastructure: the gotcha, the fix and a snippet to reuse.",
+  "topics": "Topics",
+  "codeLabel": "{language} code: {title}",
+  "copy": "Copy",
+  "copySr": " code: {title}",
+  "copied": "Copied",
+  "copyFailed": "Copy failed. The code is selected: copy it with Ctrl+C, ⌘C or your device's Copy command.",
+  "items": {
+    "pgbouncer": {
+      "title": "PgBouncer transaction pooling breaks django-tenants",
+      "body": "django-tenants picks the tenant with a session-level `SET search_path` on the database connection. In transaction mode, PgBouncer can run that SET and the next query on different server connections, so the query may reach another tenant's schema or `public`. Use session pooling for the tenant app, or skip PgBouncer there and rely on Django's persistent connections (`CONN_MAX_AGE`)."
+    },
+    "argocd": {
+      "title": "Argo CD automated sync neither prunes nor self-heals by default",
+      "body": "With automated sync alone, Argo CD applies new commits but leaves resources deleted from Git running, and ignores changes made by hand with `kubectl`. `prune: true` removes what Git no longer declares, and `selfHeal: true` brings any drift in the cluster back to the state in Git."
+    },
+    "vxlan": {
+      "title": "VXLAN takes 50 bytes off every packet's MTU",
+      "body": "VXLAN wraps each frame in outer IPv4, UDP and VXLAN headers and carries the inner Ethernet header too: 50 bytes in total, 70 over an IPv6 underlay. On a 1500-byte underlay, set the overlay MTU to 1450 or enable jumbo frames, otherwise small pings work while large transfers stall."
+    },
+    "terraform": {
+      "title": "Terraform can lock S3 state without DynamoDB",
+      "body": "Since Terraform 1.10, the S3 backend can lock state with a `.tflock` object stored next to the state file (`use_lockfile = true`), built on S3 conditional writes; it is generally available since 1.11, which also deprecated DynamoDB-based locking. No DynamoDB table is needed. Turn on bucket versioning so a bad state write can be rolled back."
+    },
+    "jsonlogs": {
+      "title": "Loki wants JSON log lines and few labels",
+      "body": "Loki indexes labels only, so high-cardinality fields such as a request or tenant ID belong in the log line, not in labels. With one JSON object per line, LogQL's `json` parser turns those fields into filters at query time."
+    },
+    "tmux": {
+      "title": "tmux keeps remote work alive when SSH drops",
+      "body": "Work on a server inside a named tmux session: if the connection drops, the shell and its running commands survive, and `tmux attach` brings them back. A few default key bindings, pressed after the Ctrl-b prefix, cover most daily use."
+    }
+  }
+}
