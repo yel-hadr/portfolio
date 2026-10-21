@@ -33,7 +33,7 @@ There is no test suite and no Prettier config yet.
 
 ## Base path (GitHub Pages)
 
-`vite.config.js` sets `base: '/portfolio/'`, and `BrowserRouter` gets `basename={import.meta.env.BASE_URL}`. Consequences:
+`vite.config.js` sets `base: '/portfolio/'`. There is no router; in-page navigation uses `#section` anchors. Consequences:
 - The dev server URL is `http://localhost:5173/portfolio/`.
 - Imported assets and `url()` in CSS are rewritten by Vite automatically.
 - Files in `public/` (the gltf models) must be referenced relatively (`./planet/scene.gltf`) or via `import.meta.env.BASE_URL`. A leading `/` will 404 in production.

@@ -1,4 +1,3 @@
-import { BrowserRouter } from "react-router-dom";
 import { useEffect } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { View } from "@react-three/drei";
@@ -31,15 +30,7 @@ function App() {
   return (
     <MotionConfig reducedMotion="user">
       {glSupported ? (
-        <BrowserRouter
-          basename={import.meta.env.BASE_URL}
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
-          <AppContent />
-        </BrowserRouter>
+        <AppContent />
       ) : (
         <WebGLFallback />
       )}
