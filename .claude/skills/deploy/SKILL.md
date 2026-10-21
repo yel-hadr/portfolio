@@ -1,12 +1,12 @@
 ---
 name: deploy
-description: Build and publish the portfolio to GitHub Pages (https://yel-hadr.github.io/portfolio/). Runs preflight checks (git state, base path, EmailJS env, lint, build, dist/ audit), publishes dist/ to the gh-pages branch after explicit confirmation, then verifies the live site with curl and Playwright.
+description: Build and publish the portfolio to GitHub Pages at the root of https://yel-hadr.github.io/. Runs preflight checks (git state, base path, EmailJS env, lint, build, dist/ audit), publishes dist/ to the main branch of yel-hadr/yel-hadr.github.io after explicit confirmation, then verifies the live site with curl and Playwright.
 disable-model-invocation: true
 ---
 
 # Deploy to GitHub Pages
 
-Publishes `dist/` to the `gh-pages` branch of github.com/yel-hadr/portfolio, served at https://yel-hadr.github.io/portfolio/.
+Publishes `dist/` to the `main` branch of github.com/yel-hadr/yel-hadr.github.io (the GitHub Pages *user* site), served at the root https://yel-hadr.github.io/. This source repo (yel-hadr/portfolio) is not published itself.
 
 Hard rules for this whole skill:
 - Never print EmailJS values or any other secret. Print only variable names and counts. Env file contents may only be piped into `grep -c` / name-only `grep -o`, never shown (no bare `cat`, `head`, `grep` without `-c`, or Read tool on `.env*`).
@@ -20,21 +20,22 @@ Hard rules for this whole skill:
 git status --short
 git branch --show-current
 git fetch origin && git status -sb | head -1     # ahead/behind origin/main
-git remote get-url origin                         # must be github.com/yel-hadr/portfolio
+git remote get-url origin                         # the source repo: github.com/yel-hadr/portfolio
+gh repo view yel-hadr/yel-hadr.github.io --json name --jq .name   # the publish target must exist
 test -x node_modules/.bin/gh-pages && echo "gh-pages OK" || echo "gh-pages MISSING"
 gh auth status 2>&1 | grep -E 'Logged in|not logged'   # needed for steps 7-8; never print tokens
 ```
 
 - Uncommitted changes, or a branch other than `main`: warn and ask whether to continue. The deploy publishes whatever is in the working tree, not what is on GitHub.
 - `main` ahead of `origin/main`: mention it. The live site will not match the repo until the user pushes.
-- `origin` is not `yel-hadr/portfolio`: **stop**. gh-pages pushes to `origin`.
+- `yel-hadr/yel-hadr.github.io` missing or not reachable with the current `gh` login: **stop**. gh-pages pushes there (`-r`), not to `origin`.
 - `gh-pages MISSING`: tell the user to run `npm install`, then **stop**.
 - `gh` not logged in: tell the user to run `gh auth login` (steps 7-8 need it), then **stop**.
 
 ## 2. Base path
 
 ```bash
-grep -n "base:" vite.config.js                                   # must be: base: '/portfolio/'
+grep -n "base:" vite.config.js                                   # must be: base: '/'
 grep -rnE "[\"'\`(]/(planet|logo\.svg|vite\.svg)" src  # must print nothing
 ```
 
@@ -84,12 +85,12 @@ If the build fails, **stop**.
 ## 5. Audit dist/
 
 ```bash
-grep -oE '(src|href)="[^"]+"' dist/index.html     # every URL must start with /portfolio/
+grep -oE '(src|href)="[^"]+"' dist/index.html     # every URL must start with /assets/
 du -sh dist
 find dist -type f -printf '%s\t%p\n' | sort -rn | head -10 | numfmt --field=1 --to=iec
 ```
 
-Any `src`/`href` in `dist/index.html` that does not start with `/portfolio/` (absolute `https://` URLs excepted): **stop**. Expected today: one `index-*.js`, one `index-*.css`, one `logo-*.svg`, all under `/portfolio/assets/`.
+Any `src`/`href` in `dist/index.html` that does not start with `/assets/` (absolute `https://` URLs excepted): **stop**; a `/portfolio/` prefix means `base` is stale. Expected today: `index-*.js`, `index-*.css`, `logo-*.svg` and the `vendor-react` / `vendor-motion` preloads, all under `/assets/`.
 
 Secret scan. The three `VITE_EMAILJS_*` values are public by design (EmailJS public key, inlined client-side). Anything else is a leak:
 
@@ -113,7 +114,7 @@ Use `npx gh-pages -d dist`, not `npm run deploy`. `npm run deploy` triggers `pre
 This is an outward-facing action. Right before running it, summarize the branch, commit (`git log -1 --oneline`), dist size and any warnings, then ask the user to confirm. Only then run:
 
 ```bash
-npx gh-pages -d dist --nojekyll -m "Deploy $(git rev-parse --short HEAD)"
+npx gh-pages -d dist --nojekyll -r https://github.com/yel-hadr/yel-hadr.github.io.git -b main -m "Deploy yel-hadr/portfolio@$(git rev-parse --short HEAD)"
 ```
 
 `--nojekyll` writes `.nojekyll` to the branch so GitHub Pages does not run Jekyll, which silently drops any file or folder whose name starts with `_` (Rollup can emit such chunk names).
@@ -123,23 +124,23 @@ If gh-pages fails with a stale cache error such as "branch already exists", run 
 ## 7. Pages setup (first time)
 
 ```bash
-gh api repos/yel-hadr/portfolio/pages --jq '{status, html_url, build_type, source}'
+gh api repos/yel-hadr/yel-hadr.github.io/pages --jq '{status, html_url, build_type, source}'
 ```
 
-- `404 Not Found`: Pages is not enabled. Tell the user to go to github.com/yel-hadr/portfolio → Settings → Pages → Build and deployment → Source: "Deploy from a branch" → Branch `gh-pages` / `/ (root)` → Save. Or offer to run the following, and ask before running it:
-  `gh api -X POST repos/yel-hadr/portfolio/pages -f "source[branch]=gh-pages" -f "source[path]=/"`
-- Enabled but `source.branch` is not `gh-pages` or `source.path` is not `/`: offer the fix and ask first:
-  `gh api -X PUT repos/yel-hadr/portfolio/pages -f "source[branch]=gh-pages" -f "source[path]=/"`
-- `build_type` of `workflow` means Pages deploys from GitHub Actions and ignores the `gh-pages` branch. Point this out and ask before switching it.
+- `404 Not Found`: Pages is not enabled. Tell the user to go to github.com/yel-hadr/yel-hadr.github.io → Settings → Pages → Build and deployment → Source: "Deploy from a branch" → Branch `main` / `/ (root)` → Save. Or offer to run the following, and ask before running it:
+  `gh api -X POST repos/yel-hadr/yel-hadr.github.io/pages -f "source[branch]=main" -f "source[path]=/"`
+- Enabled but `source.branch` is not `main` or `source.path` is not `/`: offer the fix and ask first:
+  `gh api -X PUT repos/yel-hadr/yel-hadr.github.io/pages -f "source[branch]=main" -f "source[path]=/"`
+- `build_type` of `workflow` means Pages deploys from GitHub Actions and ignores the `main` branch contents. Point this out and ask before switching it.
 
 ## 8. Verify live
 
-Wait for the Pages build of the commit just pushed. It usually takes 1 to 2 minutes. `builds/latest` keeps returning the previous build until the new one is queued, so match on the `gh-pages` head SHA, not on status alone. Run this with a Bash `timeout` of 300000 (the default 120 s is too short):
+Wait for the Pages build of the commit just pushed. It usually takes 1 to 2 minutes. `builds/latest` keeps returning the previous build until the new one is queued, so match on the target repo's `main` head SHA, not on status alone. Run this with a Bash `timeout` of 300000 (the default 120 s is too short):
 
 ```bash
-sha=$(git ls-remote origin refs/heads/gh-pages | cut -f1)
+sha=$(git ls-remote https://github.com/yel-hadr/yel-hadr.github.io.git refs/heads/main | cut -f1)
 for i in $(seq 1 24); do
-  b=$(gh api repos/yel-hadr/portfolio/pages/builds/latest --jq '.status + " " + .commit')
+  b=$(gh api repos/yel-hadr/yel-hadr.github.io/pages/builds/latest --jq '.status + " " + .commit')
   echo "$b"
   case "$b" in "built $sha"|"errored $sha") break;; esac
   sleep 10
@@ -149,13 +150,13 @@ done
 `errored`, or still not `built` after the loop: **stop** and report. Otherwise:
 
 ```bash
-curl -sI https://yel-hadr.github.io/portfolio/ | head -1                      # expect 200
-curl -sI https://yel-hadr.github.io/portfolio/planet/scene.glb | head -1         # expect 200
+curl -sI https://yel-hadr.github.io/ | head -1                      # expect 200
+curl -sI https://yel-hadr.github.io/planet/scene.glb | head -1         # expect 200
 ```
 
 Then use the `playwright` MCP server at each viewport, 390x844 (mobile) and 1440x900 (desktop):
 1. `mcp__playwright__browser_resize` to the viewport.
-2. `mcp__playwright__browser_navigate` to `https://yel-hadr.github.io/portfolio/`, then `mcp__playwright__browser_wait_for` about 5 seconds for the models to load.
+2. `mcp__playwright__browser_navigate` to `https://yel-hadr.github.io/`, then `mcp__playwright__browser_wait_for` about 5 seconds for the models to load.
 3. `mcp__playwright__browser_take_screenshot` (`deploy-390.png` / `deploy-1440.png`).
 4. `mcp__playwright__browser_console_messages` for errors, and `mcp__playwright__browser_network_requests` for failed requests.
 

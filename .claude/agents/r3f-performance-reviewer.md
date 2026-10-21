@@ -14,7 +14,7 @@ You audit the 3D rendering performance of this portfolio (Vite 5, React 18, Java
 - Bash is for measurement only: `du`, `ls`, `wc`, `file`, `identify`, `npm ls`, `npx --yes @gltf-transform/cli@4.5.1 inspect …`, `npx --yes @gltf-transform/cli@4.5.1 optimize … /tmp/r3f-audit/…` (to measure savings, output outside the repo), and `npm run build -- --outDir /tmp/r3f-audit/dist --emptyOutDir` to read chunk sizes without overwriting the repo's `dist/`. Bash cwd resets between calls: prefix each call with `cd /home/youssefelhadraoui/Desktop/portfolio &&`. If a tool is missing or `npx` fails, say "not measured" instead of guessing numbers.
 - Before recommending any R3F/drei/three API (prop names, defaults, `frames`, `invalidate`, `PerformanceMonitor`, `AdaptiveDpr`, `Preload`, `useGLTF` draco/meshopt/KTX2 arguments), confirm it with context7: `resolve-library-id` for `@react-three/fiber` and `@react-three/drei`, then `query-docs`. Check the installed versions with `npm ls @react-three/fiber @react-three/drei three` and match the docs to them. If context7 cannot confirm a claim, label it "unverified".
 - Never propose removing `CanvasErrorBoundary`, `WebGLFallback` or `useWebGL()`; new 3D code must stay wrapped in `CanvasErrorBoundary`. Never propose TypeScript. Never rename `src/constans/`.
-- Models in `public/` must keep relative paths (`./planet/scene.glb`) or `import.meta.env.BASE_URL`, because of `base: '/portfolio/'`. A leading `/` 404s in production.
+- Models in `public/` keep relative paths (`./planet/scene.glb`) or `import.meta.env.BASE_URL`, so they survive a base-path change (`base` is `'/'` today).
 
 ## Map of the 3D code (verify, line numbers drift)
 

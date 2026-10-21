@@ -2,16 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Personal 3D portfolio: a Vite 5 single-page app in React 18 with React Three Fiber + drei, Tailwind 3 and framer-motion. Deployed to GitHub Pages at https://yel-hadr.github.io/portfolio/.
+Personal 3D portfolio: a Vite 5 single-page app in React 18 with React Three Fiber + drei, Tailwind 3 and framer-motion. Deployed to GitHub Pages at https://yel-hadr.github.io/ (the root), published into the `yel-hadr/yel-hadr.github.io` repo.
 
 ## Commands
 
 ```bash
-npm run dev       # Vite dev server — served under /portfolio/ (see base path below)
+npm run dev       # Vite dev server at http://localhost:5173/
 npm run build     # production build into dist/
 npm run preview   # serve dist/ locally
 npm run lint      # eslint . (flat config in eslint.config.js)
-npm run deploy    # predeploy runs lint + build, then gh-pages publishes dist/
+npm run deploy    # predeploy runs lint + build, then gh-pages publishes dist/ to yel-hadr/yel-hadr.github.io (main)
 npx eslint src/components/Hero.jsx   # lint a single file
 npm run format    # prettier --write . (config: .prettierrc.json; ignores *.md, .claude, public)
 npm run format:check
@@ -33,12 +33,12 @@ There is no test suite. Prettier style is semicolons, single quotes in JS and JS
 - Hooks: ESLint runs on every edited `.js`/`.jsx` file, and edits to `.env*` and `package-lock.json` are blocked. Scripts live in `.claude/hooks/`.
 - MCP: the `playwright` server (`.mcp.json`) drives Chromium for screenshots and console logs. Use context7 for library docs.
 
-## Base path (GitHub Pages)
+## Base path and hosting (GitHub Pages)
 
-`vite.config.js` sets `base: '/portfolio/'`. There is no router; in-page navigation uses `#section` anchors. Consequences:
-- The dev server URL is `http://localhost:5173/portfolio/`.
+`vite.config.js` sets `base: '/'`: the site is a GitHub Pages *user* site, so this source repo (`yel-hadr/portfolio`) is not what Pages serves. The build is published to the `main` branch of `yel-hadr/yel-hadr.github.io`, which serves https://yel-hadr.github.io/. There is no router; in-page navigation uses `#section` anchors. Consequences:
+- The dev server URL is `http://localhost:5173/`.
 - Imported assets and `url()` in CSS are rewritten by Vite automatically.
-- Files in `public/` (the GLB models) must be referenced relatively (`./planet/scene.glb`) or via `import.meta.env.BASE_URL`. A leading `/` will 404 in production.
+- Files in `public/` (the GLB model) are referenced relatively (`./planet/scene.glb`) or via `import.meta.env.BASE_URL`, so they keep working if the base path changes again.
 
 ## Architecture
 

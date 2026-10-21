@@ -70,9 +70,9 @@ Skip link, logo link, nav links, mobile menu button, project source links, form 
 
 ## Runtime verification
 
-1. Check the dev server: `curl -sf -o /dev/null -w '%{http_code}\n' http://localhost:5173/portfolio/`. If it is not 200, say "No dev server reachable; static review only. Start one with `npm run dev`." and skip to the report.
+1. Check the dev server: `curl -sf -o /dev/null -w '%{http_code}\n' http://localhost:5173/`. If it is not 200, say "No dev server reachable; static review only. Start one with `npm run dev`." and skip to the report.
 2. If reachable, with the Playwright MCP (`mcp__playwright__browser_*`, server `playwright` from `.mcp.json`; if those tools are not available in this session, say so and do the static review):
-   - `browser_resize` to 1440x900, `browser_navigate` to `http://localhost:5173/portfolio/`, wait until no `[role=progressbar]` remains, then `browser_snapshot` (accessibility tree: headings, landmarks, names of images/views/buttons).
+   - `browser_resize` to 1440x900, `browser_navigate` to `http://localhost:5173/`, wait until no `[role=progressbar]` remains, then `browser_snapshot` (accessibility tree: headings, landmarks, names of images/views/buttons).
    - Press `Tab` repeatedly with `browser_press_key` (at least 20 times) and snapshot/screenshot to record the focus order and whether a focus ring is visible. Press `Enter` on each nav link and confirm the scroll target and `aria-current`.
    - `browser_resize` to 390x844 and repeat: open the mobile menu with the keyboard, press `Escape`, check where focus lands.
    - Reduced motion: `browser_emulate_media` with `reducedMotion: "reduce"`, reload, confirm with `browser_evaluate` (`() => matchMedia('(prefers-reduced-motion: reduce)').matches`), then take screenshots a few seconds apart to confirm the stars, models and balls are still. Optionally repeat with `forcedColors: "active"` to check that buttons and tags keep a visible boundary. If `browser_emulate_media` is missing, say so and rely on the static check.
