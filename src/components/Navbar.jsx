@@ -13,7 +13,7 @@ const Navbar = () => {
   const [active, setActive] = useState('');
   const [open, setOpen] = useState(false);
   const toggleRef = useRef(null);
-  const lastJumpAt = useRef(0);
+  const lastY = useRef(0);
   const reduced = usePrefersReducedMotion();
 
   // Sync the active link with the URL hash (back/forward). On first load, sections mount after
@@ -22,17 +22,28 @@ const Navbar = () => {
     const syncFromHash = () => setActive(window.location.hash.slice(1));
     syncFromHash();
     const initial = window.location.hash.slice(1);
-    if (initial) requestAnimationFrame(() => document.getElementById(initial)?.scrollIntoView());
+    if (initial)
+      requestAnimationFrame(() => {
+        const target = document.getElementById(initial);
+        if (!target) return;
+        target.scrollIntoView();
+        // Move focus too, so the next Tab and screen readers continue from the section
+        target.setAttribute('tabindex', '-1');
+        target.focus({ preventScroll: true });
+      });
     window.addEventListener('hashchange', syncFromHash);
     return () => window.removeEventListener('hashchange', syncFromHash);
   }, []);
 
-  // Back at the top of the page, no section is current any more. Ignore the first moments
-  // of a nav jump: a smooth scroll that starts at the top fires scroll events below 200px.
+  // Back at the top of the page, no section is current any more. Only clear on an upward
+  // scroll: a nav jump from the top scrolls down through the first 200px, however slowly.
   useEffect(() => {
     if (!active) return undefined;
+    lastY.current = window.scrollY;
     const onScroll = () => {
-      if (window.scrollY < 200 && performance.now() - lastJumpAt.current > 1500) setActive('');
+      const y = window.scrollY;
+      if (y < 200 && y < lastY.current) setActive('');
+      lastY.current = y;
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -55,7 +66,6 @@ const Navbar = () => {
     const target = document.getElementById(id);
     if (!target) return; // let the browser handle the hash
     e.preventDefault();
-    lastJumpAt.current = performance.now();
     setActive(id);
     setOpen(false);
     target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });

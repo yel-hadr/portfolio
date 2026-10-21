@@ -17,7 +17,7 @@ const SectionWrapper = (Component, idName) =>
         initial='hidden'
         whileInView='show'
         viewport={{ once: true, amount: 0.1 }}
-        className={`${styles.container} ${styles.section} relative scroll-mt-20`}
+        className={`${styles.container} ${styles.section} relative`}
       >
         <Component />
       </motion.section>

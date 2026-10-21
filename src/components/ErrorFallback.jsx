@@ -1,15 +1,17 @@
 const ErrorFallback = ({ error, resetErrorBoundary, sectionName }) => {
+  // The hero holds the page's only h1; keep one when it fails
+  const Heading = sectionName === 'hero' ? 'h1' : 'h2';
   return (
     // Keeps the section id so nav links still land here (sectionName values match section ids)
     <section
       id={sectionName}
       aria-labelledby={`${sectionName}-error`}
-      className='max-w-7xl mx-auto my-10 min-h-[25rem] p-8 bg-surface border border-line rounded-3xl scroll-mt-20 flex'
+      className='max-w-7xl mx-auto my-10 min-h-[25rem] p-8 bg-surface border border-line rounded-3xl flex'
     >
       <div role='alert' className='m-auto flex flex-col items-center justify-center'>
-        <h2 id={`${sectionName}-error`} className='text-2xl font-bold text-foreground mb-4'>
+        <Heading id={`${sectionName}-error`} className='text-2xl font-bold text-foreground mb-4'>
           The {sectionName} section failed to load
-        </h2>
+        </Heading>
         {/* 3D failures never reach here: SceneView's own boundary swaps in a static fallback */}
         <p className='text-foreground-muted mb-6 text-center max-w-md'>
           Reload the section to try again.

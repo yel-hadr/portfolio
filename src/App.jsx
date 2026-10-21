@@ -32,13 +32,17 @@ function App() {
   return (
     <MotionConfig reducedMotion='user'>
       <WebGLContext.Provider value={webgl}>
-        <AppContent webgl={webgl} onCanvasError={() => setCanvasFailed(true)} />
+        <AppContent
+          webgl={webgl}
+          supported={supported}
+          onCanvasError={() => setCanvasFailed(true)}
+        />
       </WebGLContext.Provider>
     </MotionConfig>
   );
 }
 
-const AppContent = ({ webgl, onCanvasError }) => (
+const AppContent = ({ webgl, supported, onCanvasError }) => (
   <div id='top' className='relative bg-background'>
     <a
       href='#main'
@@ -69,7 +73,10 @@ const AppContent = ({ webgl, onCanvasError }) => (
           <Hero />
         </ErrorBoundary>
 
-        {!webgl && <WebGLFallback />}
+        {/* A live region mounted from the start, so a late 3D failure is announced */}
+        <div role='status'>
+          {!webgl && <WebGLFallback reason={supported ? 'failed' : 'unsupported'} />}
+        </div>
 
         <ErrorBoundary sectionName='about'>
           <About />

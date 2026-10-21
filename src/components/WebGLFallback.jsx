@@ -1,18 +1,21 @@
 import { styles } from '../styles';
 
 /**
- * Shown when the browser has no WebGL2: the whole portfolio still renders as plain content,
- * and this notice explains why the 3D scenes are missing and how to enable them.
+ * Shown when the browser has no WebGL2 (`reason='unsupported'`) or the 3D layer failed later
+ * (`reason='failed'`): the portfolio still renders as plain content, and this notice explains
+ * why the 3D scenes are missing. App renders it inside an always-mounted role=status region.
  */
-const WebGLFallback = ({ onRetry }) => (
-  <section role='status' aria-labelledby='webgl-title' className={`${styles.container} py-10`}>
+const WebGLFallback = ({ reason = 'unsupported', onRetry }) => (
+  <section aria-labelledby='webgl-title' className={`${styles.container} py-10`}>
     <div className={`${styles.card} max-w-3xl`}>
       <h2 id='webgl-title' className='text-foreground text-xl font-bold'>
         3D scenes are turned off
       </h2>
       <p className='mt-2 text-foreground-muted leading-relaxed'>
-        Your browser or device doesn&apos;t support WebGL 2, so the interactive 3D globe and
-        technology icons aren&apos;t shown. Everything else on this page works as usual.
+        {reason === 'failed'
+          ? 'The 3D scenes could not load on this device, so static images are shown instead.'
+          : "Your browser or device doesn't support WebGL 2, so the interactive 3D globe and technology icons aren't shown."}{' '}
+        Everything else on this page works as usual.
       </p>
       <details className='mt-4 text-foreground-muted'>
         <summary className='cursor-pointer font-medium text-foreground'>
