@@ -2,7 +2,9 @@ import { styles } from '../styles';
 
 const Footer = () => (
   <footer className='relative border-t border-line'>
-    <div className={`${styles.container} flex flex-col gap-4 py-10 text-sm text-foreground-muted sm:flex-row sm:items-center sm:justify-between`}>
+    <div
+      className={`${styles.container} flex flex-col gap-4 py-10 text-sm text-foreground-muted sm:flex-row sm:items-center sm:justify-between`}
+    >
       <p>© {new Date().getFullYear()} Youssef El Hadraoui</p>
       <ul className='flex gap-6'>
         <li>

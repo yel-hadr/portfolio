@@ -1,10 +1,10 @@
-import { useState, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
-import { Points, PointMaterial } from "@react-three/drei";
-import * as random from "maath/random/dist/maath-random.esm";
+import { useState, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { Points, PointMaterial } from '@react-three/drei';
+import * as random from 'maath/random/dist/maath-random.esm';
 
-import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
-import { ViewCamera } from "./helpers";
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
+import { ViewCamera } from './helpers';
 
 const STAR_CONFIG = {
   COUNT: 1700, // stars; the position buffer holds COUNT * 3 floats
@@ -34,7 +34,7 @@ const Stars = () => {
         <Points ref={ref} positions={sphere} stride={3} frustumCulled>
           <PointMaterial
             transparent
-            color="#f272c8"
+            color='#f272c8'
             size={STAR_CONFIG.SIZE}
             sizeAttenuation
             // Stars draw first and nothing clears depth between Views (drei sets

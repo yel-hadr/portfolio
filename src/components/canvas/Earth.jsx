@@ -1,9 +1,9 @@
-import { useMemo } from "react";
-import { Preload, useGLTF } from "@react-three/drei";
+import { useMemo } from 'react';
+import { Preload, useGLTF } from '@react-three/drei';
 
-import { AutoRotate, ViewCamera } from "./helpers";
+import { AutoRotate, ViewCamera } from './helpers';
 
-const MODEL = "./planet/scene.glb";
+const MODEL = './planet/scene.glb';
 
 const Earth = () => {
   const { scene } = useGLTF(MODEL);

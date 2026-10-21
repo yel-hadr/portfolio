@@ -1,10 +1,10 @@
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion';
 
-import { github } from '../assets'
-import { SectionWrapper } from '../hoc'
-import { projects } from '../constans'
-import { reveal } from '../utils/motion'
-import SectionHeader from './SectionHeader'
+import { github } from '../assets';
+import { SectionWrapper } from '../hoc';
+import { projects } from '../constans';
+import { reveal } from '../utils/motion';
+import SectionHeader from './SectionHeader';
 
 // Tag colors in src/constans keep their legacy class names; map them to solid,
 // AA-contrast text colors (the old gradient text dropped to 4.3:1).
@@ -13,7 +13,7 @@ const TAG_COLORS = {
   'green-text-gradient': 'text-emerald-300',
   'pink-text-gradient': 'text-pink-300',
   'orange-text-gradient': 'text-primary-400',
-}
+};
 
 const ProjectCard = ({ name, description, tags, image, source_code_link }) => {
   return (
@@ -53,8 +53,8 @@ const ProjectCard = ({ name, description, tags, image, source_code_link }) => {
         </a>
       )}
     </motion.li>
-  )
-}
+  );
+};
 
 const Works = () => {
   return (
@@ -70,9 +70,9 @@ const Works = () => {
         ))}
       </ul>
     </>
-  )
-}
+  );
+};
 
-const WorksSection = SectionWrapper(Works, 'works')
+const WorksSection = SectionWrapper(Works, 'works');
 
-export default WorksSection
+export default WorksSection;

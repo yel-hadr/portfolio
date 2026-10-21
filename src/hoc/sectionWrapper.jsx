@@ -1,6 +1,6 @@
-import { motion } from "framer-motion";
-import { staggerContainer } from "../utils/motion";
-import { styles } from "../styles";
+import { motion } from 'framer-motion';
+import { staggerContainer } from '../utils/motion';
+import { styles } from '../styles';
 
 /**
  * Wraps a page section: shared padding/width, the section anchor (`id`, used by the nav),
@@ -14,8 +14,8 @@ const SectionWrapper = (Component, idName) =>
         id={idName}
         aria-labelledby={`${idName}-title`}
         variants={staggerContainer()}
-        initial="hidden"
-        whileInView="show"
+        initial='hidden'
+        whileInView='show'
         viewport={{ once: true, amount: 0.1 }}
         className={`${styles.container} ${styles.section} relative scroll-mt-20`}
       >

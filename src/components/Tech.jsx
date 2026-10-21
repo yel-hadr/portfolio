@@ -1,16 +1,19 @@
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion';
 
-import { SectionWrapper } from '../hoc'
-import { technologies } from '../constans'
-import { reveal } from '../utils/motion'
-import SectionHeader from './SectionHeader'
-import { Ball, SceneView } from './canvas'
+import { SectionWrapper } from '../hoc';
+import { technologies } from '../constans';
+import { reveal } from '../utils/motion';
+import SectionHeader from './SectionHeader';
+import { Ball, SceneView } from './canvas';
 
 const Tech = () => {
   return (
     <>
       <SectionHeader id='tech' title='Tech stack.' lead='Languages and tools I work with.' />
-      <motion.ul variants={reveal()} className='mt-12 flex flex-wrap justify-center gap-x-6 gap-y-8 sm:gap-x-10'>
+      <motion.ul
+        variants={reveal()}
+        className='mt-12 flex flex-wrap justify-center gap-x-6 gap-y-8 sm:gap-x-10'
+      >
         {technologies.map((tech) => (
           <li key={tech.name} className='flex w-24 flex-col items-center gap-2 sm:w-28'>
             {/* The visible name below labels the ball, so the 3D view itself is decorative */}
@@ -26,9 +29,9 @@ const Tech = () => {
         ))}
       </motion.ul>
     </>
-  )
-}
+  );
+};
 
-const TechSection = SectionWrapper(Tech, "tech")
+const TechSection = SectionWrapper(Tech, 'tech');
 
-export default TechSection
+export default TechSection;

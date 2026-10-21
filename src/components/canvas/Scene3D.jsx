@@ -57,10 +57,10 @@ const Scene3D = () => {
       <LoadingProgress />
       <Canvas
         style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}
-        frameloop="demand"
+        frameloop='demand'
         dpr={[1, 1.5]}
         gl={{ antialias: true, alpha: true, powerPreference: 'default' }}
-        aria-hidden="true"
+        aria-hidden='true'
         onCreated={({ gl, invalidate }) => {
           // Redraw once the GPU hands the context back after a loss
           gl.domElement.addEventListener('webglcontextrestored', () => invalidate());

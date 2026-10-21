@@ -34,8 +34,13 @@ const Contact = () => {
     const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
     if (!serviceId || !templateId || !publicKey) {
-      console.error('Missing EmailJS configuration. Set VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID and VITE_EMAILJS_PUBLIC_KEY in .env.');
-      setStatus({ type: 'error', message: "Message not sent: the contact form isn't configured yet. Please try again later." });
+      console.error(
+        'Missing EmailJS configuration. Set VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID and VITE_EMAILJS_PUBLIC_KEY in .env.'
+      );
+      setStatus({
+        type: 'error',
+        message: "Message not sent: the contact form isn't configured yet. Please try again later.",
+      });
       return;
     }
 
@@ -48,18 +53,24 @@ const Contact = () => {
         templateId,
         {
           from_name: form.name,
-          to_name: "Youssef El hadraoui",
+          to_name: 'Youssef El hadraoui',
           from_email: form.email,
-          to_email: "yousefelhadraoui99@gmail.com",
+          to_email: 'yousefelhadraoui99@gmail.com',
           message: form.message,
         },
         publicKey
       );
-      setStatus({ type: 'success', message: "Message sent. I'll get back to you as soon as possible." });
+      setStatus({
+        type: 'success',
+        message: "Message sent. I'll get back to you as soon as possible.",
+      });
       setForm(EMPTY_FORM);
     } catch (error) {
       console.error(error);
-      setStatus({ type: 'error', message: "Message not sent. Check your connection and try again." });
+      setStatus({
+        type: 'error',
+        message: 'Message not sent. Check your connection and try again.',
+      });
     } finally {
       setLoading(false);
     }
@@ -67,14 +78,29 @@ const Contact = () => {
 
   return (
     <>
-      <SectionHeader id='contact' title='Contact me.' lead='Have a question or an opportunity? Send me a message.' />
+      <SectionHeader
+        id='contact'
+        title='Contact me.'
+        lead='Have a question or an opportunity? Send me a message.'
+      />
 
       <div className='mt-12 grid gap-10 xl:grid-cols-2'>
-        <motion.div variants={reveal()} className='rounded-3xl border border-line bg-surface p-6 sm:p-8'>
-          <p id='contact-hint' className='mb-6 text-sm text-foreground-muted'>All fields are required.</p>
-          <form onSubmit={handleSubmit} aria-describedby='contact-hint' className='flex flex-col gap-6'>
+        <motion.div
+          variants={reveal()}
+          className='rounded-3xl border border-line bg-surface p-6 sm:p-8'
+        >
+          <p id='contact-hint' className='mb-6 text-sm text-foreground-muted'>
+            All fields are required.
+          </p>
+          <form
+            onSubmit={handleSubmit}
+            aria-describedby='contact-hint'
+            className='flex flex-col gap-6'
+          >
             <div className='flex flex-col gap-2'>
-              <label htmlFor='contact-name' className='font-medium text-foreground'>Name</label>
+              <label htmlFor='contact-name' className='font-medium text-foreground'>
+                Name
+              </label>
               <input
                 id='contact-name'
                 type='text'
@@ -87,7 +113,9 @@ const Contact = () => {
               />
             </div>
             <div className='flex flex-col gap-2'>
-              <label htmlFor='contact-email' className='font-medium text-foreground'>Email</label>
+              <label htmlFor='contact-email' className='font-medium text-foreground'>
+                Email
+              </label>
               <input
                 id='contact-email'
                 type='email'
@@ -101,7 +129,9 @@ const Contact = () => {
               />
             </div>
             <div className='flex flex-col gap-2'>
-              <label htmlFor='contact-message' className='font-medium text-foreground'>Message</label>
+              <label htmlFor='contact-message' className='font-medium text-foreground'>
+                Message
+              </label>
               <textarea
                 id='contact-message'
                 rows={6}

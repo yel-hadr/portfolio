@@ -80,7 +80,10 @@ const Navbar = () => {
   );
 
   return (
-    <nav aria-label='Main' className='w-full fixed top-0 z-50 border-b border-line bg-background/80 backdrop-blur-md'>
+    <nav
+      aria-label='Main'
+      className='w-full fixed top-0 z-50 border-b border-line bg-background/80 backdrop-blur-md'
+    >
       <div className={`${styles.container} flex justify-between items-center py-4`}>
         <a
           href='#top'

@@ -11,15 +11,15 @@ const LoadingProgress = () => {
 
   return (
     <div
-      role="progressbar"
-      aria-label="Loading 3D scenes"
+      role='progressbar'
+      aria-label='Loading 3D scenes'
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(progress)}
-      className="fixed top-0 inset-x-0 z-[60] h-1 bg-white/10"
+      className='fixed top-0 inset-x-0 z-[60] h-1 bg-white/10'
     >
       <div
-        className="h-full bg-primary transition-[width] duration-200 ease-out"
+        className='h-full bg-primary transition-[width] duration-200 ease-out'
         style={{ width: `${progress}%` }}
       />
     </div>

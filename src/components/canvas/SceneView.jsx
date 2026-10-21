@@ -18,13 +18,21 @@ const SceneViewImpl = lazy(() => import('./SceneViewImpl'));
  * @param {number} [frames] - how many frames drei measures the box; 1 for fixed boxes
  * @param {React.ReactNode} [fallback] - static DOM shown instead of the scene
  */
-const SceneView = ({ sectionType, label, className = '', index = 2, frames = Infinity, fallback = null, children }) => {
+const SceneView = ({
+  sectionType,
+  label,
+  className = '',
+  index = 2,
+  frames = Infinity,
+  fallback = null,
+  children,
+}) => {
   const webgl = useContext(WebGLContext);
   const [failed, setFailed] = useState(false);
   const a11y = label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true };
   // The static box shows no model, so it must not announce one
   const staticSlot = (
-    <div className={className} aria-hidden="true">
+    <div className={className} aria-hidden='true'>
       {fallback}
     </div>
   );
@@ -34,7 +42,7 @@ const SceneView = ({ sectionType, label, className = '', index = 2, frames = Inf
   return (
     // Outer boundary catches a failed chunk load; the inner one (in SceneViewImpl) scene errors
     <CanvasErrorBoundary sectionType={sectionType} fallback={staticSlot}>
-      <Suspense fallback={<div className={className} aria-hidden="true" />}>
+      <Suspense fallback={<div className={className} aria-hidden='true' />}>
         <SceneViewImpl
           sectionType={sectionType}
           className={className}

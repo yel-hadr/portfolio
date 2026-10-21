@@ -13,9 +13,11 @@ npm run preview   # serve dist/ locally
 npm run lint      # eslint . (flat config in eslint.config.js)
 npm run deploy    # predeploy runs lint + build, then gh-pages publishes dist/
 npx eslint src/components/Hero.jsx   # lint a single file
+npm run format    # prettier --write . (config: .prettierrc.json; ignores *.md, .claude, public)
+npm run format:check
 ```
 
-There is no test suite and no Prettier config yet.
+There is no test suite. Prettier style is semicolons, single quotes in JS and JSX, and 100-character lines.
 
 ## Ground rules
 

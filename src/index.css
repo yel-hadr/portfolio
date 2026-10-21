@@ -15,12 +15,12 @@
 
   /* One visible focus style for every keyboard-focusable element (6.8:1 on background). */
   :focus-visible {
-    outline: 2px solid theme("colors.primary.DEFAULT");
+    outline: 2px solid theme('colors.primary.DEFAULT');
     outline-offset: 3px;
   }
 
   /* Programmatic focus targets (main, sections after a nav jump) get no ring. */
-  [tabindex="-1"]:focus {
+  [tabindex='-1']:focus {
     outline: none;
   }
 

@@ -34,5 +34,5 @@ export {
   CanvasErrorBoundary,
   LoadingProgress,
   Footer,
-  SectionHeader
+  SectionHeader,
 };
