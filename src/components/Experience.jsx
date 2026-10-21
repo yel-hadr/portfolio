@@ -1,68 +1,75 @@
-import { VerticalTimeline, VerticalTimelineElement } from "react-vertical-timeline-component"
-import { motion } from "framer-motion"
-import 'react-vertical-timeline-component/style.min.css'
-import { styles } from "../styles"
-import { experiences } from "../constans"
-import { SectionWrapper } from "../hoc"
-import { textVariant } from "../utils/motion"
+import { VerticalTimeline, VerticalTimelineElement } from 'react-vertical-timeline-component';
+import 'react-vertical-timeline-component/style.min.css';
 
-const ExperienceCard = ({ experience, index }) => {
+import { experiences } from '../constans';
+import { SectionWrapper } from '../hoc';
+import SectionHeader from './SectionHeader';
+
+// The timeline library only takes inline styles, so read the Tailwind tokens through the
+// CSS variables defined in src/index.css.
+const CARD_STYLE = {
+  background: 'var(--color-glass)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  color: 'var(--color-foreground)',
+  border: '1px solid var(--color-line)',
+  borderRadius: '1.5rem',
+  boxShadow: 'none',
+  padding: '1.5rem',
+};
+
+const ExperienceCard = ({ experience }) => {
   return (
     <VerticalTimelineElement
-      contentStyle={{
-        background: '#1d1836',
-        color: '#fff',
+      contentStyle={CARD_STYLE}
+      contentArrowStyle={{ borderRight: '7px solid var(--color-line)' }}
+      date={experience.date ? <span aria-hidden='true'>{experience.date}</span> : undefined}
+      dateClassName='!text-foreground-muted !opacity-100 font-medium'
+      iconStyle={{
+        background: experience.iconBg,
+        boxShadow: '0 0 0 4px var(--color-background), 0 0 0 5px var(--color-line)',
       }}
-      contentArrowStyle={{ borderRight: "7px solid  #232631" }}
-      date={experience.date}
-      iconStyle={{ background: experience.iconBg }}
-      icon={
-        <div className='flex justify-center items-center w-full h-full'>
-        </div>
-      }
     >
-      <div>
-        <h3 className='text-white text-[24px] font-bold'>{experience.title}</h3>
-        <p
-          className='text-secondary text-[16px] font-semibold'
-          style={{ margin: 0 }}
-        >
-          {experience.company_name}
-        </p>
-      </div>
-      <ul className='mt-5 list-disc ml-5 space-y-2'>
-        {experience.points.map((point, index) => (
+      <h3 className='text-foreground text-xl sm:text-2xl font-bold'>{experience.title}</h3>
+      {/* The visible date renders after the card content; give screen readers it in reading order */}
+      {experience.date && <p className='sr-only'>{experience.date}</p>}
+      {experience.company_name && (
+        <p className='text-primary-400 font-semibold !m-0'>{experience.company_name}</p>
+      )}
+      <ul className='mt-4 list-disc ml-5 space-y-2'>
+        {experience.points.map((point) => (
           <li
-            key={`experience-point-${index}`}
-            className='text-white-100 text-[14px] pl-1 tracking-wider'
+            key={point}
+            className='text-foreground-muted text-sm sm:text-base !font-normal leading-relaxed pl-1'
           >
             {point}
           </li>
         ))}
       </ul>
     </VerticalTimelineElement>
-
-  )
-}
+  );
+};
 
 const Experience = () => {
   return (
     <>
-      <motion.div variants={textVariant()} >
-        <p className={styles.sectionSubText}>what I've done so far as a 1337 student</p>
-        <h2 className={styles.sectionHeadText}>1337 Experience.</h2>
-      </motion.div>
-      <div
-        className='mt-10 flex flex-col' 
-        >
-          <VerticalTimeline>
-            {experiences.map((experience, index) => (
-              <ExperienceCard key={index} experience={experience}/>
-            ))}
-          </VerticalTimeline>
+      <SectionHeader
+        id='experience'
+        title='Experience.'
+        lead='Where I build backends and the infrastructure they run on.'
+      />
+      <div className='mt-12 flex flex-col'>
+        {/* animate={false}: entries stay visible instead of popping in on scroll */}
+        <VerticalTimeline animate={false} lineColor='var(--color-line)'>
+          {experiences.map((experience) => (
+            <ExperienceCard key={experience.title} experience={experience} />
+          ))}
+        </VerticalTimeline>
       </div>
     </>
-  )
-}
+  );
+};
 
-export default SectionWrapper(Experience, 'experience')
+const ExperienceSection = SectionWrapper(Experience, 'experience');
+
+export default ExperienceSection;

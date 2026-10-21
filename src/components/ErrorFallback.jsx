@@ -1,48 +1,37 @@
-import React from 'react';
-
 const ErrorFallback = ({ error, resetErrorBoundary, sectionName }) => {
-  const is3DSection = ['hero', 'about', 'tech', 'works', 'contact'].includes(sectionName);
-  
+  // The hero holds the page's only h1; keep one when it fails
+  const Heading = sectionName === 'hero' ? 'h1' : 'h2';
   return (
-    <div 
-      role="alert" 
-      className="flex flex-col items-center justify-center min-h-[400px] p-8 bg-black-100 rounded-2xl"
+    // Keeps the section id so nav links still land here (sectionName values match section ids)
+    <section
+      id={sectionName}
+      aria-labelledby={`${sectionName}-error`}
+      className='max-w-7xl mx-auto my-10 min-h-[25rem] p-8 bg-surface border border-line rounded-3xl flex'
     >
-      <h2 className="text-2xl font-bold text-white mb-4">
-        Something went wrong
-      </h2>
-      {is3DSection ? (
-        <>
-          <p className="text-secondary mb-6 text-center max-w-md">
-            We're sorry, but the 3D content failed to load. This could be due to:
-          </p>
-          <ul className="text-secondary mb-6 space-y-2">
-            <li>• WebGL not supported in your browser</li>
-            <li>• Outdated graphics drivers</li>
-            <li>• Hardware acceleration disabled</li>
-          </ul>
-        </>
-      ) : (
-        <p className="text-secondary mb-6 text-center max-w-md">
-          We're sorry, but this section failed to load. Please try again.
+      <div role='alert' className='m-auto flex flex-col items-center justify-center'>
+        <Heading id={`${sectionName}-error`} className='text-2xl font-bold text-foreground mb-4'>
+          The {sectionName} section failed to load
+        </Heading>
+        {/* 3D failures never reach here: SceneView's own boundary swaps in a static fallback */}
+        <p className='text-foreground-muted mb-6 text-center max-w-md'>
+          Reload the section to try again.
         </p>
-      )}
-      <button
-        onClick={resetErrorBoundary}
-        className="bg-tertiary py-3 px-8 rounded-xl text-white font-bold hover:bg-tertiary/80 transition-colors"
-        aria-label="Try again"
-      >
-        Try Again
-      </button>
-      {error && (
-        <details className="mt-6 text-xs text-secondary max-w-lg">
-          <summary className="cursor-pointer">Error details (for developers)</summary>
-          <pre className="mt-2 p-4 bg-black-90 rounded overflow-auto max-h-40">
-            {error.message}
-          </pre>
-        </details>
-      )}
-    </div>
+        <button
+          onClick={resetErrorBoundary}
+          className='bg-surface-raised border border-line-strong py-3 px-8 rounded-xl text-foreground font-bold hover:bg-surface transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary'
+        >
+          Reload section
+        </button>
+        {error && (
+          <details className='mt-6 text-xs text-foreground-muted max-w-lg'>
+            <summary className='cursor-pointer'>Error details (for developers)</summary>
+            <pre className='mt-2 p-4 bg-background rounded-xl overflow-auto max-h-40'>
+              {error.message}
+            </pre>
+          </details>
+        )}
+      </div>
+    </section>
   );
 };
 

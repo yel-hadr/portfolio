@@ -1,8 +1,56 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import react from 'eslint-plugin-react'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
+import js from '@eslint/js';
+import globals from 'globals';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+
+// React Three Fiber maps lowercase JSX (<mesh>, <ambientLight>, …) to three.js objects,
+// so their props are not DOM attributes. Only ignored in files that render 3D.
+const R3F_PROPS = [
+  'args',
+  'attach',
+  'dispose',
+  'object',
+  'position',
+  'position-x',
+  'position-y',
+  'position-z',
+  'rotation',
+  'rotation-x',
+  'rotation-y',
+  'rotation-z',
+  'scale',
+  'scale-x',
+  'scale-y',
+  'scale-z',
+  'castShadow',
+  'receiveShadow',
+  'frustumCulled',
+  'renderOrder',
+  'intensity',
+  'groundColor',
+  'angle',
+  'penumbra',
+  'decay',
+  'distance',
+  'shadow-mapSize',
+  'shadow-bias',
+  'shadow-camera-near',
+  'shadow-camera-far',
+  'flatShading',
+  'polygonOffset',
+  'polygonOffsetFactor',
+  'map',
+  'transparent',
+  'toneMapped',
+  'depthWrite',
+  'sizeAttenuation',
+  'vertexColors',
+  'emissive',
+  'emissiveIntensity',
+  'metalness',
+  'roughness',
+];
 
 export default [
   { ignores: ['dist'] },
@@ -29,10 +77,15 @@ export default [
       ...react.configs['jsx-runtime'].rules,
       ...reactHooks.configs.recommended.rules,
       'react/jsx-no-target-blank': 'off',
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true },
-      ],
+      // JS-only project without PropTypes
+      'react/prop-types': 'off',
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
-]
+  {
+    files: ['src/App.jsx', 'src/components/canvas/**/*.{js,jsx}'],
+    rules: {
+      'react/no-unknown-property': ['error', { ignore: R3F_PROPS }],
+    },
+  },
+];

@@ -1,64 +1,48 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./src/**/*.{js,jsx}"],
-  mode: "jit",
+  content: ['./src/**/*.{js,jsx}'],
   theme: {
     extend: {
+      // Design tokens. Every text/background pair below meets WCAG AA (checked):
+      // foreground 17.8:1, foreground-muted 8.5:1 and primary 6.8:1 on background;
+      // muted 7.5:1 on surface-raised; line-strong >= 3.4:1 against both surfaces.
       colors: {
-        primary: "#050816",
-        secondary: "#aaa6c3",
-        tertiary: "#151030",
-        "black-100": "#100d25",
-        "black-200": "#090325",
-        "white-100": "#f3f3f3",
-      },
-      keyframes: {
-        spin: {
-          '33%': { transform: 'rotateX(-36deg) rotateY(-405deg)' },
-          '100%': { transform: 'rotateX(-36deg) rotateY(-405deg)' },
+        background: '#050816', // page, night sky
+        surface: {
+          DEFAULT: '#0e0b22', // cards and panels
+          raised: '#171338', // inputs, chips, hover
         },
-        shiftTop: {
-          '33%, 100%': { transform: 'rotateX(90deg) translateZ(50px)' },
-          '50%, 60%': { transform: 'rotateX(90deg) translateZ(100px)' },
+        foreground: {
+          DEFAULT: '#f2f1f7', // headings and body
+          muted: '#aaa6c3', // secondary copy
         },
-        shiftBottom: {
-          '33%, 100%': { transform: 'rotateX(-90deg) translateZ(50px)' },
-          '50%, 60%': { transform: 'rotateX(-90deg) translateZ(100px)' },
+        primary: {
+          DEFAULT: '#FF6500', // brand orange; pair with dark text (white on orange is 2.95:1)
+          400: '#ff8533',
+          600: '#e65b00',
         },
-        shiftRight: {
-          '33%, 100%': { transform: 'rotateY(90deg) translateZ(50px)' },
-          '50%, 60%': { transform: 'rotateY(90deg) translateZ(100px)' },
+        secondary: {
+          DEFAULT: '#a78bfa', // violet, used sparingly (waves mid-stop, second timeline dot)
         },
-        shiftLeft: {
-          '33%, 100%': { transform: 'rotateY(-90deg) translateZ(50px)' },
-          '50%, 60%': { transform: 'rotateY(-90deg) translateZ(100px)' },
+        tertiary: {
+          DEFAULT: '#3b82f6', // deep blue, the far end of the waves gradient; decorative only
         },
-        shiftFront: {
-          '33%, 100%': { transform: 'translateZ(50px)' },
-          '50%, 60%': { transform: 'translateZ(100px)' },
+        // Translucent card fill over the waves background; used with backdrop-blur (.card-glass).
+        // Text contrast is checked against the opaque worst case below it: background.
+        glass: {
+          DEFAULT: 'rgb(14 11 34 / 0.62)', // surface at 62%
+          strong: 'rgb(23 19 56 / 0.78)', // surface-raised at 78%: nav menu, inputs
         },
-        shiftBack: {
-          '33%, 100%': { transform: 'rotateY(-180deg) translateZ(50px)' },
-          '50%, 60%': { transform: 'rotateY(-180deg) translateZ(100px)' },
+        line: {
+          DEFAULT: 'rgb(255 255 255 / 0.1)', // decorative hairlines
+          strong: '#77749a', // control boundaries (non-text contrast >= 3:1)
         },
       },
-      animation: {
-        spin: 'spin 3s infinite cubic-bezier(0.16, 0.61, 0.49, 0.91)',
-        shiftTop: 'shiftTop 3s infinite ease-out',
-        shiftBottom: 'shiftBottom 3s infinite ease-out',
-        shiftRight: 'shiftRight 3s infinite ease-out',
-        shiftLeft: 'shiftLeft 3s infinite ease-out',
-        shiftFront: 'shiftFront 3s infinite ease-out',
-        shiftBack: 'shiftBack 3s infinite ease-out',
-      },
-      boxShadow: {
-        card: "0px 35px 120px -15px #211e35",
+      fontFamily: {
+        sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       screens: {
-        xs: "450px",
-      },
-      backgroundImage: {
-        "hero-pattern": "url('/src/assets/herobg.png')",
+        xs: '450px',
       },
     },
   },

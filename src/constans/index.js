@@ -1,225 +1,257 @@
 import {
-    mobile,
-    backend,
-    creator,
-    web,
-    javascript,
-    html,
-    css,
-    reactjs,
-    tailwind,
-    git,
-    docker,
-    carrent,
-    cpp,
-    python,
-    
-    cub3D_42,
-    minishell,
-    ft_irc,
-    Inception,
-  } from "../assets";
-  
-  export const navLinks = [
-    {
-      id: "about",
-      title: "About",
-    },
-    {
-      id: "experience",
-      title: "Experience",
-    },
-    {
-      id: "contact",
-      title: "Contact",
-    },
-  ];
-  
-  const services = [
-    {
-      title: "DevOps Engineer",
-      icon: web,
-    },
-    {
-      title: "Full Stack Developer",
-      icon: mobile,
-    },
-    {
-      title: "Backend Developer",
-      icon: backend,
-    },
-    {
-      title: "low_level Developer",
-      icon: creator,
-    },
-  ];
-  
-  const technologies = [
-    {
-      name: "C++",
-      icon: cpp
-    },
-    {
-      name: "python",
-      icon: python,
-    },
-    {
-      name: "git",
-      icon: git,
-    },
-    {
-      name: "docker",
-      icon: docker,
-    },
-    {
-      name: "HTML 5",
-      icon: html,
-    },
-    {
-      name: "CSS 3",
-      icon: css,
-    },
-    {
-      name: "JavaScript",
-      icon: javascript,
-    },
-    {
-      name: "React JS",
-      icon: reactjs,
-    },
-    {
-      name: "Tailwind CSS",
-      icon: tailwind,
-    },
-  ];
-  
-  const experiences = [
-    {
-      title: "1337 Pool",
-      iconBg: "#383E56",
-      date: "March 2022 - April 2022",
-      points: [
-        "Gained proficiency in writing efficient, low-level code and debugging complex problems.",
-        "Developed collaboration and communication skills through a self-directed learning model.",
-        "Learned to both teach and learn from peers, fostering a community-driven growth mindset.",
-        "Enhanced teamwork and adaptability through weekly team-based challenges with randomized groups.",
-        "Built time management and project delivery skills by collaborating under tight deadlines.",
-      ],
-    },
-    {
-      title: "1337 Cursus Part 1 (C Programming)",
-      iconBg: "#383E56",
-      date: "October 2022 - December 2023",
-      points: [
-        "Built a custom library (libft) of reusable utility functions to streamline future projects.",
-        "Mastered file and input/output operations through projects like ft_printf (recreating printf() with variable arguments) and get_next_line (reading lines from file descriptors).",
-        "Enhanced algorithmic thinking by solving stack-based data sorting challenges in push_swap with efficient solutions.",
-        "Gained a deep understanding of threading, synchronization, and inter-process communication through philosophers (threading basics with mutexes) and minitalk (using UNIX signals for data exchange).",
-        "Explored graphics and 3D rendering with fdf (wireframe landscapes) and cub3d (ray-casting to simulate dynamic first-person navigation).",
-        "Built a functional shell (minishell), deepening knowledge of system calls, file descriptors, and process management."
-      ],
-    },
-    {
-      title: "1337 Cursus Part 2 (C++ Object-Oriented Programming)",
-      iconBg: "#383E56",
-      date: "December 2023 - Mai 2024",
-      points: [
-        "Exploring the core C++ concepts including dynamic memory allocation, pointers, references, and polymorphism, with a focus on low-level memory operations and efficient data manipulation.",
-        "Developed object-oriented designs using inheritance, subtype polymorphism, abstract classes, and the Orthodox Canonical Form for reusable and scalable code.",
-        "Gained expertise in generic programming with C++ templates, templated containers, iterators, and STL algorithms, enhancing flexibility and performance.",
-        "Built an IRC server (ft_irc), deepening my understanding of client-server architectures, networking, and protocol implementation.",
-      ],
-    },
-    {
-      title: "1337 Cursus Part 3 (Web Development & System Administration & Virtualization)",
-      iconBg: "#383E56",
-      date: "December 2023 - June 2024",
-      points: [
-        "Gained experience in making strategic decisions within project constraints, such as using Nginx and selecting appropriate external libraries for the project.",
-        "Developed skills in modular development with Django, managing dependencies and ensuring smooth integration across the application.",
-        "Strengthened understanding of project scoping and adaptability, staying within defined frameworks (like Django) while making thoughtful decisions to meet project goals.",
-        "Gained hands-on experience in system administration and virtualization, using Docker for containerization and VirtualBox for setting up virtual machines and installing operating systems from scratch."
-        
-      ],
-    }
-  ];
-  
+  mobile,
+  backend,
+  creator,
+  web,
+  aws,
+  terraform,
+  ansible,
+  kubernetes,
+  argocd,
+  docker,
+  linux,
+  nginx,
+  python,
+  cpp,
+  git,
+  reactjs,
+} from '../assets';
 
-  
-  const projects = [
-    {
-      name: "Transcendence",
-      description:
-        "This project is about creating my own IRC server with C++, using the RFC 1459 as a reference. The server must be able to handle multiple clients at the same time, and the clients must be able to send messages to each other.",
-      tags: [
-        {
-          name: "HTML/CSS",
-          color: "blue-text-gradient",
-        },
-        {
-          name: "JavaScript",
-          color: "pink-text-gradient",
-        },
-        {
-          name: "django",
-          color: "green-text-gradient",
-        },
-      ],
-      image: carrent,
-      source_code_link: "https://github.com/Sbahdi/Transcendence",
-    },
-    {
-      name: "ft_irc",
-      description:
-        "This project is about creating my own IRC server with C++, using the RFC 1459 as a reference. The server must be able to handle multiple clients at the same time, and the clients must be able to send messages to each other.",
-      tags: [
-        {
-          name: "C++",
-          color: "blue-text-gradient",
-        },
-      ],
-      image: ft_irc,
-      source_code_link: "https://github.com/yel-hadr/ft_irc",
-    },
-    {
-      name: "Inception",
-      description:
-        "This project is about System Administration related exercise, where I have learned to work with Docker and Docker Compose. I have constructed a total of 7 containers, each with its own unique function.",
-      tags: [
-        {
-          name: "Docker",
-          color: "blue-text-gradient",
-        },
-      ],
-      image: Inception,
-      source_code_link: "https://github.com/yel-hadr/Inception",
-    },
-    {
-      name: "cub3D_42",
-      description:
-        "Cub3d is a project inspired by the world-famous Wolfenstein 3D game, which was the first FPS ever. It allows you to explore ray-casting, a technique used in early video games to simulate 3D environments.",
-      tags: [
-        {
-          name: "C",
-          color: "blue-text-gradient",
-        },
-      ],
-      image: cub3D_42,
-      source_code_link: "https://github.com/yel-hadr/cub3D_42",
-    },
-    {
-      name: "minishell",
-      description:
-        "Minishell is a simple shell implementation written in C. It provides a minimalistic command-line interface with basic shell functionalities.",
-      tags: [
-        {
-          name: "C",
-          color: "blue-text-gradient",
-        },
-      ],
-      image: minishell,
-      source_code_link: "https://github.com/yel-hadr/minishell",
-    },
-  ];
-  
-  export { services, technologies, experiences, projects };
+// Name, headline and summary, as on the resume. Used by the Hero, About and Footer.
+export const person = {
+  name: 'Youssef El Hadraoui',
+  alias: 'Jebril',
+  title: 'Software Engineer | Cloud Infrastructure & DevOps',
+  summary:
+    'Software Engineer specializing in multi-tenant backend architecture, cloud infrastructure, and DevOps automation. Proven experience in designing scalable microservices, implementing GitOps delivery pipelines, and managing containerized environments. Passionate about automating server setups, observability, and integrating AI coding assistants into modern development workflows.',
+  github: 'https://github.com/yel-hadr',
+};
+
+export const navLinks = [
+  {
+    id: 'about',
+    title: 'About',
+  },
+  {
+    id: 'experience',
+    title: 'Experience',
+  },
+  {
+    id: 'works',
+    title: 'Projects',
+  },
+  {
+    id: 'education',
+    title: 'Education',
+  },
+  {
+    id: 'contact',
+    title: 'Contact',
+  },
+];
+
+const services = [
+  {
+    title: 'Backend Architecture',
+    icon: backend,
+  },
+  {
+    title: 'Cloud Infrastructure',
+    icon: web,
+  },
+  {
+    title: 'DevOps & GitOps',
+    icon: mobile,
+  },
+  {
+    title: 'Automation & Observability',
+    icon: creator,
+  },
+];
+
+const technologies = [
+  {
+    name: 'AWS',
+    icon: aws,
+  },
+  {
+    name: 'Terraform',
+    icon: terraform,
+  },
+  {
+    name: 'Ansible',
+    icon: ansible,
+  },
+  {
+    name: 'Kubernetes',
+    icon: kubernetes,
+  },
+  {
+    name: 'Argo CD',
+    icon: argocd,
+  },
+  {
+    name: 'Docker',
+    icon: docker,
+  },
+  {
+    name: 'Linux',
+    icon: linux,
+  },
+  {
+    name: 'Nginx',
+    icon: nginx,
+  },
+  {
+    name: 'Python',
+    icon: python,
+  },
+  {
+    name: 'C++',
+    icon: cpp,
+  },
+  {
+    name: 'Git',
+    icon: git,
+  },
+  {
+    name: 'React',
+    icon: reactjs,
+  },
+];
+
+// Dates are left empty until they are confirmed; the timeline hides an empty date.
+const experiences = [
+  {
+    title: 'Lead Backend Engineer & DevOps Infrastructure Lead',
+    company_name: 'Legaliox',
+    iconBg: 'var(--color-primary)',
+    date: '',
+    points: [
+      'Lead the backend of Legaliox, a multi-tenant legal SaaS platform.',
+      'Design and build the API and its business logic for every tenant.',
+      'Run the DevOps infrastructure the platform is built, shipped and hosted on.',
+    ],
+  },
+  {
+    title: 'Software Engineering Intern',
+    company_name: 'WePartner Consulting',
+    iconBg: 'var(--color-secondary)',
+    date: '',
+    points: ['Built an AI-powered agent that analyzes resumes.'],
+  },
+];
+
+const projects = [
+  {
+    name: 'BADASS Network Architecture',
+    description:
+      'A data-center network design: VXLAN overlays with a BGP EVPN control plane, routed with FRRouting.',
+    tags: [
+      {
+        name: 'BGP EVPN',
+        color: 'blue-text-gradient',
+      },
+      {
+        name: 'VXLAN',
+        color: 'green-text-gradient',
+      },
+      {
+        name: 'FRRouting',
+        color: 'pink-text-gradient',
+      },
+    ],
+    source_code_link: '',
+  },
+  {
+    name: 'Cloud-1 Automation',
+    description:
+      'Automated deployment of a WordPress and MariaDB stack on AWS: Terraform provisions the infrastructure and Ansible configures the host.',
+    tags: [
+      {
+        name: 'AWS',
+        color: 'orange-text-gradient',
+      },
+      {
+        name: 'Terraform',
+        color: 'blue-text-gradient',
+      },
+      {
+        name: 'Ansible',
+        color: 'pink-text-gradient',
+      },
+      {
+        name: 'WordPress / MariaDB',
+        color: 'green-text-gradient',
+      },
+    ],
+    source_code_link: 'https://github.com/yel-hadr/cloud-1_42',
+  },
+  {
+    name: 'Inception-of-Things',
+    description:
+      'Kubernetes from the ground up: K3s clusters on Vagrant VMs, Traefik ingress with host-based routing, then K3d with Argo CD deploying from Git.',
+    tags: [
+      {
+        name: 'Vagrant',
+        color: 'blue-text-gradient',
+      },
+      {
+        name: 'K3s',
+        color: 'green-text-gradient',
+      },
+      {
+        name: 'Traefik',
+        color: 'pink-text-gradient',
+      },
+      {
+        name: 'K3d',
+        color: 'green-text-gradient',
+      },
+      {
+        name: 'Argo CD',
+        color: 'orange-text-gradient',
+      },
+    ],
+    source_code_link: 'https://github.com/yel-hadr/-Inception-of-Things',
+  },
+  {
+    name: 'Interactive 3D Portfolio',
+    description:
+      'This site: React with React Three Fiber scenes sharing one WebGL canvas, a canvas wave background and Tailwind design tokens.',
+    tags: [
+      {
+        name: 'React',
+        color: 'blue-text-gradient',
+      },
+      {
+        name: 'Three.js',
+        color: 'pink-text-gradient',
+      },
+      {
+        name: 'Tailwind CSS',
+        color: 'green-text-gradient',
+      },
+    ],
+    source_code_link: 'https://github.com/yel-hadr/portfolio',
+  },
+];
+
+const education = [
+  {
+    school: '42 Paris',
+    degree: 'RNCP Level 7, Network & Information Systems Architecture',
+    date: 'September 2026',
+    points: [],
+  },
+  {
+    school: '1337 Coding School',
+    degree: 'Common Core',
+    date: '2022 – 2024',
+    points: [
+      'Peer-to-peer, project-based curriculum: C and C++, UNIX processes and signals, networking, graphics and containers with Docker.',
+    ],
+  },
+];
+
+export { services, technologies, experiences, projects, education };

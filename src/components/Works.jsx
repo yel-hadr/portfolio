@@ -1,88 +1,77 @@
-import React from 'react'
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion';
 
-import { styles } from '../styles'
-import { github } from '../assets'
-import { SectionWrapper } from '../hoc'
-import { projects } from '../constans'
-import { fadeIn, textVariant } from '../utils/motion'
-import { Tilt } from 'react-tilt'
+import { github } from '../assets';
+import { styles } from '../styles';
+import { SectionWrapper } from '../hoc';
+import { projects } from '../constans';
+import { reveal } from '../utils/motion';
+import SectionHeader from './SectionHeader';
 
+// Tag colors in src/constans keep their legacy class names; map them to solid,
+// AA-contrast text colors (the old gradient text dropped to 4.3:1).
+const TAG_COLORS = {
+  'blue-text-gradient': 'text-sky-300',
+  'green-text-gradient': 'text-emerald-300',
+  'pink-text-gradient': 'text-pink-300',
+  'orange-text-gradient': 'text-primary-400',
+};
 
-const ProjectCard = ({ index, name, description, tags, image, source_code_link }) => {
+const ProjectCard = ({ name, description, tags, image, source_code_link }) => {
   return (
-    <motion.div variants={ fadeIn("up", "spring", index * 0.5, 0.75)}>
-      <Tilt
-        options={{
-          max: 45,
-          scale: 1,
-          speed : 450,
-        }}
-        className='bg-tertiary rounded-2xl sm:w-[360px] w-full p-5'
-      >
-        <div
-          className='relative w-full h-[230px]'
+    <motion.li variants={reveal()} className={`${styles.card} flex flex-col`}>
+      {image && (
+        <img
+          src={image}
+          alt=''
+          loading='lazy'
+          decoding='async'
+          className='mb-5 aspect-video w-full rounded-xl object-cover'
+        />
+      )}
+      <h3 className='text-foreground text-xl font-bold'>{name}</h3>
+      <p className='mt-2 text-foreground-muted leading-relaxed'>{description}</p>
+      <ul className='mt-4 flex flex-wrap gap-2' aria-label='Technologies'>
+        {tags.map((tag) => (
+          <li
+            key={tag.name}
+            className={`rounded-full border border-line bg-surface-raised px-3 py-1 text-sm font-medium ${TAG_COLORS[tag.color] ?? 'text-foreground-muted'}`}
           >
-            <img src={image}
-              alt={name}
-              className='w-full h-full object-cover rounded-2xl'
-            />
-            <div className='absolute inset-0 flex justify-end m-3 card-img_hover'
-              >
-                <div
-                  onClick={() => window.open(source_code_link, "_blank")} 
-                  className='w-10 h-10 black-gradient rounded-full flex justify-center items-center cursor-pointer'
-                  >
-                    <img 
-                      src={github}
-                      alt='github'
-                      className='w-1/2 h-1/2'
-                      />
-                </div>
-            </div>
-        </div>
-        <div className='mt-5'>
-          <h3 className='text-white text-xl font-bold'>{name}</h3>
-          <p className='text-secondary mt-2'>{description}</p>
-          <div className='flex flex-wrap gap-2 mt-3'>
-            {tags.map((tag, index) => (
-                <span key={`tag-${index}`}
-                  className={`px-2 py-1 rounded-md ${tag.color}`}
-                  >
-                    #{tag.name}
-                </span>
-              ))}
-          </div>
-        </div>
-
-      </Tilt>
-    </motion.div>
-  )
-}
+            {tag.name}
+          </li>
+        ))}
+      </ul>
+      {source_code_link && (
+        <a
+          href={source_code_link}
+          target='_blank'
+          rel='noopener noreferrer'
+          className='mt-auto inline-flex w-fit items-center gap-2 rounded-xl pt-6 font-semibold text-foreground hover:text-primary-400 transition-colors'
+        >
+          <img src={github} alt='' className='h-5 w-5' />
+          View source<span className='sr-only'> of {name} on GitHub (opens in a new tab)</span>
+        </a>
+      )}
+    </motion.li>
+  );
+};
 
 const Works = () => {
   return (
     <>
-      <motion.div variants={textVariant()} >
-          <p className={styles.sectionSubText}>My Work</p>
-          <h2 className={styles.sectionHeadText}>Projects.</h2>
-      </motion.div>
-      <div>
-        <motion.p
-          variants={fadeIn("", "", 0.1, 1)}
-          className='mt-3 text-secondary text-[17px] max-w-3xl leading-[30px]'
-          >
-            Following projects showcases my skills and experience through real-world examples of my work. Each project is briefly described with links to code repositories. It reflects my ability to solve complex problems, work with different technologies, and manage projects effectively.
-        </motion.p>
-      </div>
-      <div className='mt-20 flex flex-wrap gap-7'>
-        {projects.map((project, index) => (
-            <ProjectCard key={`project-${index}`} index={index} {...project} />
-          ))}
-      </div>
-
+      <SectionHeader
+        id='works'
+        title='Projects.'
+        lead='Infrastructure, networking and Kubernetes projects, with a link to the source where it is public.'
+      />
+      <ul className='mt-12 grid gap-8 md:grid-cols-2'>
+        {projects.map((project) => (
+          <ProjectCard key={project.name} {...project} />
+        ))}
+      </ul>
     </>
-  )
-}
+  );
+};
 
-export default SectionWrapper(Works, 'works')
+const WorksSection = SectionWrapper(Works, 'works');
+
+export default WorksSection;

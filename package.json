@@ -7,19 +7,23 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run lint && npm run build",
+    "deploy": "gh-pages -d dist",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
+    "@fontsource/poppins": "5.3.0",
     "@react-three/drei": "^9.117.3",
-    "@react-three/fiber": "^8.17.10",
-    "framer-motion": "^11.11.17",
+    "@react-three/fiber": "^8.18.0",
+    "framer-motion": "^11.18.2",
     "maath": "^0.10.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.0",
-    "react-tilt": "^1.0.2",
-    "react-vertical-timeline-component": "^3.6.0"
+    "react-vertical-timeline-component": "^3.6.0",
+    "three": "^0.170.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
@@ -34,6 +38,7 @@
     "gh-pages": "^6.2.0",
     "globals": "^15.11.0",
     "postcss": "^8.4.49",
+    "prettier": "3.9.8",
     "tailwindcss": "^3.4.15",
     "vite": "^5.4.10"
   }

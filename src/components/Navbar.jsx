@@ -1,120 +1,140 @@
-import React, { useEffect, useState, memo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
 
 import { styles } from '../styles';
 import { navLinks } from '../constans';
 import { logo, menu, close } from '../assets';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
-const NavItem = memo(({ name, active, handleClick }) => (
-  <li 
-    className={`${
-      active === name ? "text-white" : "text-secondary"
-    } hover:text-white text-[18px] font-medium cursor-pointer transition-colors`}
-  >
-    <a href={`#${name}`} onClick={(e) => { e.preventDefault(); handleClick(name); }}>
-      {name}
-    </a>
-  </li>
-));
-
-const MobileNavItem = memo(({ name, active, handleClick, setToggle }) => (
-  <li 
-    className={`${
-      active === name ? "text-white" : "text-secondary"
-    } font-poppins font-medium cursor-pointer text-[16px] hover:text-white`}
-    onClick={() => {
-      setToggle(false);
-      handleClick(name);
-    }}
-  >
-    <a href={`#${name}`}>{name}</a>
-  </li>
-));
+const linkClass = (isActive) =>
+  `${isActive ? 'text-foreground underline decoration-primary decoration-2 underline-offset-8' : 'text-foreground-muted'} ` +
+  'font-medium hover:text-foreground transition-colors';
 
 const Navbar = () => {
-  const [active, setActive] = useState("");
-  const [toggle, setToggle] = useState(false);
+  const [active, setActive] = useState('');
+  const [open, setOpen] = useState(false);
+  const toggleRef = useRef(null);
+  const lastY = useRef(0);
+  const reduced = usePrefersReducedMotion();
 
-  // Sync active state with URL hash on mount and hash change
+  // Sync the active link with the URL hash (back/forward). On first load, sections mount after
+  // the browser tried to scroll to the hash, so scroll a deep link (/#experience) ourselves.
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.slice(1);
-      if (hash) {
-        setActive(hash);
+    const syncFromHash = () => setActive(window.location.hash.slice(1));
+    syncFromHash();
+    const initial = window.location.hash.slice(1);
+    if (initial)
+      requestAnimationFrame(() => {
+        const target = document.getElementById(initial);
+        if (!target) return;
+        target.scrollIntoView();
+        // Move focus too, so the next Tab and screen readers continue from the section
+        target.setAttribute('tabindex', '-1');
+        target.focus({ preventScroll: true });
+      });
+    window.addEventListener('hashchange', syncFromHash);
+    return () => window.removeEventListener('hashchange', syncFromHash);
+  }, []);
+
+  // Back at the top of the page, no section is current any more. Only clear on an upward
+  // scroll: a nav jump from the top scrolls down through the first 200px, however slowly.
+  useEffect(() => {
+    if (!active) return undefined;
+    lastY.current = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y < 200 && y < lastY.current) setActive('');
+      lastY.current = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [active]);
+
+  // Escape closes the mobile menu and returns focus to its button
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        toggleRef.current?.focus();
       }
     };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [open]);
 
-    // Set initial state
-    handleHashChange();
-    
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  const goTo = (e, id) => {
+    const target = document.getElementById(id);
+    if (!target) return; // let the browser handle the hash
+    e.preventDefault();
+    setActive(id);
+    setOpen(false);
+    target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+    // Move focus to the section so keyboard and screen reader users land there too
+    target.setAttribute('tabindex', '-1');
+    target.focus({ preventScroll: true });
+    window.history.pushState(null, '', `#${id}`);
+  };
 
-  const handleClick = useCallback((name) => {
-    setActive(name);
-    const element = document.getElementById(name);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-      // Update URL hash without triggering scroll
-      window.history.pushState(null, '', `#${name}`);
-    }
-  }, []);
+  const renderLinks = (className) => (
+    <ul className={className}>
+      {navLinks.map((link) => (
+        <li key={link.id}>
+          <a
+            href={`#${link.id}`}
+            aria-current={active === link.id ? 'location' : undefined}
+            className={linkClass(active === link.id)}
+            onClick={(e) => goTo(e, link.id)}
+          >
+            {link.title}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
     <nav
-      className={`${styles.paddingX} w-full flex items-center py-5 fixed top-0 z-50 bg-black/80 backdrop-blur-md`}
+      aria-label='Main'
+      className='w-full fixed top-0 z-50 border-b border-line bg-background/80 backdrop-blur-md'
     >
-      <div className="flex justify-between items-center w-full max-w-7xl mx-auto">
-        <Link 
-          to="/"
-          className="flex items-center gap-2"
+      <div className={`${styles.container} flex justify-between items-center py-4`}>
+        <a
+          href='#top'
+          className='flex items-center gap-2'
           onClick={() => {
-            setActive("");
-            window.scrollTo(0, 0);
+            setActive('');
+            setOpen(false);
           }}
         >
-          <img src={logo} alt="logo" className="h-9 w-9 object-contain" />
-          <p className='text-white text-[18px] font-bold cursor-pointer'>
-            Youssef el hadraoui &nbsp;
-            <span className="sm:block hidden">| Portfolio</span>
-          </p>
-        </Link>
-        
-        <ul className='list-none hidden sm:flex flex-row gap-10'>
-          {navLinks.map((link) => (
-            <NavItem 
-              key={link.id}
-              name={link.title}
-              active={active}
-              handleClick={handleClick}
-            />
-          ))}
-        </ul>
-        
-        <div className="sm:hidden flex flex-1 justify-end items-center">
-          <img
-            src={toggle ? close : menu}
-            alt="menu"
-            className="h-[28px] w-[28px] cursor-pointer object-contain"
-            onClick={() => setToggle(!toggle)}
-          />
-          <div
-            className={`${
-              !toggle ? "hidden" : "flex"
-            } p-6 black-gradient absolute top-20 right-0 mx-4 my-2 min-w-[140px] z-50 rounded-xl`}
+          <img src={logo} alt='' className='h-9 w-9 object-contain' />
+          <span className='text-foreground text-lg font-bold'>Youssef El Hadraoui</span>
+        </a>
+
+        {renderLinks('list-none hidden md:flex flex-row gap-8')}
+
+        <div
+          className='md:hidden flex flex-1 justify-end items-center'
+          onBlur={(e) => {
+            // Close the menu when keyboard focus moves outside it
+            if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
+          }}
+        >
+          <button
+            ref={toggleRef}
+            type='button'
+            aria-expanded={open}
+            aria-controls='mobile-menu'
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            onClick={() => setOpen((v) => !v)}
+            className='-m-2 rounded-xl p-2'
           >
-            <ul className='list-none flex flex-col gap-4 justify-end items-start'>
-              {navLinks.map((link) => (
-                <MobileNavItem
-                  key={link.id}
-                  name={link.title}
-                  active={active}
-                  handleClick={handleClick}
-                  setToggle={setToggle}
-                />
-              ))}
-            </ul>
+            <img src={open ? close : menu} alt='' className='h-7 w-7 object-contain' />
+          </button>
+          <div
+            id='mobile-menu'
+            className={`${open ? 'flex' : 'hidden'} p-6 bg-surface/95 backdrop-blur-md border border-line absolute top-16 right-0 mx-4 my-2 min-w-[10rem] z-50 rounded-xl`}
+          >
+            {renderLinks('list-none flex flex-col gap-4 justify-end items-start')}
           </div>
         </div>
       </div>
@@ -122,4 +142,4 @@ const Navbar = () => {
   );
 };
 
-export default memo(Navbar);
+export default Navbar;
