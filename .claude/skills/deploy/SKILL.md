@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # Deploy to GitHub Pages
 
+Normally you don't need this skill: merging to `main` deploys through the CI/CD Pipeline (`.github/workflows/deploy.yml`). Use it for a manual deploy, for example when Actions is unavailable or to test a branch build live.
+
 Publishes `dist/` to the `main` branch of github.com/yel-hadr/yel-hadr.github.io (the GitHub Pages *user* site), served at the root https://yel-hadr.github.io/. This source repo (yel-hadr/portfolio) is not published itself.
 
 Hard rules for this whole skill:

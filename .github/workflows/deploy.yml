@@ -1,0 +1,100 @@
+name: CI/CD Pipeline
+
+# Pull requests to main: lint and build (reported as a PR check).
+# Pushes to main: the same checks, then publish the tested build to GitHub Pages.
+#
+# The site is a GitHub Pages *user* site: Pages serves the main branch of
+# yel-hadr/yel-hadr.github.io at https://yel-hadr.github.io/ (vite.config.js base: '/').
+# This repo's GITHUB_TOKEN cannot push to another repository, so the deploy uses an SSH
+# deploy key: the public half is a write-enabled deploy key on yel-hadr.github.io, the
+# private half is this repo's ACTIONS_DEPLOY_KEY secret.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    name: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          # Caches npm's download cache (~/.npm) keyed on package-lock.json. node_modules
+          # itself is not cached because `npm ci` deletes it before every install.
+          cache: npm
+
+      - name: Install (npm ci)
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          # Public EmailJS identifiers (inlined into the client bundle by design). If the
+          # secrets are not set the build still succeeds and the contact form reports that
+          # it is not configured.
+          VITE_EMAILJS_SERVICE_ID: ${{ secrets.VITE_EMAILJS_SERVICE_ID }}
+          VITE_EMAILJS_TEMPLATE_ID: ${{ secrets.VITE_EMAILJS_TEMPLATE_ID }}
+          VITE_EMAILJS_PUBLIC_KEY: ${{ secrets.VITE_EMAILJS_PUBLIC_KEY }}
+
+      - name: Check asset paths
+        # Every URL in index.html must start with /assets/ (base '/'); a /portfolio/ prefix
+        # would mean a stale base path and a broken live site.
+        run: |
+          bad=$(grep -oE '(src|href)="[^"]+"' dist/index.html | grep -vE '"(/assets/|https://)' || true)
+          if [ -n "$bad" ]; then echo "Unexpected asset URLs:"; echo "$bad"; exit 1; fi
+
+      - name: Upload build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+
+  deploy-to-pages:
+    name: deploy-to-pages
+    needs: lint-and-test
+    # Never from pull requests: only after lint and build pass on a push to main.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # One deploy at a time; a newer push waits instead of racing.
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
+    # Deployment history with the live URL. Not "github-pages": that environment was created
+    # by this repo's old project-site Pages and only allows the gh-pages branch to deploy.
+    environment:
+      name: yel-hadr.github.io
+      url: https://yel-hadr.github.io/
+    steps:
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Publish to yel-hadr.github.io (main)
+        # Pinned to the commit behind the v4 tag (v4.1.0): this job holds a write deploy key,
+        # so a moved tag must not change the code that runs with it.
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
+        with:
+          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          external_repository: yel-hadr/yel-hadr.github.io
+          publish_branch: main
+          publish_dir: ./dist
+          # Replaces the branch contents with dist/ and writes .nojekyll (enable_jekyll
+          # defaults to false), like `npx gh-pages -d dist --nojekyll`.
+          full_commit_message: Deploy yel-hadr/portfolio@${{ github.sha }}
