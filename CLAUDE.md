@@ -33,6 +33,10 @@ There is no test suite. Prettier style is semicolons, single quotes in JS and JS
 - Hooks: ESLint runs on every edited `.js`/`.jsx` file, and edits to `.env*` and `package-lock.json` are blocked. Scripts live in `.claude/hooks/`.
 - MCP: the `playwright` server (`.mcp.json`) drives Chromium for screenshots and console logs. Use context7 for library docs.
 
+## CI/CD
+
+`.github/workflows/deploy.yml` ("CI/CD Pipeline"). On a PR to `main`, `lint-and-test` runs `npm ci`, lint, build and an asset-path check. On a push to `main`, `deploy-to-pages` publishes that job's `dist/` artifact with `peaceiris/actions-gh-pages` to `yel-hadr/yel-hadr.github.io` (`main`), so merging to `main` deploys. It authenticates with the `ACTIONS_DEPLOY_KEY` secret (a write deploy key on that repo). The EmailJS values come from `VITE_EMAILJS_*` repo secrets. The job deploys to the `yel-hadr.github.io` environment, not `github-pages`, because that one only allows the old `gh-pages` branch. The resume is `public/Youssef_Elhadraoui_Resume.pdf`, linked through `person.resume` (built from `import.meta.env.BASE_URL`) by `ResumeLink`.
+
 ## Base path and hosting (GitHub Pages)
 
 `vite.config.js` sets `base: '/'`: the site is a GitHub Pages *user* site, so this source repo (`yel-hadr/portfolio`) is not what Pages serves. The build is published to the `main` branch of `yel-hadr/yel-hadr.github.io`, which serves https://yel-hadr.github.io/. There is no router; in-page navigation uses `#section` anchors. Consequences:

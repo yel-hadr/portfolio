@@ -25,6 +25,8 @@ export const person = {
   summary:
     'Software Engineer specializing in multi-tenant backend architecture, cloud infrastructure, and DevOps automation. Proven experience in designing scalable microservices, implementing GitOps delivery pipelines, and managing containerized environments. Passionate about automating server setups, observability, and integrating AI coding assistants into modern development workflows.',
   github: 'https://github.com/yel-hadr',
+  // public/Youssef_Elhadraoui_Resume.pdf, resolved against Vite's base path
+  resume: `${import.meta.env.BASE_URL}Youssef_Elhadraoui_Resume.pdf`,
 };
 
 export const navLinks = [

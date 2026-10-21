@@ -4,6 +4,7 @@ import { styles } from '../styles';
 import { profile320, profile640 } from '../assets';
 import { person } from '../constans';
 import { reveal, staggerContainer } from '../utils/motion';
+import ResumeLink from './ResumeLink';
 
 const Hero = () => {
   return (
@@ -58,6 +59,7 @@ const Hero = () => {
             <a href='#works' className={styles.buttonPrimary}>
               See my projects
             </a>
+            <ResumeLink />
             <a href='#contact' className={styles.buttonGhost}>
               Get in touch
             </a>
