@@ -18,7 +18,7 @@ You audit the 3D rendering performance of this portfolio (Vite 5, React 18, Java
 
 ## Map of the 3D code (verify, line numbers drift)
 
-- `src/App.jsx`: the only `<Canvas>`. Inline `style` makes it fixed and full-screen behind the content (`zIndex: 0`, `pointerEvents: 'none'`, no `eventSource`). `frameloop` is `always`, or `demand` plus `InvalidateOnScroll` under reduced motion. It renders `<View.Port />` and is wrapped in `CanvasErrorBoundary`. `onCreated` redraws after `webglcontextrestored`.
+- `src/components/canvas/Scene3D.jsx`: the only `<Canvas>`, lazily loaded by `src/App.jsx` inside `CanvasErrorBoundary`. It sits in an absolutely positioned 125vh layer (a plain fixed canvas where `overflow: clip` is unsupported) that `ScrollSync` (`useFrame`, priority -1) moves to `scrollY` every rendered frame. That keeps scenes glued to their DOM boxes during compositor scrolling. 25vh of overscan sits below the viewport; `resize={{ scroll: false }}` is set, and a stale `size.top` gets corrected. `frameloop='demand'` is driven by `FrameDriver`. It renders `<View.Port />`, and `onCreated` redraws after `webglcontextrestored`. Measure scroll sync from composited frames (CDP screencast with the view box outlined), not from main-thread rects, which always agree with each other.
 - `src/components/canvas/SceneView.jsx`: a DOM slot. A drei inline `<View>` tunnels its children into the port, wrapped in `CanvasErrorBoundary` plus `Suspense`. It swaps to a DOM `fallback` on error.
 - Scenes placed with `SceneView`:
   - `Tech.jsx` → 9 × `Ball` (`useTexture` + `Decal` + `Float`; shares the root camera).

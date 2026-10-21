@@ -50,7 +50,7 @@ node -e 'const L=h=>{const c=h.match(/\w\w/g).map(x=>{x=parseInt(x,16)/255;retur
 Check at least: muted text on background/surface/surface-raised, primary on background, dark text on primary (buttons, skip link), input borders (`line-strong`) on surface and surface-raised, every tag color, both status colors, and text over the hero backdrop.
 
 **4. Focus visible (2.4.7 Focus Visible, 2.4.11 Focus Not Obscured, 2.4.13 for reference)**
-Skip link, logo link, nav links, mobile menu button, project source links, form inputs and submit button, footer links. A global `:focus-visible` outline lives in `src/index.css`, and form controls use `focus-visible:ring-*`. Verify the rendered ring is visible on each stop, and that the fixed Navbar does not cover focused elements or headings after anchor jumps (sections use `scroll-mt-20`).
+Skip link, logo link, nav links, mobile menu button, project source links, form inputs and submit button, footer links. A global `:focus-visible` outline lives in `src/index.css`, and form controls use `focus-visible:ring-*`. Verify the rendered ring is visible on each stop, and that the fixed Navbar does not cover focused elements or headings after anchor jumps (`html` sets `scroll-padding-top: 5rem`; sections have no `scroll-mt`).
 
 **5. Structure and semantics (1.3.1, 2.4.1 Bypass Blocks, 2.4.2, 2.4.6, 3.1.1)**
 - One `h1` (Hero). Each section is `<section id aria-labelledby>` named by its `SectionHeader` `h2`; card titles are `h3`; the `WebGLFallback` notice is an `h2` placed after the hero.

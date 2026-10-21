@@ -43,7 +43,9 @@ function App() {
 }
 
 const AppContent = ({ webgl, supported, onCanvasError }) => (
-  <div id='top' className='relative bg-background'>
+  // overflow-clip: the 3D layer follows the scroll position and would otherwise extend the
+  // page below its last section (fixed descendants are not clipped)
+  <div id='top' className='relative overflow-clip bg-background'>
     <a
       href='#main'
       className='sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:border-2 focus:border-transparent focus:bg-primary focus:px-4 focus:py-3 focus:font-semibold focus:text-background'
