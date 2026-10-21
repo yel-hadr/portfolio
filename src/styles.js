@@ -5,14 +5,22 @@ const styles = {
   section: 'py-20 sm:py-28',
 
   heroHeadText:
-    'font-black text-foreground text-5xl xs:text-6xl sm:text-7xl lg:text-8xl leading-none tracking-tight',
-  heroSubText: 'text-foreground-muted text-lg sm:text-xl lg:text-2xl leading-relaxed max-w-2xl',
+    'font-black text-foreground text-5xl sm:text-6xl xl:text-7xl leading-[1.05] tracking-tight',
+  heroSubText:
+    'text-primary-400 font-semibold text-lg sm:text-xl lg:text-2xl leading-snug max-w-2xl',
 
   sectionHeadText:
     'font-black text-foreground text-4xl sm:text-5xl lg:text-6xl leading-tight tracking-tight',
   sectionLead: 'mt-4 text-foreground-muted text-base sm:text-lg leading-relaxed max-w-prose',
 
   cardTitle: 'text-foreground text-xl font-bold',
+  card: 'card-glass p-6 sm:p-8',
+
+  // Primary: dark text on orange (6.8:1). Ghost: glass with a strong border (>= 3:1).
+  buttonPrimary:
+    'inline-flex items-center rounded-xl bg-primary px-7 py-3 font-bold text-background transition-colors hover:bg-primary-400',
+  buttonGhost:
+    'inline-flex items-center rounded-xl border border-line-strong bg-glass px-7 py-3 font-semibold text-foreground backdrop-blur-md transition-colors hover:border-foreground-muted',
   body: 'text-foreground-muted text-base leading-relaxed',
 };
 

@@ -24,6 +24,12 @@ export default {
         secondary: {
           DEFAULT: '#a78bfa', // violet from the hero pattern and stars, used sparingly
         },
+        // Translucent card fill over the waves background; used with backdrop-blur (.card-glass).
+        // Text contrast is checked against the opaque worst case below it: background.
+        glass: {
+          DEFAULT: 'rgb(14 11 34 / 0.62)', // surface at 62%
+          strong: 'rgb(23 19 56 / 0.78)', // surface-raised at 78%: nav menu, inputs
+        },
         line: {
           DEFAULT: 'rgb(255 255 255 / 0.1)', // decorative hairlines
           strong: '#77749a', // control boundaries (non-text contrast >= 3:1)
@@ -34,9 +40,6 @@ export default {
       },
       screens: {
         xs: '450px',
-      },
-      backgroundImage: {
-        'hero-pattern': "url('/src/assets/herobg.webp')",
       },
     },
   },

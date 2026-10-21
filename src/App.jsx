@@ -9,8 +9,8 @@ import {
   Navbar,
   Tech,
   Works,
-  Stars,
-  SceneView,
+  Education,
+  WavesBackground,
   Scene3D,
   ErrorBoundary,
   CanvasErrorBoundary,
@@ -47,11 +47,8 @@ const AppContent = ({ webgl, onCanvasError }) => (
       Skip to content
     </a>
 
-    {/* Hero backdrop. The image is opaque, so it sits below the canvas or it would hide the 3D. */}
-    <div
-      aria-hidden='true'
-      className='absolute inset-x-0 top-0 h-screen bg-hero-pattern bg-cover bg-no-repeat bg-center'
-    />
+    {/* Interactive waves (2D canvas, fixed behind everything; not a WebGL context) */}
+    <WavesBackground />
 
     {/* The 3D layer (one Canvas, lazily loaded). Without WebGL2 it is skipped and every
         SceneView renders its static fallback. If the renderer or its chunk fails, the
@@ -63,16 +60,6 @@ const AppContent = ({ webgl, onCanvasError }) => (
         </Suspense>
       </CanvasErrorBoundary>
     )}
-
-    {/* Star field behind everything (drawn first, index 1); fixed box, so measure once */}
-    <SceneView
-      sectionType='stars'
-      index={1}
-      frames={1}
-      className='fixed inset-0 pointer-events-none'
-    >
-      <Stars />
-    </SceneView>
 
     <div className='relative z-10'>
       <Navbar />
@@ -98,6 +85,10 @@ const AppContent = ({ webgl, onCanvasError }) => (
 
         <ErrorBoundary sectionName='works'>
           <Works />
+        </ErrorBoundary>
+
+        <ErrorBoundary sectionName='education'>
+          <Education />
         </ErrorBoundary>
 
         <ErrorBoundary sectionName='contact'>

@@ -6,12 +6,12 @@ import { styles } from '../styles';
  */
 const WebGLFallback = ({ onRetry }) => (
   <section role='status' aria-labelledby='webgl-title' className={`${styles.container} py-10`}>
-    <div className='rounded-3xl border border-line bg-surface p-6 sm:p-8 max-w-3xl'>
+    <div className={`${styles.card} max-w-3xl`}>
       <h2 id='webgl-title' className='text-foreground text-xl font-bold'>
         3D scenes are turned off
       </h2>
       <p className='mt-2 text-foreground-muted leading-relaxed'>
-        Your browser or device doesn&apos;t support WebGL 2, so the interactive 3D desk, globe and
+        Your browser or device doesn&apos;t support WebGL 2, so the interactive 3D globe and
         technology icons aren&apos;t shown. Everything else on this page works as usual.
       </p>
       <details className='mt-4 text-foreground-muted'>

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 
 import { github } from '../assets';
+import { styles } from '../styles';
 import { SectionWrapper } from '../hoc';
 import { projects } from '../constans';
 import { reveal } from '../utils/motion';
@@ -17,25 +18,23 @@ const TAG_COLORS = {
 
 const ProjectCard = ({ name, description, tags, image, source_code_link }) => {
   return (
-    <motion.li
-      variants={reveal()}
-      // full width on phones, two per row from md, exactly three per row from lg (gap-8 = 2rem)
-      className='flex w-full max-w-sm flex-col rounded-3xl border border-line bg-surface p-5 md:basis-[calc((100%-2rem)/2)] lg:max-w-none lg:basis-[calc((100%-4rem)/3)]'
-    >
-      <img
-        src={image}
-        alt=''
-        loading='lazy'
-        decoding='async'
-        className='aspect-video w-full rounded-xl object-cover'
-      />
-      <h3 className='mt-5 text-foreground text-xl font-bold'>{name}</h3>
+    <motion.li variants={reveal()} className={`${styles.card} flex flex-col`}>
+      {image && (
+        <img
+          src={image}
+          alt=''
+          loading='lazy'
+          decoding='async'
+          className='mb-5 aspect-video w-full rounded-xl object-cover'
+        />
+      )}
+      <h3 className='text-foreground text-xl font-bold'>{name}</h3>
       <p className='mt-2 text-foreground-muted leading-relaxed'>{description}</p>
       <ul className='mt-4 flex flex-wrap gap-2' aria-label='Technologies'>
         {tags.map((tag) => (
           <li
             key={tag.name}
-            className={`rounded-full bg-surface-raised px-3 py-1 text-sm font-medium ${TAG_COLORS[tag.color] ?? 'text-foreground-muted'}`}
+            className={`rounded-full border border-line bg-surface-raised px-3 py-1 text-sm font-medium ${TAG_COLORS[tag.color] ?? 'text-foreground-muted'}`}
           >
             {tag.name}
           </li>
@@ -62,9 +61,9 @@ const Works = () => {
       <SectionHeader
         id='works'
         title='Projects.'
-        lead='Projects from the 1337 curriculum, each with a short description and a link to its source code where it is public.'
+        lead='Infrastructure, networking and Kubernetes projects, with a link to the source where it is public.'
       />
-      <ul className='mt-12 flex flex-wrap justify-center gap-8'>
+      <ul className='mt-12 grid gap-8 md:grid-cols-2'>
         {projects.map((project) => (
           <ProjectCard key={project.name} {...project} />
         ))}

@@ -100,10 +100,10 @@ const Navbar = () => {
           <span className='text-foreground text-lg font-bold'>Youssef El Hadraoui</span>
         </a>
 
-        {renderLinks('list-none hidden sm:flex flex-row gap-10')}
+        {renderLinks('list-none hidden md:flex flex-row gap-8')}
 
         <div
-          className='sm:hidden flex flex-1 justify-end items-center'
+          className='md:hidden flex flex-1 justify-end items-center'
           onBlur={(e) => {
             // Close the menu when keyboard focus moves outside it
             if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
@@ -122,7 +122,7 @@ const Navbar = () => {
           </button>
           <div
             id='mobile-menu'
-            className={`${open ? 'flex' : 'hidden'} p-6 bg-surface border border-line absolute top-16 right-0 mx-4 my-2 min-w-[10rem] z-50 rounded-xl`}
+            className={`${open ? 'flex' : 'hidden'} p-6 bg-surface/95 backdrop-blur-md border border-line absolute top-16 right-0 mx-4 my-2 min-w-[10rem] z-50 rounded-xl`}
           >
             {renderLinks('list-none flex flex-col gap-4 justify-end items-start')}
           </div>

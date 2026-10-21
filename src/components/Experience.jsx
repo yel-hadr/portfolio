@@ -8,7 +8,9 @@ import SectionHeader from './SectionHeader';
 // The timeline library only takes inline styles, so read the Tailwind tokens through the
 // CSS variables defined in src/index.css.
 const CARD_STYLE = {
-  background: 'var(--color-surface)',
+  background: 'var(--color-glass)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
   color: 'var(--color-foreground)',
   border: '1px solid var(--color-line)',
   borderRadius: '1.5rem',
@@ -21,7 +23,7 @@ const ExperienceCard = ({ experience }) => {
     <VerticalTimelineElement
       contentStyle={CARD_STYLE}
       contentArrowStyle={{ borderRight: '7px solid var(--color-line)' }}
-      date={<span aria-hidden='true'>{experience.date}</span>}
+      date={experience.date ? <span aria-hidden='true'>{experience.date}</span> : undefined}
       dateClassName='!text-foreground-muted !opacity-100 font-medium'
       iconStyle={{
         background: experience.iconBg,
@@ -30,9 +32,9 @@ const ExperienceCard = ({ experience }) => {
     >
       <h3 className='text-foreground text-xl sm:text-2xl font-bold'>{experience.title}</h3>
       {/* The visible date renders after the card content; give screen readers it in reading order */}
-      <p className='sr-only'>{experience.date}</p>
+      {experience.date && <p className='sr-only'>{experience.date}</p>}
       {experience.company_name && (
-        <p className='text-foreground-muted font-semibold !m-0'>{experience.company_name}</p>
+        <p className='text-primary-400 font-semibold !m-0'>{experience.company_name}</p>
       )}
       <ul className='mt-4 list-disc ml-5 space-y-2'>
         {experience.points.map((point) => (
@@ -53,8 +55,8 @@ const Experience = () => {
     <>
       <SectionHeader
         id='experience'
-        title='1337 Experience.'
-        lead="What I've done so far as a 1337 student."
+        title='Experience.'
+        lead='Where I build backends and the infrastructure they run on.'
       />
       <div className='mt-12 flex flex-col'>
         {/* animate={false}: entries stay visible instead of popping in on scroll */}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import emailjs from '@emailjs/browser';
 import { motion } from 'framer-motion';
 
+import { styles } from '../styles';
 import { SectionWrapper } from '../hoc';
 import { reveal } from '../utils/motion';
 import SectionHeader from './SectionHeader';
@@ -10,7 +11,7 @@ import { Earth, SceneView } from './canvas';
 const FIELD =
   'w-full rounded-xl border border-line-strong bg-surface-raised px-5 py-4 font-medium text-foreground ' +
   'placeholder:text-foreground-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ' +
-  'focus-visible:ring-offset-2 focus-visible:ring-offset-surface';
+  'focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 const EMPTY_FORM = { name: '', email: '', message: '' };
 
@@ -85,10 +86,7 @@ const Contact = () => {
       />
 
       <div className='mt-12 grid gap-10 xl:grid-cols-2'>
-        <motion.div
-          variants={reveal()}
-          className='rounded-3xl border border-line bg-surface p-6 sm:p-8'
-        >
+        <motion.div variants={reveal()} className={styles.card}>
           <p id='contact-hint' className='mb-6 text-sm text-foreground-muted'>
             All fields are required.
           </p>
@@ -149,7 +147,7 @@ const Contact = () => {
               <button
                 type='submit'
                 aria-disabled={loading || undefined}
-                className='rounded-xl border-2 border-transparent bg-primary px-8 py-3 font-bold text-background transition-colors hover:bg-primary-400 aria-disabled:cursor-wait focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface'
+                className='rounded-xl border-2 border-transparent bg-primary px-8 py-3 font-bold text-background transition-colors hover:bg-primary-400 aria-disabled:cursor-wait focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background'
               >
                 {loading ? 'Sending…' : 'Send message'}
               </button>

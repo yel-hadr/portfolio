@@ -22,6 +22,8 @@ import cub3D_42 from './cub3D_42.webp';
 import minishell from './minishell.webp';
 import Inception from './Inception.webp';
 import projectPlaceholder from './project-placeholder.svg';
+import profile from './profile.jpg';
+
 export {
   logo,
   backend,
@@ -45,4 +47,5 @@ export {
   ft_irc,
   Inception,
   projectPlaceholder,
+  profile,
 };
