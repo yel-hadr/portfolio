@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react';
 
 // https://vite.dev/config/
 export default defineConfig({
-  // Served from https://yel-hadr.github.io/portfolio/ (GitHub Pages project site)
-  base: '/portfolio/',
+  // Served from the root of https://yel-hadr.github.io/ (the yel-hadr.github.io user-site repo)
+  base: '/',
   plugins: [react()],
   build: {
     rollupOptions: {

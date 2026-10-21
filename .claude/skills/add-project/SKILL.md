@@ -138,7 +138,7 @@ npm run build
 
 Optional visual check, if the dev server starts:
 
-1. Start `npm run dev` with the Bash tool's `run_in_background`, and read the port from its output (default `http://localhost:5173/portfolio/`; Vite moves to the next port if 5173 is busy; the `/portfolio/` base path is required).
+1. Start `npm run dev` with the Bash tool's `run_in_background`, and read the port from its output (default `http://localhost:5173/`; Vite moves to the next port if 5173 is busy; the `/portfolio/` base path is required).
 2. With the Playwright MCP (`mcp__playwright__browser_*`), `browser_navigate` to the URL, then `browser_resize` to 390×844 and scroll to the section with `browser_evaluate` and the function `() => document.getElementById('works').scrollIntoView()` (section ids from `SectionWrapper`: `works`, `experience`, `tech`). Sections animate in only once they are in view, so wait about 2 seconds (`browser_wait_for` with `time: 2`), then `browser_take_screenshot`.
 3. Repeat at 1440×900.
 4. Check `browser_console_messages` for errors (404 on the image, WebGL context lost).
