@@ -1,45 +1,39 @@
-import React from 'react';
+// Sections that render a 3D scene; their failures get WebGL troubleshooting tips.
+const SECTIONS_WITH_3D = ['hero', 'about', 'tech', 'contact'];
 
 const ErrorFallback = ({ error, resetErrorBoundary, sectionName }) => {
-  const is3DSection = ['hero', 'about', 'tech', 'works', 'contact'].includes(sectionName);
-  
+  const is3DSection = SECTIONS_WITH_3D.includes(sectionName);
+
   return (
-    <div 
-      role="alert" 
-      className="flex flex-col items-center justify-center min-h-[400px] p-8 bg-black-100 rounded-2xl"
+    <div
+      role="alert"
+      className="max-w-7xl mx-auto my-10 flex flex-col items-center justify-center min-h-[25rem] p-8 bg-surface border border-line rounded-3xl"
     >
-      <h2 className="text-2xl font-bold text-white mb-4">
-        Something went wrong
-      </h2>
+      <h2 className="text-2xl font-bold text-foreground mb-4">This section failed to load</h2>
       {is3DSection ? (
         <>
-          <p className="text-secondary mb-6 text-center max-w-md">
-            We're sorry, but the 3D content failed to load. This could be due to:
+          <p className="text-foreground-muted mb-6 text-center max-w-md">
+            The 3D content in this section couldn&apos;t load. Common causes:
           </p>
-          <ul className="text-secondary mb-6 space-y-2">
-            <li>• WebGL not supported in your browser</li>
-            <li>• Outdated graphics drivers</li>
-            <li>• Hardware acceleration disabled</li>
+          <ul className="text-foreground-muted mb-6 space-y-2 list-disc pl-5">
+            <li>WebGL is not supported in your browser</li>
+            <li>Graphics drivers are outdated</li>
+            <li>Hardware acceleration is turned off</li>
           </ul>
         </>
       ) : (
-        <p className="text-secondary mb-6 text-center max-w-md">
-          We're sorry, but this section failed to load. Please try again.
-        </p>
+        <p className="text-foreground-muted mb-6 text-center max-w-md">Reload the section to try again.</p>
       )}
       <button
         onClick={resetErrorBoundary}
-        className="bg-tertiary py-3 px-8 rounded-xl text-white font-bold hover:bg-tertiary/80 transition-colors"
-        aria-label="Try again"
+        className="bg-surface-raised border border-line-strong py-3 px-8 rounded-xl text-foreground font-bold hover:bg-surface transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
-        Try Again
+        Reload section
       </button>
       {error && (
-        <details className="mt-6 text-xs text-secondary max-w-lg">
+        <details className="mt-6 text-xs text-foreground-muted max-w-lg">
           <summary className="cursor-pointer">Error details (for developers)</summary>
-          <pre className="mt-2 p-4 bg-black-90 rounded overflow-auto max-h-40">
-            {error.message}
-          </pre>
+          <pre className="mt-2 p-4 bg-background rounded-xl overflow-auto max-h-40">{error.message}</pre>
         </details>
       )}
     </div>

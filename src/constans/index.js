@@ -10,7 +10,7 @@ import {
     tailwind,
     git,
     docker,
-    carrent,
+    projectPlaceholder,
     cpp,
     python,
     
@@ -49,7 +49,7 @@ import {
       icon: backend,
     },
     {
-      title: "low_level Developer",
+      title: "Low-level Developer",
       icon: creator,
     },
   ];
@@ -60,15 +60,15 @@ import {
       icon: cpp
     },
     {
-      name: "python",
+      name: "Python",
       icon: python,
     },
     {
-      name: "git",
+      name: "Git",
       icon: git,
     },
     {
-      name: "docker",
+      name: "Docker",
       icon: docker,
     },
     {
@@ -122,7 +122,7 @@ import {
     {
       title: "1337 Cursus Part 2 (C++ Object-Oriented Programming)",
       iconBg: "#383E56",
-      date: "December 2023 - Mai 2024",
+      date: "December 2023 - May 2024",
       points: [
         "Exploring the core C++ concepts including dynamic memory allocation, pointers, references, and polymorphism, with a focus on low-level memory operations and efficient data manipulation.",
         "Developed object-oriented designs using inheritance, subtype polymorphism, abstract classes, and the Orthodox Canonical Form for reusable and scalable code.",
@@ -149,8 +149,7 @@ import {
   const projects = [
     {
       name: "Transcendence",
-      description:
-        "This project is about creating my own IRC server with C++, using the RFC 1459 as a reference. The server must be able to handle multiple clients at the same time, and the clients must be able to send messages to each other.",
+      description: "Description pending.",
       tags: [
         {
           name: "HTML/CSS",
@@ -161,12 +160,12 @@ import {
           color: "pink-text-gradient",
         },
         {
-          name: "django",
+          name: "Django",
           color: "green-text-gradient",
         },
       ],
-      image: carrent,
-      source_code_link: "https://github.com/Sbahdi/Transcendence",
+      image: projectPlaceholder,
+      source_code_link: "",
     },
     {
       name: "ft_irc",
@@ -179,7 +178,7 @@ import {
         },
       ],
       image: ft_irc,
-      source_code_link: "https://github.com/yel-hadr/ft_irc",
+      source_code_link: "",
     },
     {
       name: "Inception",

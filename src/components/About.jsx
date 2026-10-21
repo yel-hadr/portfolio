@@ -1,36 +1,22 @@
-import React from 'react'
 import { motion } from 'framer-motion'
-import { Tilt } from 'react-tilt'
-
-import { fadeIn, textVariant } from '../utils/motion'
 
 import { styles } from '../styles'
 import { services } from '../constans'
 import { SectionWrapper } from '../hoc'
 import { useMediaQuery } from '../hooks/useMediaQuery'
+import { reveal } from '../utils/motion'
+import SectionHeader from './SectionHeader'
 import { Earth, SceneView } from './canvas'
 
-const ServiceCard = ({ index, title, icon }) => {
-  return (
-    <Tilt
-      className="xs:w-[250px] w-full">
-      <motion.div
-        variants={fadeIn('right', 'spring', 0.5 * index, 1)}
-        className='w-full orange-pink-gradient p-[1px] rounded-[20px] shadow-card'
-      >
-        <div 
-          options={{ max: 45, scale: 1 , speed: 450 }}
-          className='bg-tertiary rounded-[20px] px-12 py-5 min-h-[280px] flex flex-col items-center justify-evenly'
-          >
-          <img src={icon} alt={title} className='w-16 h-16' />
-          <h3 className='text-white text-[20px] font-bold text-center'>{title}</h3>
+const Em = ({ children }) => <strong className='text-foreground font-semibold'>{children}</strong>
 
-          </div>
-      </motion.div>
-
-    </Tilt>
-  )
-}
+// Roles as a quiet spec list: hairline-separated rows, no boxed cards.
+const ServiceItem = ({ title, icon }) => (
+  <motion.li variants={reveal()} className='flex items-center gap-4 border-t border-line pt-6'>
+    <img src={icon} alt='' className='h-12 w-12 shrink-0' />
+    <h3 className='text-foreground text-lg font-semibold'>{title}</h3>
+  </motion.li>
+)
 
 const About = () => {
   // The globe sits beside the overview on wide screens only; on phones Contact has the globe.
@@ -40,14 +26,13 @@ const About = () => {
     <>
       <div className='lg:grid lg:grid-cols-[1fr_360px] lg:items-center lg:gap-12'>
         <div>
-          <motion.div variants={textVariant()} >
-            <p className={styles.sectionSubText}>Introdtion</p>
-            <h2 className={styles.sectionHeadText}>Overview.</h2>
-          </motion.div>
-          <motion.p variants={fadeIn('', '', 0.1, 1)}
-            className='mt-4 text-secondary text-[17px] max-w-5xl leading-[30px]'
-
-            >I'm a passionate software developer with expertise in <strong>C/C++</strong>, <strong>JavaScript</strong>, and <strong>Python</strong>, and hands-on experience with frameworks like <strong>Django</strong> and <strong>React</strong>.<br/> Skilled in <strong>system administration</strong>, <strong>Docker</strong>, and <strong>UNIX environments</strong>, I thrive on building scalable and efficient solutions. A quick learner and team player, I'm excited to tackle real-world challenges and deliver impactful results. Let's create something extraordinary together!
+          <SectionHeader id='about' title='Overview.' />
+          <motion.p variants={reveal()} className={`${styles.body} mt-6 sm:text-lg max-w-prose`}>
+            I&apos;m a passionate software developer with expertise in <Em>C/C++</Em>, <Em>JavaScript</Em>, and{' '}
+            <Em>Python</Em>, and hands-on experience with frameworks like <Em>Django</Em> and <Em>React</Em>. Skilled
+            in <Em>system administration</Em>, <Em>Docker</Em>, and <Em>UNIX environments</Em>, I thrive on building
+            scalable and efficient solutions. A quick learner and team player, I&apos;m excited to tackle real-world
+            challenges and deliver impactful results. Let&apos;s create something extraordinary together!
           </motion.p>
         </div>
         {showGlobe && (
@@ -56,13 +41,12 @@ const About = () => {
           </SceneView>
         )}
       </div>
-      <div
-        className='mt-20 flex flex-wrap justify-center gap-8'
-        >
-          {services.map((service, index) => (
-            <ServiceCard key={service.title} index={index} {...service} />
-          ))}
-      </div>
+
+      <ul className='mt-12 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4'>
+        {services.map((service) => (
+          <ServiceItem key={service.title} {...service} />
+        ))}
+      </ul>
     </>
   )
 }

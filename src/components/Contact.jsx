@@ -1,47 +1,45 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import emailjs from '@emailjs/browser';
 import { motion } from 'framer-motion';
-import { Earth, SceneView } from './canvas';
-import { slideIn } from '../utils/motion';
-import { styles } from '../styles';
+
 import { SectionWrapper } from '../hoc';
+import { reveal } from '../utils/motion';
+import SectionHeader from './SectionHeader';
+import { Earth, SceneView } from './canvas';
+
+const FIELD =
+  'w-full rounded-xl border border-line-strong bg-surface-raised px-5 py-4 font-medium text-foreground ' +
+  'placeholder:text-foreground-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ' +
+  'focus-visible:ring-offset-2 focus-visible:ring-offset-surface';
+
+const EMPTY_FORM = { name: '', email: '', message: '' };
 
 const Contact = () => {
+  const [form, setForm] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(false);
-  const formRef = useRef();
-
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    message: ''
-  });
+  // { type: 'success' | 'error', message } shown in a live region instead of alert()
+  const [status, setStatus] = useState(null);
 
   const handleChange = (e) => {
-    const { target } = e;
-    const { name, value } = target;
-
-    setForm({
-      ...form,
-      [name]: value,
-    });
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate required environment variables
+
     const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
     const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
     const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-    
+
     if (!serviceId || !templateId || !publicKey) {
-      console.error('Missing EmailJS configuration. Please set VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID, and VITE_EMAILJS_PUBLIC_KEY in your .env file.');
-      alert('Configuration error: EmailJS credentials are missing. Please contact the site administrator.');
-      setLoading(false);
+      console.error('Missing EmailJS configuration. Set VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID and VITE_EMAILJS_PUBLIC_KEY in .env.');
+      setStatus({ type: 'error', message: "Message not sent: the contact form isn't configured yet. Please try again later." });
       return;
     }
-    
+
     setLoading(true);
+    setStatus(null);
 
     try {
       await emailjs.send(
@@ -56,94 +54,89 @@ const Contact = () => {
         },
         publicKey
       );
-
-      alert("Thank you. I will get back to you as soon as possible.");
-      setForm({
-        name: "",
-        email: "",
-        message: "",
-      });
+      setStatus({ type: 'success', message: "Message sent. I'll get back to you as soon as possible." });
+      setForm(EMPTY_FORM);
     } catch (error) {
       console.error(error);
-      alert("Ahh, something went wrong. Please try again.");
+      setStatus({ type: 'error', message: "Message not sent. Check your connection and try again." });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className='xl:mt-12 xl:flex-row flex-col flex gap-10 overflow-hidden'>
-      <motion.div
-        variants={slideIn('left', 'tween', 0.2, 1)}
-        className='flex-[0.75] bg-black-100 p-8 rounded-2xl'
-      >
-        <p className={styles.sectionSubText}>Get in touch</p>
-        <h3 className={styles.sectionHeadText}>Contact me.</h3>
-        <form
-          ref={formRef}
-          onSubmit={handleSubmit}
-          className='mt-12 flex flex-col gap-8'
-        >
-          <label className='flex flex-col'>
-            <span className='text-white font-medium mb-4'>Your Name</span>
-            <input
-              type='text'
-              name='name'
-              value={form.name}
-              onChange={handleChange}
-              placeholder="What's your good name?"
-              className='bg-tertiary py-4 px-6 placeholder:text-secondary text-white rounded-lg outline-none border-none font-medium'
-              required
-              aria-label="Your name"
-            />
-          </label>
-          <label className='flex flex-col'>
-            <span className='text-white font-medium mb-4'>Your email</span>
-            <input
-              type='email'
-              name='email'
-              value={form.email}
-              onChange={handleChange}
-              placeholder="What's your web address?"
-              className='bg-tertiary py-4 px-6 placeholder:text-secondary text-white rounded-lg outline-none border-none font-medium'
-              required
-              aria-label="Your email"
-            />
-          </label>
-          <label className='flex flex-col'>
-            <span className='text-white font-medium mb-4'>Your Message</span>
-            <textarea
-              rows={7}
-              name='message'
-              value={form.message}
-              onChange={handleChange}
-              placeholder='What you want to say?'
-              className='bg-tertiary py-4 px-6 placeholder:text-secondary text-white rounded-lg outline-none border-none font-medium'
-              required
-              aria-label="Your message"
-            />
-          </label>
+    <>
+      <SectionHeader id='contact' title='Contact me.' lead='Have a question or an opportunity? Send me a message.' />
 
-          <button
-            type='submit'
-            className='bg-tertiary py-3 px-8 rounded-xl outline-none w-fit text-white font-bold shadow-md shadow-primary hover:bg-tertiary/80 transition-colors'
-            disabled={loading}
-            aria-label="Send message"
-          >
-            {loading ? "Sending..." : "Send"}
-          </button>
-        </form>
-      </motion.div>
+      <div className='mt-12 grid gap-10 xl:grid-cols-2'>
+        <motion.div variants={reveal()} className='rounded-3xl border border-line bg-surface p-6 sm:p-8'>
+          <form onSubmit={handleSubmit} className='flex flex-col gap-6'>
+            <div className='flex flex-col gap-2'>
+              <label htmlFor='contact-name' className='font-medium text-foreground'>Name</label>
+              <input
+                id='contact-name'
+                type='text'
+                name='name'
+                autoComplete='name'
+                value={form.name}
+                onChange={handleChange}
+                className={FIELD}
+                required
+              />
+            </div>
+            <div className='flex flex-col gap-2'>
+              <label htmlFor='contact-email' className='font-medium text-foreground'>Email</label>
+              <input
+                id='contact-email'
+                type='email'
+                name='email'
+                autoComplete='email'
+                placeholder='you@example.com'
+                value={form.email}
+                onChange={handleChange}
+                className={FIELD}
+                required
+              />
+            </div>
+            <div className='flex flex-col gap-2'>
+              <label htmlFor='contact-message' className='font-medium text-foreground'>Message</label>
+              <textarea
+                id='contact-message'
+                rows={6}
+                name='message'
+                placeholder='What would you like to talk about?'
+                value={form.message}
+                onChange={handleChange}
+                className={`${FIELD} resize-y`}
+                required
+              />
+            </div>
 
-      <motion.div
-        variants={slideIn("right", "tween", 0.2, 1)}
-        className='xl:flex-1 xl:h-auto md:h-[550px] h-[350px]'
-      >
-        <SceneView sectionType='earth' label='Rotating 3D globe' className='w-full h-full'>
-          <Earth />
-        </SceneView>
-      </motion.div>
-    </div>
+            <div className='flex flex-wrap items-center gap-4'>
+              <button
+                type='submit'
+                disabled={loading}
+                className='rounded-xl bg-primary px-8 py-3 font-bold text-background transition-colors hover:bg-primary-400 disabled:cursor-wait disabled:opacity-70 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface'
+              >
+                {loading ? 'Sending…' : 'Send message'}
+              </button>
+              <p
+                role='status'
+                className={`text-sm font-medium ${status?.type === 'error' ? 'text-pink-300' : 'text-emerald-300'}`}
+              >
+                {status?.message}
+              </p>
+            </div>
+          </form>
+        </motion.div>
+
+        <motion.div variants={reveal(0.1)} className='h-80 md:h-96 xl:h-auto'>
+          <SceneView sectionType='earth' label='Rotating 3D globe' className='h-full w-full'>
+            <Earth />
+          </SceneView>
+        </motion.div>
+      </div>
+    </>
   );
 };
 

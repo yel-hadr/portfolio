@@ -11,6 +11,8 @@ import ErrorFallback from './ErrorFallback';
 import WebGLFallback from './WebGLFallback';
 import CanvasErrorBoundary from './CanvasErrorBoundary';
 import LoadingProgress from './LoadingProgress';
+import Footer from './Footer';
+import SectionHeader from './SectionHeader';
 
 export {
   Hero,
@@ -29,5 +31,7 @@ export {
   ErrorFallback,
   WebGLFallback,
   CanvasErrorBoundary,
-  LoadingProgress
+  LoadingProgress,
+  Footer,
+  SectionHeader
 };

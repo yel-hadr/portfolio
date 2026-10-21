@@ -17,6 +17,7 @@ import {
   ErrorBoundary,
   WebGLFallback,
   LoadingProgress,
+  Footer,
 } from "./components";
 import { useWebGL } from "./hooks/useWebGL";
 
@@ -60,7 +61,7 @@ const AppContent = () => {
   const reduced = useReducedMotion();
 
   return (
-    <div className="relative bg-primary">
+    <div id="top" className="relative bg-background">
       <LoadingProgress />
 
       {/* Hero backdrop. The image is opaque, so it sits below the canvas or it would hide the 3D. */}
@@ -112,6 +113,8 @@ const AppContent = () => {
         <ErrorBoundary sectionName="contact">
           <Contact />
         </ErrorBoundary>
+
+        <Footer />
       </div>
     </div>
   );

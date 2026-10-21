@@ -1,65 +1,56 @@
 import { VerticalTimeline, VerticalTimelineElement } from "react-vertical-timeline-component"
-import { motion } from "framer-motion"
 import 'react-vertical-timeline-component/style.min.css'
-import { styles } from "../styles"
+
 import { experiences } from "../constans"
 import { SectionWrapper } from "../hoc"
-import { textVariant } from "../utils/motion"
+import SectionHeader from "./SectionHeader"
 
-const ExperienceCard = ({ experience, index }) => {
+// The timeline library styles via inline props, so token values are repeated here
+// (surface #0e0b22, line rgb(255 255 255 / 0.1)); keep in sync with tailwind.config.js.
+const CARD_STYLE = {
+  background: '#0e0b22',
+  color: '#f2f1f7',
+  border: '1px solid rgb(255 255 255 / 0.1)',
+  borderRadius: '1.5rem',
+  boxShadow: 'none',
+  padding: '1.5rem',
+}
+
+const ExperienceCard = ({ experience }) => {
   return (
     <VerticalTimelineElement
-      contentStyle={{
-        background: '#1d1836',
-        color: '#fff',
-      }}
-      contentArrowStyle={{ borderRight: "7px solid  #232631" }}
+      contentStyle={CARD_STYLE}
+      contentArrowStyle={{ borderRight: '7px solid rgb(255 255 255 / 0.1)' }}
       date={experience.date}
-      iconStyle={{ background: experience.iconBg }}
-      icon={
-        <div className='flex justify-center items-center w-full h-full'>
-        </div>
-      }
+      dateClassName='!text-foreground-muted !opacity-100 font-medium'
+      iconStyle={{ background: experience.iconBg, boxShadow: '0 0 0 4px #050816, 0 0 0 5px rgb(255 255 255 / 0.1)' }}
     >
-      <div>
-        <h3 className='text-white text-[24px] font-bold'>{experience.title}</h3>
-        <p
-          className='text-secondary text-[16px] font-semibold'
-          style={{ margin: 0 }}
-        >
-          {experience.company_name}
-        </p>
-      </div>
-      <ul className='mt-5 list-disc ml-5 space-y-2'>
-        {experience.points.map((point, index) => (
-          <li
-            key={`experience-point-${index}`}
-            className='text-white-100 text-[14px] pl-1 tracking-wider'
-          >
+      <h3 className='text-foreground text-xl sm:text-2xl font-bold'>{experience.title}</h3>
+      {experience.company_name && (
+        <p className='text-foreground-muted font-semibold !m-0'>{experience.company_name}</p>
+      )}
+      <ul className='mt-4 list-disc ml-5 space-y-2'>
+        {experience.points.map((point) => (
+          <li key={point} className='text-foreground-muted text-sm sm:text-base !font-normal leading-relaxed pl-1'>
             {point}
           </li>
         ))}
       </ul>
     </VerticalTimelineElement>
-
   )
 }
 
 const Experience = () => {
   return (
     <>
-      <motion.div variants={textVariant()} >
-        <p className={styles.sectionSubText}>what I've done so far as a 1337 student</p>
-        <h2 className={styles.sectionHeadText}>1337 Experience.</h2>
-      </motion.div>
-      <div
-        className='mt-10 flex flex-col' 
-        >
-          <VerticalTimeline>
-            {experiences.map((experience, index) => (
-              <ExperienceCard key={index} experience={experience}/>
-            ))}
-          </VerticalTimeline>
+      <SectionHeader id='experience' title='1337 Experience.' lead="What I've done so far as a 1337 student." />
+      <div className='mt-12 flex flex-col'>
+        {/* animate={false}: entries stay visible instead of popping in on scroll */}
+        <VerticalTimeline animate={false} lineColor='rgb(255 255 255 / 0.1)'>
+          {experiences.map((experience) => (
+            <ExperienceCard key={experience.title} experience={experience} />
+          ))}
+        </VerticalTimeline>
       </div>
     </>
   )

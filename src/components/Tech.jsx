@@ -1,22 +1,27 @@
+import { motion } from 'framer-motion'
+
 import { SectionWrapper } from '../hoc'
 import { technologies } from '../constans'
+import { reveal } from '../utils/motion'
+import SectionHeader from './SectionHeader'
 import { Ball, SceneView } from './canvas'
 
 const Tech = () => {
   return (
-    <div className='flex flex-wrap flex-row justify-center gap-10'>
-      {technologies.map((tech) => (
-        <SceneView
-          key={tech.name}
-          sectionType='ball'
-          label={tech.name}
-          className='w-28 h-28'
-          fallback={<span className='flex h-full items-center justify-center text-secondary'>{tech.name}</span>}
-        >
-          <Ball imgUrl={tech.icon} />
-        </SceneView>
-      ))}
-    </div>
+    <>
+      <SectionHeader id='tech' title='Tech stack.' lead='Languages and tools I work with.' />
+      <motion.ul variants={reveal()} className='mt-12 flex flex-wrap justify-center gap-x-6 gap-y-8 sm:gap-x-10'>
+        {technologies.map((tech) => (
+          <li key={tech.name} className='flex w-24 flex-col items-center gap-2 sm:w-28'>
+            {/* The visible name below labels the ball, so the 3D view itself is decorative */}
+            <SceneView sectionType='ball' className='h-24 w-24 sm:h-28 sm:w-28'>
+              <Ball imgUrl={tech.icon} />
+            </SceneView>
+            <span className='text-sm font-medium text-foreground-muted'>{tech.name}</span>
+          </li>
+        ))}
+      </motion.ul>
+    </>
   )
 }
 

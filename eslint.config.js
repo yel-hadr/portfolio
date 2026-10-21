@@ -23,34 +23,8 @@ const R3F_PROPS = [
 // PostToolUse hook pass on the current baseline. Delete entries as files are cleaned up.
 const LEGACY = [
   {
-    files: [
-      'src/components/About.jsx',
-      'src/components/ErrorFallback.jsx',
-      'src/components/Experience.jsx',
-      'src/components/Navbar.jsx',
-      'src/components/WebGLFallback.jsx',
-      'src/components/Works.jsx',
-    ],
-    rules: { 'no-unused-vars': 'warn' },
-  },
-  {
-    files: [
-      'src/components/About.jsx',
-      'src/components/ErrorFallback.jsx',
-      'src/components/Experience.jsx',
-      'src/components/Hero.jsx',
-      'src/components/WebGLFallback.jsx',
-    ],
-    rules: { 'react/no-unescaped-entities': 'warn' },
-  },
-  {
     files: ['src/components/Navbar.jsx'],
-    rules: { 'react/display-name': 'warn' },
-  },
-  {
-    // ServiceCard passes react-tilt `options` to a plain <div> (a real bug, fix in place)
-    files: ['src/components/About.jsx'],
-    rules: { 'react/no-unknown-property': ['warn', { ignore: [] }] },
+    rules: { 'no-unused-vars': 'warn', 'react/display-name': 'warn' },
   },
 ]
 

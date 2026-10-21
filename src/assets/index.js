@@ -30,6 +30,7 @@ import ft_irc from "./ft_irc.png";
 import cub3D_42 from "./cub3D_42.png";
 import minishell from "./minishell.png";
 import Inception from "./Inception.png";
+import projectPlaceholder from "./project-placeholder.svg";
 export {
   logo,
   backend,
@@ -63,4 +64,5 @@ export {
   minishell,
   ft_irc,
   Inception,
+  projectPlaceholder,
 };
