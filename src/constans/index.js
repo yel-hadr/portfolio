@@ -3,15 +3,18 @@ import {
   backend,
   creator,
   web,
-  javascript,
-  html,
-  css,
-  reactjs,
-  tailwind,
-  git,
+  aws,
+  terraform,
+  ansible,
+  kubernetes,
+  argocd,
   docker,
-  cpp,
+  linux,
+  nginx,
   python,
+  cpp,
+  git,
+  reactjs,
 } from '../assets';
 
 // Name, headline and summary, as on the resume. Used by the Hero, About and Footer.
@@ -68,40 +71,52 @@ const services = [
 
 const technologies = [
   {
-    name: 'C++',
-    icon: cpp,
+    name: 'AWS',
+    icon: aws,
   },
   {
-    name: 'Python',
-    icon: python,
+    name: 'Terraform',
+    icon: terraform,
   },
   {
-    name: 'Git',
-    icon: git,
+    name: 'Ansible',
+    icon: ansible,
+  },
+  {
+    name: 'Kubernetes',
+    icon: kubernetes,
+  },
+  {
+    name: 'Argo CD',
+    icon: argocd,
   },
   {
     name: 'Docker',
     icon: docker,
   },
   {
-    name: 'HTML 5',
-    icon: html,
+    name: 'Linux',
+    icon: linux,
   },
   {
-    name: 'CSS 3',
-    icon: css,
+    name: 'Nginx',
+    icon: nginx,
   },
   {
-    name: 'JavaScript',
-    icon: javascript,
+    name: 'Python',
+    icon: python,
   },
   {
-    name: 'React JS',
+    name: 'C++',
+    icon: cpp,
+  },
+  {
+    name: 'Git',
+    icon: git,
+  },
+  {
+    name: 'React',
     icon: reactjs,
-  },
-  {
-    name: 'Tailwind CSS',
-    icon: tailwind,
   },
 ];
 

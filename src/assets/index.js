@@ -16,6 +16,13 @@ import reactjs from './tech/reactjs.webp';
 import tailwind from './tech/tailwind.webp';
 import cpp from './tech/cpp.webp';
 import python from './tech/python.webp';
+import aws from './tech/aws.webp';
+import terraform from './tech/terraform.webp';
+import ansible from './tech/ansible.webp';
+import kubernetes from './tech/kubernetes.webp';
+import argocd from './tech/argocd.webp';
+import linux from './tech/linux.webp';
+import nginx from './tech/nginx.webp';
 
 import ft_irc from './ft_irc.webp';
 import cub3D_42 from './cub3D_42.webp';
@@ -42,6 +49,13 @@ export {
   tailwind,
   cpp,
   python,
+  aws,
+  terraform,
+  ansible,
+  kubernetes,
+  argocd,
+  linux,
+  nginx,
   cub3D_42,
   minishell,
   ft_irc,

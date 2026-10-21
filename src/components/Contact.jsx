@@ -54,9 +54,9 @@ const Contact = () => {
         templateId,
         {
           from_name: form.name,
-          to_name: 'Youssef El hadraoui',
+          to_name: 'Youssef El Hadraoui',
           from_email: form.email,
-          to_email: 'yousefelhadraoui99@gmail.com',
+          to_email: 'youssefelhadraoui99@gmail.com',
           message: form.message,
         },
         publicKey

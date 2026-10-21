@@ -9,7 +9,11 @@ import { Ball, SceneView } from './canvas';
 const Tech = () => {
   return (
     <>
-      <SectionHeader id='tech' title='Tech stack.' lead='Languages and tools I work with.' />
+      <SectionHeader
+        id='tech'
+        title='Tech stack.'
+        lead='Cloud, infrastructure and the languages I build with.'
+      />
       <motion.ul
         variants={reveal()}
         className='mt-12 flex flex-wrap justify-center gap-x-6 gap-y-8 sm:gap-x-10'
