@@ -1,22 +1,21 @@
-import React from 'react'
-import { motion } from 'framer-motion'
 import { SectionWrapper } from '../hoc'
 import { technologies } from '../constans'
-import { BallCanvas } from './canvas'
-
+import { Ball, SceneView } from './canvas'
 
 const Tech = () => {
   return (
-    <div
-      className='flex flex-wrap flex-row justify-center gap-10'>
-        {technologies.map((tech) =>(
-          <div className='w-28  h-28'
-            key={tech.name}>
-              <BallCanvas icon={tech.icon} label={`${tech.name} logo`}/>
-
-          </div>
-        ))}
-
+    <div className='flex flex-wrap flex-row justify-center gap-10'>
+      {technologies.map((tech) => (
+        <SceneView
+          key={tech.name}
+          sectionType='ball'
+          label={tech.name}
+          className='w-28 h-28'
+          fallback={<span className='flex h-full items-center justify-center text-secondary'>{tech.name}</span>}
+        >
+          <Ball imgUrl={tech.icon} />
+        </SceneView>
+      ))}
     </div>
   )
 }

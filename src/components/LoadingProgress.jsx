@@ -1,38 +1,27 @@
-import React from 'react';
+import { useProgress } from '@react-three/drei';
 
 /**
- * LoadingProgress - A sleek, technical loading bar for 3D assets.
- * Displays progress percentage with a modern DevOps/SaaS aesthetic.
+ * LoadingProgress - slim, non-blocking progress bar for 3D assets.
+ * The page content is plain DOM and usable immediately; models fade in as they arrive.
+ * Owns its useProgress subscription so progress events only re-render this bar.
  */
-const LoadingProgress = ({ progress }) => {
+const LoadingProgress = () => {
+  const { active, progress } = useProgress();
+  if (!active || progress >= 100) return null;
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-slate-950 z-50">
-      <div className="w-full max-w-md px-8">
-        <div className="mb-4 flex justify-between items-end">
-          <h2 className="text-white font-mono text-lg">Loading System Assets</h2>
-          <span className="text-cyan-400 font-mono text-xl font-bold">{progress.toFixed(0)}%</span>
-        </div>
-        
-        {/* Progress Bar Track */}
-        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-          {/* Progress Fill */}
-          <div 
-            className="h-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 transition-all duration-150 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        
-        {/* Loading Dots Animation */}
-        <div className="mt-4 flex justify-center space-x-2">
-          <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-          <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-        </div>
-        
-        <p className="text-slate-500 text-xs font-mono mt-6 text-center">
-          Initializing WebGL Context • Loading Textures • Compiling Shaders
-        </p>
-      </div>
+    <div
+      role="progressbar"
+      aria-label="Loading 3D scenes"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(progress)}
+      className="fixed top-0 inset-x-0 z-[60] h-1 bg-white/10"
+    >
+      <div
+        className="h-full bg-[#FF6500] transition-[width] duration-200 ease-out"
+        style={{ width: `${progress}%` }}
+      />
     </div>
   );
 };

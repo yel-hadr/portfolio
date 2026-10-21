@@ -25,16 +25,11 @@ const LEGACY = [
   {
     files: [
       'src/components/About.jsx',
-      'src/components/CanvasErrorBoundary.jsx',
       'src/components/ErrorFallback.jsx',
       'src/components/Experience.jsx',
-      'src/components/LoadingProgress.jsx',
       'src/components/Navbar.jsx',
-      'src/components/Tech.jsx',
       'src/components/WebGLFallback.jsx',
       'src/components/Works.jsx',
-      'src/components/canvas/Ball.jsx',
-      'src/utils/webgl.js',
     ],
     rules: { 'no-unused-vars': 'warn' },
   },

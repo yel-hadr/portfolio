@@ -1,9 +1,18 @@
 import { motion } from 'framer-motion';
 import { styles } from '../styles';
+import { Computers, SceneView } from './canvas';
 
 const Hero = () => {
   return (
     <section id="hero-section" className='relative w-full h-screen mx-auto'>
+      <SceneView
+        sectionType='hero'
+        label='3D model of a desk setup with a computer, keyboard and monitor'
+        className='absolute inset-0 pointer-events-none'
+      >
+        <Computers />
+      </SceneView>
+
       <div
         className={`${styles.paddingX} absolute inset-0 top-[120px] sm:top-[120px] xs:top-[100px] max-w-7xl mx-auto flex flex-row items-start gap-5 z-20 pointer-events-auto`}
       >

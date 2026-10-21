@@ -1,49 +1,27 @@
 import { BrowserRouter } from "react-router-dom";
-import { useState, useEffect, Suspense, useRef } from "react";
-import { Canvas } from "@react-three/fiber";
-import { View, Preload, OrbitControls, useProgress } from "@react-three/drei";
+import { useEffect } from "react";
+import { Canvas, useThree } from "@react-three/fiber";
+import { View } from "@react-three/drei";
+import { useReducedMotion } from "framer-motion";
 
-import { 
-  About, 
-  Contact, 
-  Experience, 
-  Hero, 
-  Navbar, 
-  Tech, 
-  Works, 
-  StarsCanvas, 
-  Computers,
-  Earth,
+import {
+  About,
+  Contact,
+  Experience,
+  Hero,
+  Navbar,
+  Tech,
+  Works,
+  Stars,
+  SceneView,
   ErrorBoundary,
   WebGLFallback,
-  CanvasErrorBoundary,
-  LoadingProgress
+  LoadingProgress,
 } from "./components";
 import { useWebGL } from "./hooks/useWebGL";
 
 function App() {
-  const { supported: glSupported, loading } = useWebGL();
-  const [isMobile, setIsMobile] = useState(false);
-  
-  // Refs for view tracking
-  const heroViewRef = useRef(null);
-  const aboutViewRef = useRef(null);
-  
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 768px)');
-    setIsMobile(mediaQuery.matches);
-    const handler = (e) => setIsMobile(e.matches);
-    mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="w-full h-screen flex items-center justify-center bg-primary">
-        <div className="text-white text-xl">Loading portfolio...</div>
-      </div>
-    );
-  }
+  const { supported: glSupported } = useWebGL();
 
   if (!glSupported) {
     return <WebGLFallback />;
@@ -57,107 +35,80 @@ function App() {
         v7_relativeSplatPath: true,
       }}
     >
-      <AppContent 
-        isMobile={isMobile}
-        heroViewRef={heroViewRef}
-        aboutViewRef={aboutViewRef}
-      />
+      <AppContent />
     </BrowserRouter>
   );
 }
 
-/**
- * AppContent - Separated component to access useProgress hook inside Canvas context
- */
-const AppContent = ({ isMobile, heroViewRef, aboutViewRef }) => {
-  const { progress } = useProgress();
-  const showLoader = progress < 100;
+// With frameloop="demand" (reduced motion) nothing animates, but the fixed canvas still has
+// to redraw when the page scrolls so each View follows its DOM box.
+const InvalidateOnScroll = () => {
+  const invalidate = useThree((state) => state.invalidate);
+  useEffect(() => {
+    const onChange = () => invalidate();
+    window.addEventListener("scroll", onChange, { passive: true });
+    window.addEventListener("resize", onChange);
+    return () => {
+      window.removeEventListener("scroll", onChange);
+      window.removeEventListener("resize", onChange);
+    };
+  }, [invalidate]);
+  return null;
+};
+
+const AppContent = () => {
+  const reduced = useReducedMotion();
 
   return (
-    <div className="relative z-0 bg-primary">
-      {/* Loading Progress Bar */}
-      {showLoader && <LoadingProgress progress={progress} />}
-      
-      {/* Single global Canvas for all 3D content with Error Boundaries */}
+    <div className="relative bg-primary">
+      <LoadingProgress />
+
+      {/* Hero backdrop. The image is opaque, so it sits below the canvas or it would hide the 3D. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-screen bg-hero-pattern bg-cover bg-no-repeat bg-center"
+      />
+
+      {/* One WebGL context for every 3D scene: each <SceneView> in the page tunnels its
+          scene into <View.Port />. Fixed behind the content, decorative for assistive tech. */}
       <Canvas
-        className="fixed inset-0 w-full h-full pointer-events-none"
-        frameloop="demand"
+        style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }}
+        frameloop={reduced ? "demand" : "always"}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
+        aria-hidden="true"
       >
-        <Suspense fallback={null}>
-          <Preload all />
-          
-          {/* Hero Section View - Computer Model with independent camera */}
-          <CanvasErrorBoundary sectionType="hero">
-            <View track={heroViewRef} className="top-0 left-0 w-full h-screen" frames={1}>
-              <group position={[0, 0, 0]}>
-                <Computers isMobile={isMobile} />
-              </group>
-              <OrbitControls
-                enableZoom={false}
-                maxPolarAngle={Math.PI / 2}
-                minPolarAngle={Math.PI / 2}
-                enablePan={false}
-                autoRotate
-                autoRotateSpeed={0.5}
-              />
-            </View>
-          </CanvasErrorBoundary>
-          
-          {/* About Section View - Earth Model with independent camera */}
-          <CanvasErrorBoundary sectionType="earth">
-            <View track={aboutViewRef} className="top-0 left-0 w-full h-screen" frames={1}>
-              <group position={[0, 0, 0]}>
-                <Earth />
-              </group>
-              <OrbitControls
-                autoRotate
-                enableZoom={false}
-                maxPolarAngle={Math.PI / 2}
-                minPolarAngle={Math.PI / 2}
-                enablePan={false}
-                autoRotateSpeed={1}
-              />
-            </View>
-          </CanvasErrorBoundary>
-          
-          {/* Background Stars - Shared across all views */}
-          <CanvasErrorBoundary sectionType="stars">
-            <StarsCanvas />
-          </CanvasErrorBoundary>
-        </Suspense>
+        <View.Port />
+        {reduced && <InvalidateOnScroll />}
       </Canvas>
 
-      {/* HTML Content Layer */}
-      <div className="bg-hero-pattern bg-cover bg-no-repeat bg-center relative z-10">
+      {/* Star field behind everything (drawn first, index 1) */}
+      <SceneView sectionType="stars" index={1} className="fixed inset-0 pointer-events-none">
+        <Stars />
+      </SceneView>
+
+      <div className="relative z-10">
         <Navbar />
-        {/* Pass ref to Hero section for view tracking */}
-        <div ref={heroViewRef}>
+        <ErrorBoundary sectionName="hero">
           <Hero />
-        </div>
-      </div>
-      
-      {/* Pass ref to About section for view tracking */}
-      <div ref={aboutViewRef}>
+        </ErrorBoundary>
+
         <ErrorBoundary sectionName="about">
           <About />
         </ErrorBoundary>
-      </div>
-      
-      <ErrorBoundary sectionName="experience">
-        <Experience />
-      </ErrorBoundary>
-      
-      <ErrorBoundary sectionName="tech">
-        <Tech />
-      </ErrorBoundary>
-      
-      <ErrorBoundary sectionName="works">
-        <Works />
-      </ErrorBoundary>
-      
-      <div className="relative z-10">
+
+        <ErrorBoundary sectionName="experience">
+          <Experience />
+        </ErrorBoundary>
+
+        <ErrorBoundary sectionName="tech">
+          <Tech />
+        </ErrorBoundary>
+
+        <ErrorBoundary sectionName="works">
+          <Works />
+        </ErrorBoundary>
+
         <ErrorBoundary sectionName="contact">
           <Contact />
         </ErrorBoundary>

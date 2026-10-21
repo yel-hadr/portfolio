@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import emailjs from '@emailjs/browser';
 import { motion } from 'framer-motion';
-import { EarthCanvas } from './canvas';
+import { Earth, SceneView } from './canvas';
 import { slideIn } from '../utils/motion';
 import { styles } from '../styles';
 import { SectionWrapper } from '../hoc';
@@ -72,7 +72,7 @@ const Contact = () => {
   };
 
   return (
-    <div className='xl:mt-12 xl:flex-row flex-col-reverse flex gap-10 overflow-hidden'>
+    <div className='xl:mt-12 xl:flex-row flex-col flex gap-10 overflow-hidden'>
       <motion.div
         variants={slideIn('left', 'tween', 0.2, 1)}
         className='flex-[0.75] bg-black-100 p-8 rounded-2xl'
@@ -139,7 +139,9 @@ const Contact = () => {
         variants={slideIn("right", "tween", 0.2, 1)}
         className='xl:flex-1 xl:h-auto md:h-[550px] h-[350px]'
       >
-        <EarthCanvas />
+        <SceneView sectionType='earth' label='Rotating 3D globe' className='w-full h-full'>
+          <Earth />
+        </SceneView>
       </motion.div>
     </div>
   );

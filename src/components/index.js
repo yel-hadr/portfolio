@@ -1,4 +1,4 @@
-import { Earth, Computers, BallCanvas, Stars as StarsCanvas } from './canvas';
+import { Ball, Computers, Earth, SceneView, Stars } from './canvas';
 import Hero from './Hero';
 import Navbar from './Navbar';
 import About from './About';
@@ -20,10 +20,11 @@ export {
   Experience,
   Works,
   Contact,
-  Earth,
+  Ball,
   Computers,
-  BallCanvas,
-  StarsCanvas,
+  Earth,
+  SceneView,
+  Stars,
   ErrorBoundary,
   ErrorFallback,
   WebGLFallback,

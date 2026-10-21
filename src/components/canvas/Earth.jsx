@@ -1,27 +1,26 @@
-import { useRef } from "react";
+import { useMemo } from "react";
 import { useGLTF } from "@react-three/drei";
 
-import { useCleanup } from "../../hooks/useCleanup";
+import { AutoRotate, ViewCamera } from "./helpers";
+
+const MODEL = "./planet/scene.gltf";
 
 const Earth = () => {
-  const ref = useRef();
-  const { scene } = useGLTF("./planet/scene.gltf");
-  
-  // Use cleanup hook for proper disposal on unmount
-  useCleanup(ref, [scene]);
+  const { scene } = useGLTF(MODEL);
+  // useGLTF returns one cached scene; an Object3D can only have one parent, so every
+  // mounted Earth (About and Contact) needs its own clone. Geometry and materials stay shared.
+  const earth = useMemo(() => scene.clone(), [scene]);
 
   return (
-    <primitive 
-      ref={ref} 
-      object={scene} 
-      scale={2.5} 
-      position-y={0} 
-      rotation-y={0} 
-    />
+    <>
+      <ViewCamera position={[-4.33, 0, 6.5]} fov={45} near={0.1} far={200} />
+      <AutoRotate speed={0.1}>
+        <primitive object={earth} scale={2.5} />
+      </AutoRotate>
+    </>
   );
 };
 
-// Preload the model for faster initial load
-useGLTF.preload("./planet/scene.gltf");
+useGLTF.preload(MODEL);
 
 export default Earth;

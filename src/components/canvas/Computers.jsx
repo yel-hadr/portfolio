@@ -1,51 +1,56 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
-import * as THREE from "three";
+import { useReducedMotion } from "framer-motion";
+import { MathUtils } from "three";
 
-import { useCleanup } from "../../hooks/useCleanup";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { AutoRotate, ViewCamera } from "./helpers";
 
-const Computers = ({ isMobile }) => {
-  const ref = useRef();
-  const { scene } = useGLTF("./desktop_pc/scene.gltf");
-  
-  // Use cleanup hook for proper disposal on unmount
-  useCleanup(ref, [scene]);
+const MODEL = "./desktop_pc/scene.gltf";
 
-  // Mouse parallax effect for desktop
-  useFrame(({ mouse }) => {
-    if (ref.current && !isMobile) {
-      ref.current.rotation.y = THREE.MathUtils.lerp(
-        ref.current.rotation.y,
-        mouse.x * 0.05,
-        0.05
-      );
-    }
+const Computers = () => {
+  const { scene } = useGLTF(MODEL);
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const reduced = useReducedMotion();
+  const parallaxRef = useRef();
+  const pointerX = useRef(0);
+
+  // Subtle mouse parallax on desktop. The Canvas ignores pointer events, so read them from window.
+  useEffect(() => {
+    const onMove = (e) => {
+      pointerX.current = (e.clientX / window.innerWidth) * 2 - 1;
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => window.removeEventListener("pointermove", onMove);
+  }, []);
+
+  useFrame(() => {
+    if (!parallaxRef.current) return;
+    const target = isMobile || reduced ? 0 : pointerX.current * 0.05;
+    parallaxRef.current.rotation.y = MathUtils.lerp(parallaxRef.current.rotation.y, target, 0.05);
   });
 
   return (
-    <mesh ref={ref}>
-      <hemisphereLight intensity={0.8} groundColor="black" />
-      <pointLight intensity={1} />
-      <spotLight
-        position={[-20, 50, 10]}
-        angle={0.12}
-        penumbra={1}
-        intensity={1}
-        castShadow
-        shadow-mapSize={1024}
-      />
-      <primitive
-        object={scene}
-        scale={isMobile ? 0.5 : 0.75}
-        position={isMobile ? [0, -3, -1.5] : [0, -2.9, -1.5]}
-        rotation={[0, -0.1, -0.1]}
-      />
-    </mesh>
+    <>
+      <ViewCamera position={[20, 0, 5]} fov={25} />
+      <AutoRotate speed={0.05}>
+        <group ref={parallaxRef}>
+          <hemisphereLight intensity={0.8} groundColor="black" />
+          <pointLight intensity={1} />
+          <spotLight position={[-20, 50, 10]} angle={0.12} penumbra={1} intensity={1} />
+          <primitive
+            object={scene}
+            scale={isMobile ? 0.5 : 0.75}
+            position={isMobile ? [0, -3, -1.5] : [0, -2.9, -1.5]}
+            rotation={[0, -0.1, -0.1]}
+          />
+        </group>
+      </AutoRotate>
+    </>
   );
 };
 
-// Preload the model for faster initial load
-useGLTF.preload("./desktop_pc/scene.gltf");
+useGLTF.preload(MODEL);
 
 export default Computers;
