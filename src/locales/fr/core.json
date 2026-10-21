@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "title": "Youssef El Hadraoui | Portfolio",
+    "description": "Youssef El Hadraoui (Jebril), ingénieur logiciel en infrastructure cloud et DevOps : expérience, projets, formation et contact."
+  },
+  "skipLink": "Aller au contenu",
+  "nav": {
+    "main": "Principal",
+    "home": "Youssef El Hadraoui, retour en haut",
+    "about": "À propos",
+    "experience": "Expérience",
+    "works": "Projets",
+    "education": "Formation",
+    "contact": "Contact",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu",
+    "language": "Langue",
+    "switchToEnglish": "Switch to English",
+    "switchToFrench": "Passer en français",
+    "themeToLight": "Passer en mode clair",
+    "themeToDark": "Passer en mode sombre",
+    "openTerminal": "Ouvrir le terminal",
+    "terminalShortcut": "Raccourci : Ctrl + `",
+    "til": "J’ai appris"
+  },
+  "person": {
+    "title": "Ingénieur logiciel | Infrastructure cloud & DevOps",
+    "summary": "Ingénieur logiciel spécialisé dans l’architecture backend multi-tenant, l’infrastructure cloud et l’automatisation DevOps. Expérience confirmée dans la conception de microservices évolutifs, la mise en place de pipelines de livraison GitOps et la gestion d’environnements conteneurisés. Passionné par l’automatisation de la configuration des serveurs, l’observabilité et l’intégration d’assistants de code IA dans les workflows de développement modernes."
+  },
+  "hero": {
+    "seeProjects": "Voir mes projets",
+    "getInTouch": "Me contacter",
+    "portraitAlt": "Portrait de Youssef El Hadraoui"
+  },
+  "resume": {
+    "label": "Télécharger mon CV",
+    "aria": "Télécharger mon CV en PDF"
+  },
+  "about": {
+    "title": "À propos.",
+    "whatIDo": "Ce que je fais",
+    "services": {
+      "backend": "Architecture backend",
+      "cloud": "Infrastructure cloud",
+      "devops": "DevOps & GitOps",
+      "automation": "Automatisation & observabilité"
+    }
+  },
+  "experience": {
+    "title": "Expérience.",
+    "lead": "Là où je construis des backends et l’infrastructure qui les fait tourner.",
+    "items": {
+      "legaliox": {
+        "title": "Lead Backend & responsable de l’infrastructure DevOps",
+        "points": [
+          "Je dirige le backend de Legaliox, une plateforme SaaS juridique multi-tenant.",
+          "Je conçois et développe l’API et sa logique métier pour chaque tenant.",
+          "Je gère l’infrastructure DevOps sur laquelle la plateforme est construite, livrée et hébergée."
+        ]
+      },
+      "wepartner": {
+        "title": "Stagiaire ingénieur logiciel",
+        "points": ["Développement d’un agent d’IA qui analyse les CV."]
+      }
+    }
+  },
+  "tech": {
+    "title": "Stack technique.",
+    "lead": "Le cloud, l’infrastructure et les langages avec lesquels je construis."
+  },
+  "works": {
+    "title": "Projets.",
+    "lead": "Projets d’infrastructure, de réseau et de Kubernetes, avec un lien vers le code source lorsqu’il est public.",
+    "technologies": "Technologies",
+    "viewSource": "Voir le code",
+    "viewSourceSr": " du projet {name} sur GitHub (s’ouvre dans un nouvel onglet)",
+    "viewArchitecture": "Voir l’architecture",
+    "viewArchitectureSr": " du projet {name}",
+    "items": {
+      "badass": {
+        "name": "BADASS : architecture réseau",
+        "description": "Conception d’un réseau de data center : overlays VXLAN avec un plan de contrôle BGP EVPN, routés avec FRRouting."
+      },
+      "cloud1": {
+        "name": "Cloud-1 : automatisation",
+        "description": "Déploiement automatisé d’une stack WordPress et MariaDB sur AWS : Terraform provisionne l’infrastructure et Ansible configure l’hôte."
+      },
+      "iot": {
+        "name": "Inception-of-Things",
+        "description": "Kubernetes de A à Z : clusters K3s sur des VM Vagrant, ingress Traefik avec routage par nom d’hôte, puis K3d avec Argo CD qui déploie depuis Git."
+      },
+      "portfolio": {
+        "name": "Portfolio 3D interactif",
+        "description": "Ce site : React avec des scènes React Three Fiber partageant un seul canvas WebGL, un fond animé de vagues et des design tokens Tailwind."
+      }
+    }
+  },
+  "education": {
+    "title": "Formation.",
+    "items": {
+      "paris42": {
+        "degree": "RNCP niveau 7, Architecte en systèmes d’information et réseaux",
+        "date": "Septembre 2026",
+        "points": []
+      },
+      "school1337": {
+        "degree": "Tronc commun",
+        "date": "2022 – 2024",
+        "points": [
+          "Cursus entre pairs, par projets : C et C++, processus et signaux UNIX, réseau, graphisme et conteneurs avec Docker."
+        ]
+      }
+    }
+  },
+  "contact": {
+    "title": "Me contacter.",
+    "lead": "Une question ou une opportunité ? Envoyez-moi un message.",
+    "required": "Tous les champs sont obligatoires.",
+    "name": "Nom",
+    "email": "E-mail",
+    "message": "Message",
+    "emailPlaceholder": "vous@exemple.com",
+    "messagePlaceholder": "De quoi aimeriez-vous parler ?",
+    "send": "Envoyer le message",
+    "sending": "Envoi…",
+    "sent": "Message envoyé. Je vous répondrai dès que possible.",
+    "notConfigured": "Message non envoyé : le formulaire de contact n’est pas encore configuré. Réessayez plus tard.",
+    "failed": "Message non envoyé. Vérifiez votre connexion et réessayez."
+  },
+  "footer": {
+    "nav": "Pied de page",
+    "github": "GitHub",
+    "newTab": " (s’ouvre dans un nouvel onglet)",
+    "backToTop": "Retour en haut",
+    "rights": "© {year} {name}"
+  },
+  "webgl": {
+    "title": "Les scènes 3D sont désactivées",
+    "failed": "Les scènes 3D n’ont pas pu se charger sur cet appareil, des images fixes sont affichées à la place.",
+    "unsupported": "Votre navigateur ou votre appareil ne prend pas en charge WebGL 2 : le globe 3D et les icônes de technologies interactifs ne sont pas affichés.",
+    "rest": "Le reste de la page fonctionne normalement.",
+    "howTo": "Comment les activer",
+    "steps": [
+      "Activez l’accélération matérielle dans les réglages du navigateur",
+      "Mettez à jour vos pilotes graphiques",
+      "Essayez un autre navigateur (Chrome, Firefox, Edge, Safari)",
+      "Vérifiez que WebGL est activé dans votre navigateur"
+    ],
+    "retry": "Relancer la détection"
+  },
+  "error": {
+    "title": "La section {section} n’a pas pu se charger",
+    "body": "Rechargez la section pour réessayer.",
+    "reload": "Recharger la section",
+    "details": "Détails de l’erreur (pour les développeurs)"
+  },
+  "loading": "Chargement des scènes 3D"
+}

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import emailjs from '@emailjs/browser';
 import { motion } from 'framer-motion';
 
 import { styles } from '../styles';
@@ -7,6 +6,7 @@ import { SectionWrapper } from '../hoc';
 import { reveal } from '../utils/motion';
 import SectionHeader from './SectionHeader';
 import { Earth, SceneView } from './canvas';
+import { useI18n } from '../i18n/context';
 
 const FIELD =
   'w-full rounded-xl border border-line-strong bg-surface-raised px-5 py-4 font-medium text-foreground ' +
@@ -16,9 +16,11 @@ const FIELD =
 const EMPTY_FORM = { name: '', email: '', message: '' };
 
 const Contact = () => {
+  const { t } = useI18n();
   const [form, setForm] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(false);
-  // { type: 'success' | 'error', message } shown in a live region instead of alert()
+  // { type: 'success' | 'error', key } shown in a live region instead of alert(); a key, not
+  // text, so the message follows a language switch
   const [status, setStatus] = useState(null);
 
   const handleChange = (e) => {
@@ -40,7 +42,7 @@ const Contact = () => {
       );
       setStatus({
         type: 'error',
-        message: "Message not sent: the contact form isn't configured yet. Please try again later.",
+        key: 'contact.notConfigured',
       });
       return;
     }
@@ -49,6 +51,9 @@ const Contact = () => {
     setStatus(null);
 
     try {
+      // Loaded on send only: the library reads localStorage at import time, which throws when
+      // the visitor blocks site data and would otherwise blank the whole page
+      const { default: emailjs } = await import('@emailjs/browser');
       await emailjs.send(
         serviceId,
         templateId,
@@ -63,14 +68,14 @@ const Contact = () => {
       );
       setStatus({
         type: 'success',
-        message: "Message sent. I'll get back to you as soon as possible.",
+        key: 'contact.sent',
       });
       setForm(EMPTY_FORM);
     } catch (error) {
       console.error(error);
       setStatus({
         type: 'error',
-        message: 'Message not sent. Check your connection and try again.',
+        key: 'contact.failed',
       });
     } finally {
       setLoading(false);
@@ -79,16 +84,12 @@ const Contact = () => {
 
   return (
     <>
-      <SectionHeader
-        id='contact'
-        title='Contact me.'
-        lead='Have a question or an opportunity? Send me a message.'
-      />
+      <SectionHeader id='contact' title={t('contact.title')} lead={t('contact.lead')} />
 
       <div className='mt-12 grid gap-10 xl:grid-cols-2'>
         <motion.div variants={reveal()} className={styles.card}>
           <p id='contact-hint' className='mb-6 text-sm text-foreground-muted'>
-            All fields are required.
+            {t('contact.required')}
           </p>
           <form
             onSubmit={handleSubmit}
@@ -97,7 +98,7 @@ const Contact = () => {
           >
             <div className='flex flex-col gap-2'>
               <label htmlFor='contact-name' className='font-medium text-foreground'>
-                Name
+                {t('contact.name')}
               </label>
               <input
                 id='contact-name'
@@ -112,14 +113,14 @@ const Contact = () => {
             </div>
             <div className='flex flex-col gap-2'>
               <label htmlFor='contact-email' className='font-medium text-foreground'>
-                Email
+                {t('contact.email')}
               </label>
               <input
                 id='contact-email'
                 type='email'
                 name='email'
                 autoComplete='email'
-                placeholder='you@example.com'
+                placeholder={t('contact.emailPlaceholder')}
                 value={form.email}
                 onChange={handleChange}
                 className={FIELD}
@@ -128,13 +129,13 @@ const Contact = () => {
             </div>
             <div className='flex flex-col gap-2'>
               <label htmlFor='contact-message' className='font-medium text-foreground'>
-                Message
+                {t('contact.message')}
               </label>
               <textarea
                 id='contact-message'
                 rows={6}
                 name='message'
-                placeholder='What would you like to talk about?'
+                placeholder={t('contact.messagePlaceholder')}
                 value={form.message}
                 onChange={handleChange}
                 className={`${FIELD} resize-y`}
@@ -147,15 +148,15 @@ const Contact = () => {
               <button
                 type='submit'
                 aria-disabled={loading || undefined}
-                className='rounded-xl border-2 border-transparent bg-primary px-8 py-3 font-bold text-background transition-colors hover:bg-primary-400 aria-disabled:cursor-wait focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+                className='rounded-xl border-2 border-transparent bg-primary px-8 py-3 font-bold text-on-primary transition-colors hover:bg-primary-hover aria-disabled:cursor-wait focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background'
               >
-                {loading ? 'Sending…' : 'Send message'}
+                {loading ? t('contact.sending') : t('contact.send')}
               </button>
-              <p role='status' className='text-sm font-medium text-emerald-300'>
-                {status?.type === 'success' ? status.message : ''}
+              <p role='status' className='text-sm font-medium text-success'>
+                {status?.type === 'success' ? t(status.key) : ''}
               </p>
-              <p role='alert' className='text-sm font-medium text-pink-300'>
-                {status?.type === 'error' ? status.message : ''}
+              <p role='alert' className='text-sm font-medium text-danger'>
+                {status?.type === 'error' ? t(status.key) : ''}
               </p>
             </div>
           </form>

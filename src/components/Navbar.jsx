@@ -2,14 +2,74 @@ import { useEffect, useRef, useState } from 'react';
 
 import { styles } from '../styles';
 import { navLinks } from '../constans';
-import { logo, menu, close } from '../assets';
+import { logo } from '../assets';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import { useI18n } from '../i18n/context';
+import { useTheme } from '../theme/context';
+import { CloseIcon, MenuIcon, MoonIcon, SunIcon, TerminalIcon } from './icons';
+
+const ICON_BUTTON =
+  'inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground';
+
+// EN | FR segmented control. The accessible name ("English") contains the visible text ("EN").
+const LanguageToggle = () => {
+  const { lang, setLang, t } = useI18n();
+  return (
+    <div
+      role='group'
+      aria-label={t('nav.language')}
+      className='flex rounded-xl border border-line-strong p-0.5 text-sm font-semibold'
+    >
+      {[
+        ['en', 'EN', 'English'],
+        ['fr', 'FR', 'Français'],
+      ].map(([code, short, full]) => (
+        <button
+          key={code}
+          type='button'
+          lang={code}
+          aria-pressed={lang === code}
+          onClick={() => setLang(code)}
+          className={`rounded-[0.6rem] px-2.5 py-1.5 transition-colors ${
+            lang === code
+              ? 'bg-primary text-on-primary forced-colors:underline forced-colors:decoration-2 forced-colors:underline-offset-4'
+              : 'text-foreground-muted hover:text-foreground'
+          }`}
+        >
+          <span aria-hidden='true'>{short}</span>
+          <span className='sr-only'>{full}</span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const ThemeToggle = () => {
+  const { theme, toggleTheme } = useTheme();
+  const { t } = useI18n();
+  const toLight = theme === 'dark';
+  return (
+    <button
+      type='button'
+      onClick={toggleTheme}
+      aria-label={toLight ? t('nav.themeToLight') : t('nav.themeToDark')}
+      title={toLight ? t('nav.themeToLight') : t('nav.themeToDark')}
+      className={ICON_BUTTON}
+    >
+      {toLight ? <SunIcon /> : <MoonIcon />}
+    </button>
+  );
+};
 
 const linkClass = (isActive) =>
   `${isActive ? 'text-foreground underline decoration-primary decoration-2 underline-offset-8' : 'text-foreground-muted'} ` +
   'font-medium hover:text-foreground transition-colors';
 
-const Navbar = () => {
+/**
+ * @param {() => void} onOpenTerminal - opens the terminal overlay (App owns its state)
+ */
+const Navbar = ({ onOpenTerminal }) => {
+  const { t } = useI18n();
   const [active, setActive] = useState('');
   const [open, setOpen] = useState(false);
   const toggleRef = useRef(null);
@@ -85,56 +145,101 @@ const Navbar = () => {
             className={linkClass(active === link.id)}
             onClick={(e) => goTo(e, link.id)}
           >
-            {link.title}
+            {t(`nav.${link.id}`)}
           </a>
         </li>
       ))}
     </ul>
   );
 
+  const terminalButton = (extra = '') => (
+    <button
+      type='button'
+      onClick={() => {
+        setOpen(false);
+        onOpenTerminal();
+      }}
+      aria-haspopup='dialog'
+      aria-keyshortcuts='Control+`'
+      aria-label={t('nav.openTerminal')}
+      title={`${t('nav.openTerminal')} (${t('nav.terminalShortcut')})`}
+      className={`${ICON_BUTTON} ${extra}`}
+    >
+      <TerminalIcon />
+    </button>
+  );
+
   return (
     <nav
-      aria-label='Main'
+      aria-label={t('nav.main')}
       className='w-full fixed top-0 z-50 border-b border-line bg-background/80 backdrop-blur-md'
     >
-      <div className={`${styles.container} flex justify-between items-center py-4`}>
+      <div className={`${styles.container} flex items-center justify-between gap-4 py-3.5`}>
         <a
           href='#top'
-          className='flex items-center gap-2'
+          aria-label={t('nav.home')}
+          className='flex shrink-0 items-center gap-2'
           onClick={() => {
             setActive('');
             setOpen(false);
           }}
         >
           <img src={logo} alt='' className='h-9 w-9 object-contain' />
-          <span className='text-foreground text-lg font-bold'>Youssef El Hadraoui</span>
+          <span aria-hidden='true' className='hidden text-lg font-bold text-foreground xs:inline'>
+            Youssef El Hadraoui
+          </span>
         </a>
 
-        {renderLinks('list-none hidden md:flex flex-row gap-8')}
+        <div className='flex items-center gap-6 xl:gap-8'>
+          {renderLinks('list-none hidden lg:flex flex-row gap-6 xl:gap-8')}
 
-        <div
-          className='md:hidden flex flex-1 justify-end items-center'
-          onBlur={(e) => {
-            // Close the menu when keyboard focus moves outside it
-            if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
-          }}
-        >
-          <button
-            ref={toggleRef}
-            type='button'
-            aria-expanded={open}
-            aria-controls='mobile-menu'
-            aria-label={open ? 'Close menu' : 'Open menu'}
-            onClick={() => setOpen((v) => !v)}
-            className='-m-2 rounded-xl p-2'
-          >
-            <img src={open ? close : menu} alt='' className='h-7 w-7 object-contain' />
-          </button>
-          <div
-            id='mobile-menu'
-            className={`${open ? 'flex' : 'hidden'} p-6 bg-surface/95 backdrop-blur-md border border-line absolute top-16 right-0 mx-4 my-2 min-w-[10rem] z-50 rounded-xl`}
-          >
-            {renderLinks('list-none flex flex-col gap-4 justify-end items-start')}
+          <div className='flex items-center gap-1.5'>
+            <LanguageToggle />
+            <ThemeToggle />
+            {terminalButton('hidden lg:inline-flex')}
+
+            <div
+              className='relative lg:hidden'
+              onBlur={(e) => {
+                // Close the menu when keyboard focus moves outside it
+                if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
+              }}
+            >
+              <button
+                ref={toggleRef}
+                type='button'
+                aria-expanded={open}
+                aria-controls='mobile-menu'
+                aria-label={open ? t('nav.closeMenu') : t('nav.openMenu')}
+                onClick={() => setOpen((v) => !v)}
+                className={ICON_BUTTON}
+              >
+                {open ? <CloseIcon className='h-6 w-6' /> : <MenuIcon className='h-6 w-6' />}
+              </button>
+              <div
+                id='mobile-menu'
+                className={`${open ? 'flex' : 'hidden'} absolute right-0 top-14 z-50 min-w-[12rem] flex-col gap-5 rounded-xl border border-line bg-surface/95 p-6 backdrop-blur-md`}
+              >
+                {renderLinks('list-none flex flex-col gap-4 items-start')}
+                <div className='border-t border-line pt-4'>
+                  <button
+                    type='button'
+                    onClick={() => {
+                      setOpen(false);
+                      // The menu item disappears with the menu: hand focus to the visible menu
+                      // toggle first, so it is the element focus returns to on close
+                      toggleRef.current?.focus();
+                      onOpenTerminal();
+                    }}
+                    aria-haspopup='dialog'
+                    className='inline-flex items-center gap-2 whitespace-nowrap font-medium text-foreground-muted transition-colors hover:text-foreground'
+                  >
+                    <TerminalIcon />
+                    {t('nav.openTerminal')}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

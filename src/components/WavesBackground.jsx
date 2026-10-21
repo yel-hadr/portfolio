@@ -88,19 +88,14 @@ const MAX_DPR = 1.5;
 const FRAME_MS = 1000 / 30;
 
 // Brand gradient across the viewport: primary (orange) bottom-left, secondary (violet), tertiary
-// (deep blue) top-right. Colors come from the Tailwind theme through the CSS variables in
-// src/index.css; low alpha so text on top keeps its contrast (see the overlays below).
+// (blue) top-right. Colors come from the theme tokens in src/index.css ("R G B" channels), and
+// --wave-alpha scales them per theme (1 on dark, paler pastel lines on light). Low alpha so text
+// on top keeps its contrast (see the overlays below).
 const STOPS = [
-  [0, '--color-primary', 0.55],
-  [0.45, '--color-secondary', 0.34],
-  [1, '--color-tertiary', 0.3],
+  [0, '--c-primary', 0.55],
+  [0.45, '--c-secondary', 0.34],
+  [1, '--c-tertiary', 0.3],
 ];
-
-// '#rrggbb' token + alpha -> 'rgb(r g b / a)'
-const withAlpha = (hex, alpha) => {
-  const n = parseInt(hex.trim().slice(1), 16);
-  return `rgb(${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255} / ${alpha})`;
-};
 
 const WavesBackground = () => {
   const canvasRef = useRef(null);
@@ -118,6 +113,8 @@ const WavesBackground = () => {
     let lines = [];
     let frameId = null;
     let last = 0;
+    // Language switch ripple: amplitude boost that decays back to 0 (see onLangChange)
+    let ripple = 0;
 
     const setSize = () => {
       width = window.innerWidth;
@@ -127,11 +124,18 @@ const WavesBackground = () => {
       canvas.height = Math.round(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+      applyStroke();
+    };
+
+    // Read the theme tokens; runs on resize and whenever the theme changes
+    const applyStroke = () => {
       const tokens = getComputedStyle(document.documentElement);
+      const scale = parseFloat(tokens.getPropertyValue('--wave-alpha')) || 1;
       const gradient = ctx.createLinearGradient(0, height, width, 0);
-      STOPS.forEach(([offset, token, alpha]) =>
-        gradient.addColorStop(offset, withAlpha(tokens.getPropertyValue(token), alpha))
-      );
+      STOPS.forEach(([offset, token, alpha]) => {
+        const rgb = tokens.getPropertyValue(token).trim() || '255 101 0';
+        gradient.addColorStop(offset, `rgb(${rgb} / ${alpha * scale})`);
+      });
       ctx.strokeStyle = gradient;
       ctx.lineWidth = 1;
     };
@@ -167,8 +171,9 @@ const WavesBackground = () => {
         points.forEach((p) => {
           const move =
             noise((p.x + time * waveSpeedX) * 0.002, (p.y + time * waveSpeedY) * 0.0015) * 12;
-          p.wave.x = Math.cos(move) * waveAmpX;
-          p.wave.y = Math.sin(move) * waveAmpY;
+          const boost = 1 + ripple * 0.9;
+          p.wave.x = Math.cos(move) * waveAmpX * boost;
+          p.wave.y = Math.sin(move) * waveAmpY * boost;
 
           const dx = p.x - mouse.sx;
           const dy = p.y - mouse.sy;
@@ -234,6 +239,8 @@ const WavesBackground = () => {
 
       movePoints(time);
       drawLines();
+      ripple *= 0.93; // ~1 s back to calm at 30 fps
+      if (ripple < 0.01) ripple = 0;
     };
 
     // One still frame: the same wave pattern, no animation and no pointer response
@@ -248,11 +255,24 @@ const WavesBackground = () => {
       if (reduced) drawStill();
     };
     const onMouseMove = (e) => updateMouse(e.clientX, e.clientY);
+    // The page cross-fades to the other language; the lines swell and settle with it
+    const onLangChange = () => {
+      ripple = 1;
+    };
     const onTouchMove = (e) => updateMouse(e.touches[0].clientX, e.touches[0].clientY);
 
     setSize();
     setLines();
     window.addEventListener('resize', onResize);
+    // Theme switch (data-theme on <html>): recolor the lines; the still frame redraws at once
+    const themeObserver = new MutationObserver(() => {
+      applyStroke();
+      if (reduced) drawStill();
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
 
     if (reduced) {
       drawStill();
@@ -260,12 +280,15 @@ const WavesBackground = () => {
       frameId = requestAnimationFrame(tick);
       window.addEventListener('mousemove', onMouseMove, { passive: true });
       window.addEventListener('touchmove', onTouchMove, { passive: true });
+      window.addEventListener('site:langchange', onLangChange);
     }
 
     return () => {
+      themeObserver.disconnect();
       window.removeEventListener('resize', onResize);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('site:langchange', onLangChange);
       if (frameId !== null) cancelAnimationFrame(frameId);
     };
   }, [reduced]);

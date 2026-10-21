@@ -3,23 +3,94 @@
 @tailwind utilities;
 
 @layer base {
-  /* Tokens as CSS variables, for places that only take inline styles or JS (the timeline
-     library, the waves canvas). */
+  /* Theme tokens (see tailwind.config.js): "R G B" channels for colors that take an opacity
+     modifier, full colors for the translucent ones. The dark theme is the default; index.html
+     sets data-theme before the first paint, and ThemeProvider keeps it in sync. */
   :root {
-    --color-background: theme('colors.background');
-    --color-surface: theme('colors.surface.DEFAULT');
-    --color-foreground: theme('colors.foreground.DEFAULT');
-    --color-line: theme('colors.line.DEFAULT');
-    --color-glass: theme('colors.glass.DEFAULT');
-    --color-primary: theme('colors.primary.DEFAULT');
-    --color-secondary: theme('colors.secondary.DEFAULT');
-    --color-tertiary: theme('colors.tertiary.DEFAULT');
+    color-scheme: dark;
+    --c-background: 5 8 22;
+    --c-surface: 14 11 34;
+    --c-surface-raised: 23 19 56;
+    --c-foreground: 242 241 247;
+    --c-foreground-muted: 170 166 195;
+    --c-primary: 255 101 0;
+    --c-primary-400: 255 133 51;
+    --c-primary-hover: 255 133 51;
+    --c-on-primary: 5 8 22;
+    --c-secondary: 167 139 250;
+    --c-tertiary: 59 130 246;
+    --c-success: 110 231 183;
+    --c-danger: 249 168 212;
+    --c-info: 125 211 252;
+    --c-line-strong: 119 116 154;
+    --color-glass: rgb(14 11 34 / 0.62);
+    --color-glass-strong: rgb(23 19 56 / 0.78);
+    --color-line: rgb(255 255 255 / 0.1);
+    /* Waves: line opacity multiplier (see WavesBackground) */
+    --wave-alpha: 1;
+
+    /* Full colors for places that only take inline styles (the timeline library) */
+    --color-background: rgb(var(--c-background));
+    --color-surface: rgb(var(--c-surface));
+    --color-foreground: rgb(var(--c-foreground));
+    --color-primary: rgb(var(--c-primary));
+    --color-secondary: rgb(var(--c-secondary));
+    --color-tertiary: rgb(var(--c-tertiary));
+  }
+
+  /* Light theme: frosted white glass, ink text, a deeper orange that still carries dark text,
+     and paler waves. */
+  :root[data-theme='light'] {
+    color-scheme: light;
+    --c-background: 246 245 251;
+    --c-surface: 255 255 255;
+    --c-surface-raised: 236 233 247;
+    --c-foreground: 20 17 43;
+    --c-foreground-muted: 79 74 110;
+    --c-primary: 226 90 0;
+    --c-primary-400: 166 66 0;
+    --c-primary-hover: 234 94 0;
+    --c-on-primary: 20 17 43;
+    --c-secondary: 124 58 237;
+    --c-tertiary: 37 99 235;
+    --c-success: 4 120 87;
+    --c-danger: 190 24 93;
+    --c-info: 3 105 161;
+    --c-line-strong: 128 124 160;
+    --color-glass: rgb(255 255 255 / 0.66);
+    --color-glass-strong: rgb(255 255 255 / 0.85);
+    --color-line: rgb(20 17 43 / 0.12);
+    --wave-alpha: 0.55;
+  }
+
+  /* Language switch: the page content fades out, the text swaps, then fades back in
+     (I18nProvider adds the class for ~160 ms). Reduced motion swaps instantly. */
+  main,
+  footer,
+  nav ul {
+    transition: opacity 0.16s ease;
+  }
+  .lang-switching main,
+  .lang-switching footer,
+  .lang-switching nav ul {
+    opacity: 0;
+  }
+
+  /* Theme switch: colors cross-fade for a moment (ThemeProvider adds the class briefly). */
+  .theme-transition,
+  .theme-transition *,
+  .theme-transition *::before,
+  .theme-transition *::after {
+    transition:
+      background-color 0.35s ease,
+      border-color 0.35s ease,
+      color 0.35s ease,
+      fill 0.35s ease !important;
   }
 
   /* scroll-padding-top keeps anchor targets and keyboard-focused elements clear of the
      fixed navbar (h-[4.5rem]). Smooth scrolling only when motion is allowed. */
   html {
-    color-scheme: dark;
     scroll-padding-top: 5rem;
   }
 

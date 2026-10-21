@@ -16,9 +16,9 @@ const styles = {
   cardTitle: 'text-foreground text-xl font-bold',
   card: 'card-glass p-6 sm:p-8',
 
-  // Primary: dark text on orange (6.8:1). Ghost: glass with a strong border (>= 3:1).
+  // Primary: dark text on orange (dark 6.8:1, light 5.0:1). Ghost: glass with a strong border (>= 3:1).
   buttonPrimary:
-    'inline-flex items-center rounded-xl bg-primary px-7 py-3 font-bold text-background transition-colors hover:bg-primary-400',
+    'inline-flex items-center rounded-xl border-2 border-transparent bg-primary px-7 py-[0.625rem] font-bold text-on-primary transition-colors hover:bg-primary-hover',
   buttonGhost:
     'inline-flex items-center rounded-xl border border-line-strong bg-glass px-7 py-3 font-semibold text-foreground backdrop-blur-md transition-colors hover:border-foreground-muted',
   body: 'text-foreground-muted text-base leading-relaxed',

@@ -1,0 +1,206 @@
+{
+  "title": "guest@yel-hadr: ~",
+  "prompt": {
+    "user": "guest@yel-hadr",
+    "path": ":~$"
+  },
+  "description": "Terminal interactif. Tapez une commande puis appuyez sur Entrée. Tab complète, les flèches haut et bas parcourent l’historique et Échap ferme le terminal.",
+  "close": "Fermer le terminal",
+  "inputLabel": "Commande",
+  "commandSr": "Commande : ",
+  "suggestions": "Commandes suggérées",
+  "newTab": " (s’ouvre dans un nouvel onglet)",
+  "usage": "Utilisation : {usage}",
+  "welcome": {
+    "title": "Bienvenue sur le portfolio de Youssef El Hadraoui.",
+    "hint": "Tapez {help} pour lister les commandes, ou commencez par {whoami}.",
+    "keys": "Tab complète · ↑ ↓ historique · Ctrl+L efface · Échap ferme"
+  },
+  "commands": {
+    "help": {
+      "description": "Lister les commandes disponibles"
+    },
+    "whoami": {
+      "description": "Qui je suis, en trois lignes"
+    },
+    "about": {
+      "description": "Mon profil et ce que je fais"
+    },
+    "experience": {
+      "description": "Postes, entreprises et réalisations"
+    },
+    "projects": {
+      "description": "Une sélection de projets, avec les liens vers le code"
+    },
+    "skills": {
+      "description": "Compétences techniques, par domaine"
+    },
+    "education": {
+      "description": "Écoles et diplômes"
+    },
+    "contact": {
+      "description": "GitHub, LinkedIn et e-mail"
+    },
+    "resume": {
+      "description": "Télécharger mon CV (PDF)"
+    },
+    "goto": {
+      "args": "<section>",
+      "description": "Fermer le terminal et aller à une section"
+    },
+    "ls": {
+      "description": "Lister les sections de la page"
+    },
+    "til": {
+      "description": "J’ai appris : de courtes notes techniques"
+    },
+    "lang": {
+      "args": "en|fr",
+      "description": "Changer de langue"
+    },
+    "theme": {
+      "args": "light|dark",
+      "description": "Changer de thème (clair ou sombre)"
+    },
+    "history": {
+      "description": "Afficher les commandes saisies"
+    },
+    "clear": {
+      "description": "Effacer l’écran (ou Ctrl+L)"
+    },
+    "echo": {
+      "args": "<texte>",
+      "description": "Afficher du texte"
+    },
+    "date": {
+      "description": "Afficher la date et l’heure"
+    },
+    "exit": {
+      "description": "Fermer le terminal (ou Échap)"
+    }
+  },
+  "help": {
+    "title": "Commandes disponibles",
+    "aliases": "aussi : {list}",
+    "footer": "Les commandes ne tiennent pas compte de la casse, et les noms français fonctionnent aussi (aide, projets, compétences…)."
+  },
+  "whoami": {
+    "name": "{name}, alias {alias}",
+    "oneLiner": "Ingénieur logiciel orienté backend et infrastructure (UM6P-1337, réseau 42)."
+  },
+  "about": {
+    "title": "À propos",
+    "more": "Pour en savoir plus : {experience}, {projects}, {skills}."
+  },
+  "experience": {
+    "title": "Expérience",
+    "role": "{title} chez {company}",
+    "more": "Mon parcours complet est dans mon CV : tapez {resume}."
+  },
+  "projects": {
+    "title": "Projets",
+    "stack": "Technologies :",
+    "source": "Code source :",
+    "diagram": "Schéma d’architecture : ouvrez-le depuis la section Projets ({cmd})."
+  },
+  "skills": {
+    "title": "Compétences techniques",
+    "groups": [
+      {
+        "label": "Langages",
+        "items": "Python, C/C++, JavaScript, Bash, SQL"
+      },
+      {
+        "label": "Backend",
+        "items": "Django, Django Ninja, Pydantic, FastAPI, Celery, API REST · PostgreSQL, Redis, MariaDB"
+      },
+      {
+        "label": "DevOps & cloud",
+        "items": "Docker, Kubernetes (k3s), Argo CD / GitOps, GitHub Actions, NGINX, Gunicorn, Linux · AWS, DigitalOcean, Terraform, Ansible"
+      },
+      {
+        "label": "Observabilité",
+        "items": "Grafana, Loki, Promtail / Alloy, Prometheus, logs JSON structurés"
+      },
+      {
+        "label": "Qualité & outils",
+        "items": "pytest, factory-boy, coverage, Black, flake8, Git, GDB"
+      },
+      {
+        "label": "Frontend",
+        "items": "React, Three.js, Tailwind CSS"
+      },
+      {
+        "label": "Langues",
+        "items": "arabe (langue maternelle) · français (courant) · anglais (professionnel)"
+      }
+    ],
+    "more": "Plus de détails dans mon CV : tapez {resume}."
+  },
+  "education": {
+    "title": "Formation"
+  },
+  "contact": {
+    "title": "Contact",
+    "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "email": "E-mail",
+    "form": "Ou envoyez-moi un message avec le formulaire de contact : {cmd}."
+  },
+  "resume": {
+    "downloading": "Téléchargement de {file}…",
+    "fallback": "Rien ne se passe ? {link}",
+    "open": "Ouvrir le PDF"
+  },
+  "goto": {
+    "sections": "Sections : {list}",
+    "unknown": "Aucune section nommée « {name} ».",
+    "missing": "La section {name} n’est pas encore sur la page."
+  },
+  "ls": {
+    "title": "Sections",
+    "hint": "Allez à l’une d’elles avec {cmd}, par exemple."
+  },
+  "sections": {
+    "about": "À propos",
+    "experience": "Expérience",
+    "tech": "Stack technique",
+    "works": "Projets",
+    "education": "Formation",
+    "til": "J’ai appris",
+    "contact": "Contact"
+  },
+  "til": {
+    "title": "J’ai appris",
+    "empty": "Pas encore de notes. Repassez bientôt.",
+    "more": "Pour les lire en entier : {cmd}."
+  },
+  "lang": {
+    "current": "Langue actuelle : {lang}.",
+    "set": "Langue réglée sur le français.",
+    "unknown": "Langue inconnue : « {value} ». Utilisez en ou fr.",
+    "names": {
+      "en": "anglais",
+      "fr": "français"
+    }
+  },
+  "theme": {
+    "current": "Thème actuel : {theme}.",
+    "set": "Thème {theme} activé.",
+    "unknown": "Thème inconnu : « {value} ». Utilisez light (clair) ou dark (sombre).",
+    "names": {
+      "light": "clair",
+      "dark": "sombre"
+    }
+  },
+  "history": {
+    "empty": "Aucune commande pour l’instant."
+  },
+  "sudo": "Bien essayé. guest n’est pas dans le fichier sudoers. Le propriétaire reste joignable, lui : tapez {cmd}.",
+  "notFound": "commande introuvable : {cmd}",
+  "didYouMean": "Vouliez-vous dire {cmd} ?",
+  "helpHint": "Tapez {cmd} pour lister les commandes.",
+  "completions": "Complétions possibles :",
+  "interrupted": "^C",
+  "name": "Terminal"
+}

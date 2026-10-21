@@ -1,0 +1,20 @@
+{
+  "title": "État des systèmes",
+  "checking": "Vérification…",
+  "operational": "Tous les systèmes sont opérationnels",
+  "failed": "Échec du dernier déploiement",
+  "deploying": "Déploiement en cours…",
+  "incomplete": "Dernier déploiement interrompu",
+  "unavailable": "Statut indisponible",
+  "deployedAt": "déployé {time}",
+  "failedAt": "terminé {time}",
+  "startedAt": "lancé {time}",
+  "endedAt": "arrêté {time}",
+  "justNow": "à l’instant",
+  "viewRun": "voir l’exécution CI/CD",
+  "viewActions": "voir les exécutions CI/CD sur GitHub",
+  "commits": "Commits récents",
+  "commit": "Commit",
+  "in": "dans le dépôt",
+  "newTab": "(s’ouvre dans un nouvel onglet)"
+}

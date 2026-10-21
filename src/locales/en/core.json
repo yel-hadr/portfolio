@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "title": "Youssef El Hadraoui | Portfolio",
+    "description": "Youssef El Hadraoui (Jebril), Software Engineer in cloud infrastructure and DevOps: experience, projects, education and contact."
+  },
+  "skipLink": "Skip to content",
+  "nav": {
+    "main": "Main",
+    "home": "Youssef El Hadraoui, back to top",
+    "about": "About",
+    "experience": "Experience",
+    "works": "Projects",
+    "education": "Education",
+    "contact": "Contact",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "language": "Language",
+    "switchToEnglish": "Switch to English",
+    "switchToFrench": "Passer en français",
+    "themeToLight": "Switch to light mode",
+    "themeToDark": "Switch to dark mode",
+    "openTerminal": "Open terminal",
+    "terminalShortcut": "Shortcut: Ctrl + `",
+    "til": "Today I learned"
+  },
+  "person": {
+    "title": "Software Engineer | Cloud Infrastructure & DevOps",
+    "summary": "Software Engineer specializing in multi-tenant backend architecture, cloud infrastructure, and DevOps automation. Proven experience in designing scalable microservices, implementing GitOps delivery pipelines, and managing containerized environments. Passionate about automating server setups, observability, and integrating AI coding assistants into modern development workflows."
+  },
+  "hero": {
+    "seeProjects": "See my projects",
+    "getInTouch": "Get in touch",
+    "portraitAlt": "Portrait of Youssef El Hadraoui"
+  },
+  "resume": {
+    "label": "Download resume",
+    "aria": "Download resume PDF"
+  },
+  "about": {
+    "title": "About me.",
+    "whatIDo": "What I do",
+    "services": {
+      "backend": "Backend Architecture",
+      "cloud": "Cloud Infrastructure",
+      "devops": "DevOps & GitOps",
+      "automation": "Automation & Observability"
+    }
+  },
+  "experience": {
+    "title": "Experience.",
+    "lead": "Where I build backends and the infrastructure they run on.",
+    "items": {
+      "legaliox": {
+        "title": "Lead Backend Engineer & DevOps Infrastructure Lead",
+        "points": [
+          "Lead the backend of Legaliox, a multi-tenant legal SaaS platform.",
+          "Design and build the API and its business logic for every tenant.",
+          "Run the DevOps infrastructure the platform is built, shipped and hosted on."
+        ]
+      },
+      "wepartner": {
+        "title": "Software Engineering Intern",
+        "points": ["Built an AI-powered agent that analyzes resumes."]
+      }
+    }
+  },
+  "tech": {
+    "title": "Tech stack.",
+    "lead": "Cloud, infrastructure and the languages I build with."
+  },
+  "works": {
+    "title": "Projects.",
+    "lead": "Infrastructure, networking and Kubernetes projects, with a link to the source where it is public.",
+    "technologies": "Technologies",
+    "viewSource": "View source",
+    "viewSourceSr": " of {name} on GitHub (opens in a new tab)",
+    "viewArchitecture": "View architecture",
+    "viewArchitectureSr": " of {name}",
+    "items": {
+      "badass": {
+        "name": "BADASS Network Architecture",
+        "description": "A data-center network design: VXLAN overlays with a BGP EVPN control plane, routed with FRRouting."
+      },
+      "cloud1": {
+        "name": "Cloud-1 Automation",
+        "description": "Automated deployment of a WordPress and MariaDB stack on AWS: Terraform provisions the infrastructure and Ansible configures the host."
+      },
+      "iot": {
+        "name": "Inception-of-Things",
+        "description": "Kubernetes from the ground up: K3s clusters on Vagrant VMs, Traefik ingress with host-based routing, then K3d with Argo CD deploying from Git."
+      },
+      "portfolio": {
+        "name": "Interactive 3D Portfolio",
+        "description": "This site: React with React Three Fiber scenes sharing one WebGL canvas, a canvas wave background and Tailwind design tokens."
+      }
+    }
+  },
+  "education": {
+    "title": "Education.",
+    "items": {
+      "paris42": {
+        "degree": "RNCP Level 7, Network & Information Systems Architecture",
+        "date": "September 2026",
+        "points": []
+      },
+      "school1337": {
+        "degree": "Common Core",
+        "date": "2022 – 2024",
+        "points": [
+          "Peer-to-peer, project-based curriculum: C and C++, UNIX processes and signals, networking, graphics and containers with Docker."
+        ]
+      }
+    }
+  },
+  "contact": {
+    "title": "Contact me.",
+    "lead": "Have a question or an opportunity? Send me a message.",
+    "required": "All fields are required.",
+    "name": "Name",
+    "email": "Email",
+    "message": "Message",
+    "emailPlaceholder": "you@example.com",
+    "messagePlaceholder": "What would you like to talk about?",
+    "send": "Send message",
+    "sending": "Sending…",
+    "sent": "Message sent. I'll get back to you as soon as possible.",
+    "notConfigured": "Message not sent: the contact form isn't configured yet. Please try again later.",
+    "failed": "Message not sent. Check your connection and try again."
+  },
+  "footer": {
+    "nav": "Footer",
+    "github": "GitHub",
+    "newTab": " (opens in a new tab)",
+    "backToTop": "Back to top",
+    "rights": "© {year} {name}"
+  },
+  "webgl": {
+    "title": "3D scenes are turned off",
+    "failed": "The 3D scenes could not load on this device, so static images are shown instead.",
+    "unsupported": "Your browser or device doesn't support WebGL 2, so the interactive 3D globe and technology icons aren't shown.",
+    "rest": "Everything else on this page works as usual.",
+    "howTo": "How to turn them on",
+    "steps": [
+      "Enable hardware acceleration in your browser settings",
+      "Update your graphics drivers",
+      "Try a different browser (Chrome, Firefox, Edge, Safari)",
+      "Check that WebGL is enabled in your browser"
+    ],
+    "retry": "Retry detection"
+  },
+  "error": {
+    "title": "The {section} section failed to load",
+    "body": "Reload the section to try again.",
+    "reload": "Reload section",
+    "details": "Error details (for developers)"
+  },
+  "loading": "Loading 3D scenes"
+}

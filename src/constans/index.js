@@ -17,56 +17,43 @@ import {
   reactjs,
 } from '../assets';
 
-// Name, headline and summary, as on the resume. Used by the Hero, About and Footer.
+// Language-independent facts. All user-facing text (title, summary, descriptions...) lives in
+// the dictionaries in src/locales/<lang>/core.json, keyed by the ids below.
 export const person = {
   name: 'Youssef El Hadraoui',
   alias: 'Jebril',
-  title: 'Software Engineer | Cloud Infrastructure & DevOps',
-  summary:
-    'Software Engineer specializing in multi-tenant backend architecture, cloud infrastructure, and DevOps automation. Proven experience in designing scalable microservices, implementing GitOps delivery pipelines, and managing containerized environments. Passionate about automating server setups, observability, and integrating AI coding assistants into modern development workflows.',
+  email: 'youssefelhadraoui99@gmail.com',
+  linkedin: 'https://www.linkedin.com/in/youssef-el-hadraoui',
   github: 'https://github.com/yel-hadr',
   // public/Youssef_Elhadraoui_Resume.pdf, resolved against Vite's base path
   resume: `${import.meta.env.BASE_URL}Youssef_Elhadraoui_Resume.pdf`,
 };
 
+// Labels: nav.<id> in the dictionaries
 export const navLinks = [
-  {
-    id: 'about',
-    title: 'About',
-  },
-  {
-    id: 'experience',
-    title: 'Experience',
-  },
-  {
-    id: 'works',
-    title: 'Projects',
-  },
-  {
-    id: 'education',
-    title: 'Education',
-  },
-  {
-    id: 'contact',
-    title: 'Contact',
-  },
+  { id: 'about' },
+  { id: 'experience' },
+  { id: 'works' },
+  { id: 'education' },
+  { id: 'contact' },
 ];
 
+// Labels: about.services.<id>
 const services = [
   {
-    title: 'Backend Architecture',
+    id: 'backend',
     icon: backend,
   },
   {
-    title: 'Cloud Infrastructure',
+    id: 'cloud',
     icon: web,
   },
   {
-    title: 'DevOps & GitOps',
+    id: 'devops',
     icon: mobile,
   },
   {
-    title: 'Automation & Observability',
+    id: 'automation',
     icon: creator,
   },
 ];
@@ -123,32 +110,26 @@ const technologies = [
 ];
 
 // Dates are left empty until they are confirmed; the timeline hides an empty date.
+// Title and points: experience.items.<id>
 const experiences = [
   {
-    title: 'Lead Backend Engineer & DevOps Infrastructure Lead',
+    id: 'legaliox',
     company_name: 'Legaliox',
     iconBg: 'var(--color-primary)',
     date: '',
-    points: [
-      'Lead the backend of Legaliox, a multi-tenant legal SaaS platform.',
-      'Design and build the API and its business logic for every tenant.',
-      'Run the DevOps infrastructure the platform is built, shipped and hosted on.',
-    ],
   },
   {
-    title: 'Software Engineering Intern',
+    id: 'wepartner',
     company_name: 'WePartner Consulting',
     iconBg: 'var(--color-secondary)',
     date: '',
-    points: ['Built an AI-powered agent that analyzes resumes.'],
   },
 ];
 
+// Name and description: works.items.<id>. `diagram` opens an architecture diagram modal.
 const projects = [
   {
-    name: 'BADASS Network Architecture',
-    description:
-      'A data-center network design: VXLAN overlays with a BGP EVPN control plane, routed with FRRouting.',
+    id: 'badass',
     tags: [
       {
         name: 'BGP EVPN',
@@ -166,9 +147,7 @@ const projects = [
     source_code_link: '',
   },
   {
-    name: 'Cloud-1 Automation',
-    description:
-      'Automated deployment of a WordPress and MariaDB stack on AWS: Terraform provisions the infrastructure and Ansible configures the host.',
+    id: 'cloud1',
     tags: [
       {
         name: 'AWS',
@@ -188,11 +167,10 @@ const projects = [
       },
     ],
     source_code_link: 'https://github.com/yel-hadr/cloud-1_42',
+    diagram: 'cloud1',
   },
   {
-    name: 'Inception-of-Things',
-    description:
-      'Kubernetes from the ground up: K3s clusters on Vagrant VMs, Traefik ingress with host-based routing, then K3d with Argo CD deploying from Git.',
+    id: 'iot',
     tags: [
       {
         name: 'Vagrant',
@@ -216,11 +194,10 @@ const projects = [
       },
     ],
     source_code_link: 'https://github.com/yel-hadr/-Inception-of-Things',
+    diagram: 'iot',
   },
   {
-    name: 'Interactive 3D Portfolio',
-    description:
-      'This site: React with React Three Fiber scenes sharing one WebGL canvas, a canvas wave background and Tailwind design tokens.',
+    id: 'portfolio',
     tags: [
       {
         name: 'React',
@@ -239,21 +216,162 @@ const projects = [
   },
 ];
 
+// Degree, date and points: education.items.<id>
 const education = [
+  { id: 'paris42', school: '42 Paris' },
+  { id: 'school1337', school: '1337 Coding School' },
+];
+
+// "Today I learned" notes. Title and body: til.items.<id> in src/locales/<lang>/til.json. Code is
+// not translated, so comments inside snippets stay in English. Tag color: info, success, danger
+// or primary (theme tokens, see Til.jsx).
+const tils = [
   {
-    school: '42 Paris',
-    degree: 'RNCP Level 7, Network & Information Systems Architecture',
-    date: 'September 2026',
-    points: [],
+    id: 'pgbouncer',
+    tags: [
+      { name: 'PostgreSQL', color: 'info' },
+      { name: 'PgBouncer', color: 'success' },
+      { name: 'django-tenants', color: 'primary' },
+    ],
+    code: {
+      language: 'ini',
+      snippet: `; pgbouncer.ini
+[databases]
+app = host=postgres port=5432 dbname=app
+
+[pgbouncer]
+listen_addr = 0.0.0.0
+listen_port = 6432
+auth_type = scram-sha-256
+auth_file = /etc/pgbouncer/userlist.txt
+; django-tenants issues a session-level SET search_path:
+; it must run on the same server connection as the queries
+pool_mode = session
+default_pool_size = 20`,
+    },
   },
   {
-    school: '1337 Coding School',
-    degree: 'Common Core',
-    date: '2022 – 2024',
-    points: [
-      'Peer-to-peer, project-based curriculum: C and C++, UNIX processes and signals, networking, graphics and containers with Docker.',
+    id: 'argocd',
+    tags: [
+      { name: 'Argo CD', color: 'primary' },
+      { name: 'GitOps', color: 'success' },
+      { name: 'Kubernetes', color: 'info' },
     ],
+    code: {
+      language: 'yaml',
+      snippet: `apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: api
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/example/deploy.git
+    targetRevision: main
+    path: apps/api
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: api
+  syncPolicy:
+    automated:
+      prune: true     # delete resources removed from Git
+      selfHeal: true  # revert changes made directly in the cluster
+    syncOptions:
+      - CreateNamespace=true`,
+    },
+  },
+  {
+    id: 'vxlan',
+    tags: [
+      { name: 'VXLAN', color: 'info' },
+      { name: 'BGP EVPN', color: 'danger' },
+      { name: 'MTU', color: 'success' },
+    ],
+    code: {
+      language: 'shell',
+      snippet: `# 1500-byte underlay - 50 bytes of encapsulation:
+# outer IPv4 (20) + UDP (8) + VXLAN (8) + inner Ethernet (14)
+ip link add vxlan100 type vxlan id 100 dstport 4789 local 10.0.0.1 nolearning
+ip link set vxlan100 mtu 1450 up
+
+# Check the path without fragmentation: 1422 + ICMP (8) + IPv4 (20) = 1450
+ping -M do -s 1422 10.200.0.2`,
+    },
+  },
+  {
+    id: 'terraform',
+    tags: [
+      { name: 'Terraform', color: 'danger' },
+      { name: 'AWS S3', color: 'primary' },
+    ],
+    code: {
+      language: 'hcl',
+      snippet: `terraform {
+  required_version = ">= 1.11"
+
+  backend "s3" {
+    bucket       = "example-terraform-state"
+    key          = "prod/network/terraform.tfstate"
+    region       = "eu-west-3"
+    encrypt      = true
+    use_lockfile = true # lock object: prod/network/terraform.tfstate.tflock
+  }
+}`,
+    },
+  },
+  {
+    id: 'jsonlogs',
+    tags: [
+      { name: 'Loki', color: 'primary' },
+      { name: 'LogQL', color: 'info' },
+      { name: 'Python', color: 'success' },
+    ],
+    code: {
+      language: 'python',
+      snippet: `# One JSON object per line on stdout; Grafana Alloy (or Promtail) ships it to Loki as is
+import json
+import logging
+from datetime import datetime, timezone
+
+
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        entry = {
+            "ts": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "msg": record.getMessage(),
+            # Set with logger.info("...", extra={"tenant": schema_name})
+            "tenant": getattr(record, "tenant", None),
+        }
+        if record.exc_info:
+            entry["exc"] = self.formatException(record.exc_info)
+        return json.dumps(entry, default=str)
+
+
+# LogQL: {app="api"} | json | level="ERROR" | tenant="acme"`,
+    },
+  },
+  {
+    id: 'tmux',
+    tags: [
+      { name: 'tmux', color: 'success' },
+      { name: 'SSH', color: 'info' },
+    ],
+    code: {
+      language: 'shell',
+      snippet: `tmux new -s deploy      # start a named session
+tmux attach -t deploy   # reattach after the SSH connection drops
+tmux ls                 # list sessions
+
+# Default bindings, pressed after the prefix (Ctrl-b):
+#   d  detach                %  split left / right
+#   "  split top / bottom    z  zoom the current pane
+#   [  scroll (copy mode)    s  switch session
+#   :setw synchronize-panes on  -> type into every pane at once`,
+    },
   },
 ];
 
-export { services, technologies, experiences, projects, education };
+export { services, technologies, experiences, projects, education, tils };

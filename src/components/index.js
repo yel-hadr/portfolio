@@ -14,6 +14,7 @@ import CanvasErrorBoundary from './CanvasErrorBoundary';
 import Footer from './Footer';
 import SectionHeader from './SectionHeader';
 import WavesBackground from './WavesBackground';
+import Til from './Til';
 
 export {
   Hero,
@@ -35,4 +36,5 @@ export {
   Footer,
   SectionHeader,
   WavesBackground,
+  Til,
 };

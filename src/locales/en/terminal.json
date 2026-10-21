@@ -1,0 +1,206 @@
+{
+  "title": "guest@yel-hadr: ~",
+  "prompt": {
+    "user": "guest@yel-hadr",
+    "path": ":~$"
+  },
+  "description": "Interactive terminal. Type a command and press Enter. Tab completes, the up and down arrows browse your history, and Escape closes the terminal.",
+  "close": "Close terminal",
+  "inputLabel": "Command",
+  "commandSr": "Command: ",
+  "suggestions": "Suggested commands",
+  "newTab": " (opens in a new tab)",
+  "usage": "Usage: {usage}",
+  "welcome": {
+    "title": "Welcome to the portfolio of Youssef El Hadraoui.",
+    "hint": "Type {help} to list the commands, or start with {whoami}.",
+    "keys": "Tab completes · ↑ ↓ history · Ctrl+L clears · Esc closes"
+  },
+  "commands": {
+    "help": {
+      "description": "List the available commands"
+    },
+    "whoami": {
+      "description": "Who I am, in three lines"
+    },
+    "about": {
+      "description": "Profile summary and what I do"
+    },
+    "experience": {
+      "description": "Roles, companies and what I did there"
+    },
+    "projects": {
+      "description": "Selected projects, with links to the source"
+    },
+    "skills": {
+      "description": "Technical skills, grouped"
+    },
+    "education": {
+      "description": "Schools and degrees"
+    },
+    "contact": {
+      "description": "GitHub, LinkedIn and email"
+    },
+    "resume": {
+      "description": "Download my resume (PDF)"
+    },
+    "goto": {
+      "args": "<section>",
+      "description": "Close the terminal and jump to a section"
+    },
+    "ls": {
+      "description": "List the sections you can jump to"
+    },
+    "til": {
+      "description": "Today I learned: short technical notes"
+    },
+    "lang": {
+      "args": "en|fr",
+      "description": "Switch the language"
+    },
+    "theme": {
+      "args": "light|dark",
+      "description": "Switch the color theme"
+    },
+    "history": {
+      "description": "Show the commands you typed"
+    },
+    "clear": {
+      "description": "Clear the screen (or Ctrl+L)"
+    },
+    "echo": {
+      "args": "<text>",
+      "description": "Print some text"
+    },
+    "date": {
+      "description": "Show the date and time"
+    },
+    "exit": {
+      "description": "Close the terminal (or Esc)"
+    }
+  },
+  "help": {
+    "title": "Available commands",
+    "aliases": "also: {list}",
+    "footer": "Commands are case-insensitive, and French names work too (aide, projets, compétences…)."
+  },
+  "whoami": {
+    "name": "{name}, aka {alias}",
+    "oneLiner": "Software engineer focused on backend and infrastructure (UM6P-1337, 42 Network)."
+  },
+  "about": {
+    "title": "About",
+    "more": "More: {experience}, {projects}, {skills}."
+  },
+  "experience": {
+    "title": "Experience",
+    "role": "{title} at {company}",
+    "more": "The full history is in my resume: type {resume}."
+  },
+  "projects": {
+    "title": "Projects",
+    "stack": "Stack:",
+    "source": "Source:",
+    "diagram": "Architecture diagram: open it from the Projects section ({cmd})."
+  },
+  "skills": {
+    "title": "Technical skills",
+    "groups": [
+      {
+        "label": "Languages",
+        "items": "Python, C/C++, JavaScript, Bash, SQL"
+      },
+      {
+        "label": "Backend",
+        "items": "Django, Django Ninja, Pydantic, FastAPI, Celery, REST APIs · PostgreSQL, Redis, MariaDB"
+      },
+      {
+        "label": "DevOps & cloud",
+        "items": "Docker, Kubernetes (k3s), Argo CD / GitOps, GitHub Actions, NGINX, Gunicorn, Linux · AWS, DigitalOcean, Terraform, Ansible"
+      },
+      {
+        "label": "Observability",
+        "items": "Grafana, Loki, Promtail / Alloy, Prometheus, structured JSON logging"
+      },
+      {
+        "label": "Quality & tools",
+        "items": "pytest, factory-boy, coverage, Black, flake8, Git, GDB"
+      },
+      {
+        "label": "Frontend",
+        "items": "React, Three.js, Tailwind CSS"
+      },
+      {
+        "label": "Spoken languages",
+        "items": "Arabic (native) · French (fluent) · English (professional)"
+      }
+    ],
+    "more": "More detail in my resume: type {resume}."
+  },
+  "education": {
+    "title": "Education"
+  },
+  "contact": {
+    "title": "Contact",
+    "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "email": "Email",
+    "form": "Or send a message with the contact form: {cmd}."
+  },
+  "resume": {
+    "downloading": "Downloading {file}…",
+    "fallback": "Nothing happened? {link}",
+    "open": "Open the PDF"
+  },
+  "goto": {
+    "sections": "Sections: {list}",
+    "unknown": "No section named “{name}”.",
+    "missing": "The {name} section isn't on the page yet."
+  },
+  "ls": {
+    "title": "Sections",
+    "hint": "Jump to one with {cmd}, for example."
+  },
+  "sections": {
+    "about": "About",
+    "experience": "Experience",
+    "tech": "Tech stack",
+    "works": "Projects",
+    "education": "Education",
+    "til": "Today I learned",
+    "contact": "Contact"
+  },
+  "til": {
+    "title": "Today I learned",
+    "empty": "No notes yet. Check back soon.",
+    "more": "Read them in full: {cmd}."
+  },
+  "lang": {
+    "current": "Current language: {lang}.",
+    "set": "Language set to English.",
+    "unknown": "Unknown language “{value}”. Use en or fr.",
+    "names": {
+      "en": "English",
+      "fr": "French"
+    }
+  },
+  "theme": {
+    "current": "Current theme: {theme}.",
+    "set": "Theme set to {theme}.",
+    "unknown": "Unknown theme “{value}”. Use light or dark.",
+    "names": {
+      "light": "light",
+      "dark": "dark"
+    }
+  },
+  "history": {
+    "empty": "No commands yet."
+  },
+  "sudo": "Nice try. guest is not in the sudoers file. The owner does take requests, though: type {cmd}.",
+  "notFound": "command not found: {cmd}",
+  "didYouMean": "Did you mean {cmd}?",
+  "helpHint": "Type {cmd} to list the commands.",
+  "completions": "Possible completions:",
+  "interrupted": "^C",
+  "name": "Terminal"
+}

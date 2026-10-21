@@ -1,41 +1,49 @@
+// A color backed by a `--c-<name>` CSS variable holding "R G B" channels, so Tailwind's opacity
+// modifiers (bg-background/80) keep working.
+const token = (name) => `rgb(var(--c-${name}) / <alpha-value>)`;
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./src/**/*.{js,jsx}'],
   theme: {
     extend: {
-      // Design tokens. Every text/background pair below meets WCAG AA (checked):
-      // foreground 17.8:1, foreground-muted 8.5:1 and primary 6.8:1 on background;
-      // muted 7.5:1 on surface-raised; line-strong >= 3.4:1 against both surfaces.
+      // Design tokens. Values live in CSS variables (src/index.css): `:root` is the dark theme,
+      // `:root[data-theme='light']` the light one, so every class follows the theme. Every
+      // text/background pair meets WCAG AA in both themes (checked by script):
+      //   dark:  foreground 17.8:1, muted 8.5:1, primary-400 7.3:1 on background; dark text on
+      //          primary 6.8:1; line-strong >= 4:1 on surfaces.
+      //   light: foreground 16.9:1, muted 7.6:1, primary-400 5.7:1 on background; dark text on
+      //          primary 5.0:1; primary focus ring 3.4:1; line-strong >= 3.3:1 on surfaces.
       colors: {
-        background: '#050816', // page, night sky
+        background: token('background'), // page
         surface: {
-          DEFAULT: '#0e0b22', // cards and panels
-          raised: '#171338', // inputs, chips, hover
+          DEFAULT: token('surface'), // opaque panels
+          raised: token('surface-raised'), // inputs, chips, hover
         },
         foreground: {
-          DEFAULT: '#f2f1f7', // headings and body
-          muted: '#aaa6c3', // secondary copy
+          DEFAULT: token('foreground'), // headings and body ("text")
+          muted: token('foreground-muted'), // secondary copy
         },
         primary: {
-          DEFAULT: '#FF6500', // brand orange; pair with dark text (white on orange is 2.95:1)
-          400: '#ff8533',
-          600: '#e65b00',
+          DEFAULT: token('primary'), // brand orange: button fill, focus ring
+          400: token('primary-400'), // orange text on the page background
+          hover: token('primary-hover'), // button fill on hover
         },
-        secondary: {
-          DEFAULT: '#a78bfa', // violet, used sparingly (waves mid-stop, second timeline dot)
-        },
-        tertiary: {
-          DEFAULT: '#3b82f6', // deep blue, the far end of the waves gradient; decorative only
-        },
-        // Translucent card fill over the waves background; used with backdrop-blur (.card-glass).
-        // Text contrast is checked against the opaque worst case below it: background.
+        'on-primary': token('on-primary'), // text on primary fills (dark in both themes)
+        secondary: { DEFAULT: token('secondary') }, // violet: waves mid-stop, accents
+        tertiary: { DEFAULT: token('tertiary') }, // blue: far end of the waves; decorative
+        success: token('success'), // form sent, operational status
+        danger: token('danger'), // form errors, failed status
+        info: token('info'), // tags
+        // Translucent fills over the waves (used with backdrop-blur, .card-glass) and hairlines
+        // carry their own alpha, so they take no opacity modifier.
         glass: {
-          DEFAULT: 'rgb(14 11 34 / 0.62)', // surface at 62%
-          strong: 'rgb(23 19 56 / 0.78)', // surface-raised at 78%: nav menu, inputs
+          DEFAULT: 'var(--color-glass)',
+          strong: 'var(--color-glass-strong)',
         },
         line: {
-          DEFAULT: 'rgb(255 255 255 / 0.1)', // decorative hairlines
-          strong: '#77749a', // control boundaries (non-text contrast >= 3:1)
+          DEFAULT: 'var(--color-line)', // decorative hairlines
+          strong: token('line-strong'), // control boundaries (non-text contrast >= 3:1)
         },
       },
       fontFamily: {
