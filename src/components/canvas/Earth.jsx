@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useGLTF } from "@react-three/drei";
+import { Preload, useGLTF } from "@react-three/drei";
 
 import { AutoRotate, ViewCamera } from "./helpers";
 
@@ -14,6 +14,8 @@ const Earth = () => {
   return (
     <>
       <ViewCamera position={[-4.33, 0, 6.5]} fov={45} near={0.1} far={200} />
+      {/* Compile shaders and upload textures while loading, not on the first scroll into view */}
+      <Preload all />
       <AutoRotate speed={0.1}>
         <primitive object={earth} scale={2.5} />
       </AutoRotate>

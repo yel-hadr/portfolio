@@ -50,16 +50,17 @@ There is no test suite and no Prettier config yet.
 - Motion: one shared reveal in `src/utils/motion.js`. `<MotionConfig reducedMotion="user">` at the root drops transform animations for reduced-motion users.
 
 **3D rendering: one Canvas, many inline Views.**
-- `App.jsx` mounts a single `<Canvas>` with `style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}` behind the content. It's an inline style because R3F's own inline `position: relative` beats Tailwind classes. The Canvas renders `<View.Port />`.
+- `canvas/Scene3D.jsx` holds the single `<Canvas>`, lazily loaded by `App.jsx`. It uses `style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}` behind the content; it's an inline style because R3F's own inline `position: relative` beats Tailwind classes. The Canvas renders `<View.Port />`, with `dpr={[1, 1.5]}` and `powerPreference: 'default'`.
+- **Code splitting:** three, R3F and drei are reached only through lazy modules: `Scene3D`, `SceneViewImpl` and the scene components exported by `canvas/index.jsx`. `vite.config.js` `manualChunks` keeps them in `vendor-three` and `vendor-r3f`, off the first paint. Don't import `three`, `@react-three/*` or `maath` from DOM components; route them through those lazy modules. Check `dist/index.html`: it should only `modulepreload` `vendor-react` and `vendor-motion`.
 - Every scene is placed in the page with `<SceneView>` (`canvas/SceneView.jsx`), a drei inline `<View>` box whose children are tunnelled into the port: Hero `Computers`, About `Earth` (lg only), the 9 tech `Ball`s, Contact `Earth`, and the full-screen `Stars` (index 1, drawn first).
 - The result is one WebGL context for the whole page. **Never add another `<Canvas>`.** Add a `SceneView` instead.
 - Each scene sets its own camera with `ViewCamera`, except balls, which share the root camera.
-- `frameloop` is `always`, or `demand` plus redraw-on-scroll when the user prefers reduced motion. Use `usePrefersReducedMotion()`, which is live, to stop `AutoRotate`, `Float`, star rotation and parallax.
+- `frameloop` is always `demand`. `FrameDriver` (in `Scene3D`) redraws on scroll, resize and pointer moves, and ticks ambient motion at about 30 fps. Under reduced motion it redraws only on scroll and resize. So animate with `delta` or `MathUtils.damp`, never per-frame constants. Use `usePrefersReducedMotion()`, which is live, to stop `AutoRotate`, `Float`, star rotation and parallax.
 - The opaque `herobg.png` backdrop must stay **below** the canvas, or it hides the hero model.
 
 **WebGL safety — must be preserved:**
-- `useWebGL()` probes for **WebGL2** (three ≥ r163 is WebGL2-only) and `App` renders the full-page `WebGLFallback` when it's missing.
-- `CanvasErrorBoundary` wraps the Canvas itself (a failed renderer drops only the 3D layer) and every scene, inside `SceneView`. Inside the Canvas it renders `fallback ?? null`; DOM can't render there. `onError` makes the `SceneView` swap to its DOM `fallback` prop. `sectionType` is only a log label. Never remove these wrappers.
+- `useWebGL()` probes for **WebGL2** (three ≥ r163 is WebGL2-only). Without it, `App` skips the 3D layer and every `SceneView` renders its static `fallback` (via `WebGLContext`); the content still renders, with `WebGLFallback` shown as a notice after the hero.
+- `CanvasErrorBoundary` wraps the lazy 3D layer, catching a failed renderer or a failed chunk load and dropping only the 3D layer. It also wraps each `SceneView`'s lazy half (outer, for a chunk failure) and every scene (inner, inside `SceneViewImpl`). Inside the Canvas it renders `fallback ?? null`; DOM can't render there. `onError` makes the `SceneView` swap to its DOM `fallback` prop. `sectionType` is only a log label. Never remove these wrappers.
 - Boundaries do **not** catch `useFrame` exceptions or context loss. Keep `useFrame` callbacks null-safe. A context restore triggers `invalidate()` via `onCreated`.
 
 **GPU resources.** `useGLTF` / `useTexture` results are cached and shared. **Clone a cached scene per mount** (`Earth` does `scene.clone()`), because an Object3D has one parent. **Never dispose cached geometry, materials or textures** on unmount; the old `useCleanup` hook did, which blanked the Contact globe, and it was removed. R3F disposes the objects it creates declaratively.

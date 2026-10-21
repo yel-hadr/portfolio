@@ -29,10 +29,11 @@ const Computers = () => {
     return () => window.removeEventListener("pointermove", onMove);
   }, []);
 
-  useFrame(() => {
+  // damp() is frame-rate independent, so the easing feels the same under the ~30 fps demand loop
+  useFrame((_, delta) => {
     if (!parallaxRef.current) return;
     const target = isMobile || reduced ? 0 : pointerX.current * 0.05;
-    parallaxRef.current.rotation.y = MathUtils.lerp(parallaxRef.current.rotation.y, target, 0.05);
+    parallaxRef.current.rotation.y = MathUtils.damp(parallaxRef.current.rotation.y, target, 3, Math.min(delta, 0.1));
   });
 
   return (

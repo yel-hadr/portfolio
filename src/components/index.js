@@ -1,4 +1,4 @@
-import { Ball, Computers, Earth, SceneView, Stars } from './canvas';
+import { Ball, Computers, Earth, SceneView, Scene3D, Stars } from './canvas';
 import Hero from './Hero';
 import Navbar from './Navbar';
 import About from './About';
@@ -26,6 +26,7 @@ export {
   Computers,
   Earth,
   SceneView,
+  Scene3D,
   Stars,
   ErrorBoundary,
   ErrorFallback,

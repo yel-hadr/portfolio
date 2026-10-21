@@ -1,4 +1,4 @@
-import { Decal, Float, useTexture } from '@react-three/drei';
+import { Decal, Float, Preload, useTexture } from '@react-three/drei';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 
 // Rendered through a SceneView, so it shares the root camera (fov 75 at z=5), like the old per-icon Canvas.
@@ -8,6 +8,9 @@ const Ball = ({ imgUrl }) => {
   const reduced = usePrefersReducedMotion();
 
   return (
+    <>
+    {/* Compile shaders and upload the decal while loading, not on the first scroll into view */}
+    <Preload all />
     <Float speed={reduced ? 0 : 1.75} rotationIntensity={reduced ? 0 : 1} floatIntensity={reduced ? 0 : 2}>
       <ambientLight intensity={0.25} />
       <directionalLight position={[0, 0, 0.05]} />
@@ -17,6 +20,7 @@ const Ball = ({ imgUrl }) => {
         <Decal position={[0, 0, 1]} rotation={[2 * Math.PI, 0, 6.25]} scale={1} map={decal} flatShading />
       </mesh>
     </Float>
+    </>
   );
 };
 
