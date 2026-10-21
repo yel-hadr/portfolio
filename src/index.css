@@ -3,13 +3,17 @@
 @tailwind utilities;
 
 @layer base {
-  /* Tokens as CSS variables, for places that only take inline styles (the timeline library). */
+  /* Tokens as CSS variables, for places that only take inline styles or JS (the timeline
+     library, the waves canvas). */
   :root {
     --color-background: theme('colors.background');
     --color-surface: theme('colors.surface.DEFAULT');
     --color-foreground: theme('colors.foreground.DEFAULT');
     --color-line: theme('colors.line.DEFAULT');
     --color-glass: theme('colors.glass.DEFAULT');
+    --color-primary: theme('colors.primary.DEFAULT');
+    --color-secondary: theme('colors.secondary.DEFAULT');
+    --color-tertiary: theme('colors.tertiary.DEFAULT');
   }
 
   /* scroll-padding-top keeps anchor targets and keyboard-focused elements clear of the

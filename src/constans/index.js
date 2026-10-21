@@ -110,7 +110,7 @@ const experiences = [
   {
     title: 'Lead Backend Engineer & DevOps Infrastructure Lead',
     company_name: 'Legaliox',
-    iconBg: '#FF6500',
+    iconBg: 'var(--color-primary)',
     date: '',
     points: [
       'Lead the backend of Legaliox, a multi-tenant legal SaaS platform.',
@@ -121,7 +121,7 @@ const experiences = [
   {
     title: 'Software Engineering Intern',
     company_name: 'WePartner Consulting',
-    iconBg: '#a78bfa',
+    iconBg: 'var(--color-secondary)',
     date: '',
     points: ['Built an AI-powered agent that analyzes resumes.'],
   },

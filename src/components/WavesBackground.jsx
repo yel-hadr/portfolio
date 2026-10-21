@@ -87,13 +87,20 @@ const CONFIG = {
 const MAX_DPR = 1.5;
 const FRAME_MS = 1000 / 30;
 
-// Brand gradient across the viewport: orange bottom-left, violet, deep blue top-right.
-// Low alpha so text on top keeps its contrast (see the overlay in WavesBackground below).
+// Brand gradient across the viewport: primary (orange) bottom-left, secondary (violet), tertiary
+// (deep blue) top-right. Colors come from the Tailwind theme through the CSS variables in
+// src/index.css; low alpha so text on top keeps its contrast (see the overlays below).
 const STOPS = [
-  [0, 'rgba(255, 101, 0, 0.55)'],
-  [0.45, 'rgba(167, 139, 250, 0.34)'],
-  [1, 'rgba(59, 130, 246, 0.3)'],
+  [0, '--color-primary', 0.55],
+  [0.45, '--color-secondary', 0.34],
+  [1, '--color-tertiary', 0.3],
 ];
+
+// '#rrggbb' token + alpha -> 'rgb(r g b / a)'
+const withAlpha = (hex, alpha) => {
+  const n = parseInt(hex.trim().slice(1), 16);
+  return `rgb(${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255} / ${alpha})`;
+};
 
 const WavesBackground = () => {
   const canvasRef = useRef(null);
@@ -120,8 +127,11 @@ const WavesBackground = () => {
       canvas.height = Math.round(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+      const tokens = getComputedStyle(document.documentElement);
       const gradient = ctx.createLinearGradient(0, height, width, 0);
-      STOPS.forEach(([offset, color]) => gradient.addColorStop(offset, color));
+      STOPS.forEach(([offset, token, alpha]) =>
+        gradient.addColorStop(offset, withAlpha(tokens.getPropertyValue(token), alpha))
+      );
       ctx.strokeStyle = gradient;
       ctx.lineWidth = 1;
     };
@@ -265,7 +275,7 @@ const WavesBackground = () => {
       <canvas ref={canvasRef} className='block h-full w-full' />
       {/* Readability: a dark wash that is heaviest where the hero text sits (top left) and at
           the bottom edge, so lines never compete with copy at full strength. */}
-      <div className='absolute inset-0 bg-[radial-gradient(ellipse_at_20%_30%,rgb(5_8_22/0.7),transparent_55%)]' />
+      <div className='absolute inset-0 bg-[radial-gradient(ellipse_at_20%_30%,theme(colors.background/70%),transparent_55%)]' />
       <div className='absolute inset-0 bg-gradient-to-b from-background/40 via-transparent to-background/70' />
     </div>
   );

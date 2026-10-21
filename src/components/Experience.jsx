@@ -60,7 +60,7 @@ const Experience = () => {
       />
       <div className='mt-12 flex flex-col'>
         {/* animate={false}: entries stay visible instead of popping in on scroll */}
-        <VerticalTimeline animate={false} lineColor='rgb(255 255 255 / 0.1)'>
+        <VerticalTimeline animate={false} lineColor='var(--color-line)'>
           {experiences.map((experience) => (
             <ExperienceCard key={experience.title} experience={experience} />
           ))}

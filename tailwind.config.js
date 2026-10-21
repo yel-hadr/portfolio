@@ -22,7 +22,10 @@ export default {
           600: '#e65b00',
         },
         secondary: {
-          DEFAULT: '#a78bfa', // violet from the hero pattern and stars, used sparingly
+          DEFAULT: '#a78bfa', // violet, used sparingly (waves mid-stop, second timeline dot)
+        },
+        tertiary: {
+          DEFAULT: '#3b82f6', // deep blue, the far end of the waves gradient; decorative only
         },
         // Translucent card fill over the waves background; used with backdrop-blur (.card-glass).
         // Text contrast is checked against the opaque worst case below it: background.
