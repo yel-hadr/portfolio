@@ -1,1 +1,20 @@
-{}
+{
+  "title": "System status",
+  "checking": "Checking…",
+  "operational": "All systems operational",
+  "failed": "Last deploy failed",
+  "deploying": "Deploying…",
+  "incomplete": "Last deploy did not finish",
+  "unavailable": "Status unavailable",
+  "deployedAt": "deployed {time}",
+  "failedAt": "ended {time}",
+  "startedAt": "started {time}",
+  "endedAt": "stopped {time}",
+  "justNow": "just now",
+  "viewRun": "view the CI/CD run",
+  "viewActions": "view CI/CD runs on GitHub",
+  "commits": "Recent commits",
+  "commit": "Commit",
+  "in": "in repository",
+  "newTab": "(opens in a new tab)"
+}
