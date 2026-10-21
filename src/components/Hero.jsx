@@ -5,8 +5,10 @@ import { profile320, profile640 } from '../assets';
 import { person } from '../constans';
 import { reveal, staggerContainer } from '../utils/motion';
 import ResumeLink from './ResumeLink';
+import { useI18n } from '../i18n/context';
 
 const Hero = () => {
+  const { t } = useI18n();
   return (
     <section
       id='hero'
@@ -32,7 +34,7 @@ const Hero = () => {
               src={profile640}
               srcSet={`${profile320} 320w, ${profile640} 640w`}
               sizes='(min-width: 1024px) 304px, (min-width: 640px) 192px, 144px'
-              alt='Portrait of Youssef El Hadraoui'
+              alt={t('hero.portraitAlt')}
               width={640}
               height={800}
               // React 18 has no fetchPriority prop; the lowercase attribute passes through as-is
@@ -52,16 +54,16 @@ const Hero = () => {
             </span>
           </motion.h1>
           <motion.p variants={reveal()} className={`${styles.heroSubText} mt-6`}>
-            {person.title}
+            {t('person.title')}
           </motion.p>
 
           <motion.div variants={reveal()} className='mt-10 flex flex-wrap gap-4'>
             <a href='#works' className={styles.buttonPrimary}>
-              See my projects
+              {t('hero.seeProjects')}
             </a>
             <ResumeLink />
             <a href='#contact' className={styles.buttonGhost}>
-              Get in touch
+              {t('hero.getInTouch')}
             </a>
           </motion.div>
         </div>

@@ -4,6 +4,7 @@ import 'react-vertical-timeline-component/style.min.css';
 import { experiences } from '../constans';
 import { SectionWrapper } from '../hoc';
 import SectionHeader from './SectionHeader';
+import { useI18n } from '../i18n/context';
 
 // The timeline library only takes inline styles, so read the Tailwind tokens through the
 // CSS variables defined in src/index.css.
@@ -19,6 +20,9 @@ const CARD_STYLE = {
 };
 
 const ExperienceCard = ({ experience }) => {
+  const { t } = useI18n();
+  const title = t(`experience.items.${experience.id}.title`);
+  const points = t(`experience.items.${experience.id}.points`);
   return (
     <VerticalTimelineElement
       contentStyle={CARD_STYLE}
@@ -30,14 +34,14 @@ const ExperienceCard = ({ experience }) => {
         boxShadow: '0 0 0 4px var(--color-background), 0 0 0 5px var(--color-line)',
       }}
     >
-      <h3 className='text-foreground text-xl sm:text-2xl font-bold'>{experience.title}</h3>
+      <h3 className='text-foreground text-xl sm:text-2xl font-bold'>{title}</h3>
       {/* The visible date renders after the card content; give screen readers it in reading order */}
       {experience.date && <p className='sr-only'>{experience.date}</p>}
       {experience.company_name && (
         <p className='text-primary-400 font-semibold !m-0'>{experience.company_name}</p>
       )}
       <ul className='mt-4 list-disc ml-5 space-y-2'>
-        {experience.points.map((point) => (
+        {points.map((point) => (
           <li
             key={point}
             className='text-foreground-muted text-sm sm:text-base !font-normal leading-relaxed pl-1'
@@ -51,18 +55,15 @@ const ExperienceCard = ({ experience }) => {
 };
 
 const Experience = () => {
+  const { t } = useI18n();
   return (
     <>
-      <SectionHeader
-        id='experience'
-        title='Experience.'
-        lead='Where I build backends and the infrastructure they run on.'
-      />
+      <SectionHeader id='experience' title={t('experience.title')} lead={t('experience.lead')} />
       <div className='mt-12 flex flex-col'>
         {/* animate={false}: entries stay visible instead of popping in on scroll */}
         <VerticalTimeline animate={false} lineColor='var(--color-line)'>
           {experiences.map((experience) => (
-            <ExperienceCard key={experience.title} experience={experience} />
+            <ExperienceCard key={experience.id} experience={experience} />
           ))}
         </VerticalTimeline>
       </div>

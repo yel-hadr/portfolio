@@ -11,6 +11,28 @@
       content="Youssef El Hadraoui (Jebril), Software Engineer in cloud infrastructure and DevOps: experience, projects, education and contact."
     />
     <title>Youssef El Hadraoui | Portfolio</title>
+    <script>
+      // Before the first paint: theme (saved choice, else dark) and language
+      // (saved choice, else the browser's), so the page never flashes the wrong one.
+      (function () {
+        var root = document.documentElement;
+        var theme, lang;
+        try {
+          theme = localStorage.getItem('theme');
+          lang = localStorage.getItem('lang');
+        } catch (e) {}
+        // Dark is the site's default look; light only when the visitor picked it
+        if (theme !== 'light') theme = 'dark';
+        if (lang !== 'en' && lang !== 'fr') {
+          lang = /^fr\b/i.test(navigator.language || '') ? 'fr' : 'en';
+        }
+        root.dataset.theme = theme;
+        root.lang = lang;
+        document.querySelector('meta[name="theme-color"]').content =
+          theme === 'light' ? '#f6f5fb' : '#050816';
+        document.querySelector('meta[name="color-scheme"]').content = theme;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

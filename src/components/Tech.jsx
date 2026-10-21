@@ -4,16 +4,14 @@ import { SectionWrapper } from '../hoc';
 import { technologies } from '../constans';
 import { reveal } from '../utils/motion';
 import SectionHeader from './SectionHeader';
+import { useI18n } from '../i18n/context';
 import { Ball, SceneView } from './canvas';
 
 const Tech = () => {
+  const { t } = useI18n();
   return (
     <>
-      <SectionHeader
-        id='tech'
-        title='Tech stack.'
-        lead='Cloud, infrastructure and the languages I build with.'
-      />
+      <SectionHeader id='tech' title={t('tech.title')} lead={t('tech.lead')} />
       <motion.ul
         variants={reveal()}
         className='mt-12 flex flex-wrap justify-center gap-x-6 gap-y-8 sm:gap-x-10'

@@ -17,56 +17,43 @@ import {
   reactjs,
 } from '../assets';
 
-// Name, headline and summary, as on the resume. Used by the Hero, About and Footer.
+// Language-independent facts. All user-facing text (title, summary, descriptions...) lives in
+// the dictionaries in src/locales/<lang>/core.json, keyed by the ids below.
 export const person = {
   name: 'Youssef El Hadraoui',
   alias: 'Jebril',
-  title: 'Software Engineer | Cloud Infrastructure & DevOps',
-  summary:
-    'Software Engineer specializing in multi-tenant backend architecture, cloud infrastructure, and DevOps automation. Proven experience in designing scalable microservices, implementing GitOps delivery pipelines, and managing containerized environments. Passionate about automating server setups, observability, and integrating AI coding assistants into modern development workflows.',
+  email: 'youssefelhadraoui99@gmail.com',
+  linkedin: 'https://www.linkedin.com/in/youssef-el-hadraoui',
   github: 'https://github.com/yel-hadr',
   // public/Youssef_Elhadraoui_Resume.pdf, resolved against Vite's base path
   resume: `${import.meta.env.BASE_URL}Youssef_Elhadraoui_Resume.pdf`,
 };
 
+// Labels: nav.<id> in the dictionaries
 export const navLinks = [
-  {
-    id: 'about',
-    title: 'About',
-  },
-  {
-    id: 'experience',
-    title: 'Experience',
-  },
-  {
-    id: 'works',
-    title: 'Projects',
-  },
-  {
-    id: 'education',
-    title: 'Education',
-  },
-  {
-    id: 'contact',
-    title: 'Contact',
-  },
+  { id: 'about' },
+  { id: 'experience' },
+  { id: 'works' },
+  { id: 'education' },
+  { id: 'contact' },
 ];
 
+// Labels: about.services.<id>
 const services = [
   {
-    title: 'Backend Architecture',
+    id: 'backend',
     icon: backend,
   },
   {
-    title: 'Cloud Infrastructure',
+    id: 'cloud',
     icon: web,
   },
   {
-    title: 'DevOps & GitOps',
+    id: 'devops',
     icon: mobile,
   },
   {
-    title: 'Automation & Observability',
+    id: 'automation',
     icon: creator,
   },
 ];
@@ -123,32 +110,26 @@ const technologies = [
 ];
 
 // Dates are left empty until they are confirmed; the timeline hides an empty date.
+// Title and points: experience.items.<id>
 const experiences = [
   {
-    title: 'Lead Backend Engineer & DevOps Infrastructure Lead',
+    id: 'legaliox',
     company_name: 'Legaliox',
     iconBg: 'var(--color-primary)',
     date: '',
-    points: [
-      'Lead the backend of Legaliox, a multi-tenant legal SaaS platform.',
-      'Design and build the API and its business logic for every tenant.',
-      'Run the DevOps infrastructure the platform is built, shipped and hosted on.',
-    ],
   },
   {
-    title: 'Software Engineering Intern',
+    id: 'wepartner',
     company_name: 'WePartner Consulting',
     iconBg: 'var(--color-secondary)',
     date: '',
-    points: ['Built an AI-powered agent that analyzes resumes.'],
   },
 ];
 
+// Name and description: works.items.<id>. `diagram` opens an architecture diagram modal.
 const projects = [
   {
-    name: 'BADASS Network Architecture',
-    description:
-      'A data-center network design: VXLAN overlays with a BGP EVPN control plane, routed with FRRouting.',
+    id: 'badass',
     tags: [
       {
         name: 'BGP EVPN',
@@ -166,9 +147,7 @@ const projects = [
     source_code_link: '',
   },
   {
-    name: 'Cloud-1 Automation',
-    description:
-      'Automated deployment of a WordPress and MariaDB stack on AWS: Terraform provisions the infrastructure and Ansible configures the host.',
+    id: 'cloud1',
     tags: [
       {
         name: 'AWS',
@@ -188,11 +167,10 @@ const projects = [
       },
     ],
     source_code_link: 'https://github.com/yel-hadr/cloud-1_42',
+    diagram: 'cloud1',
   },
   {
-    name: 'Inception-of-Things',
-    description:
-      'Kubernetes from the ground up: K3s clusters on Vagrant VMs, Traefik ingress with host-based routing, then K3d with Argo CD deploying from Git.',
+    id: 'iot',
     tags: [
       {
         name: 'Vagrant',
@@ -216,11 +194,10 @@ const projects = [
       },
     ],
     source_code_link: 'https://github.com/yel-hadr/-Inception-of-Things',
+    diagram: 'iot',
   },
   {
-    name: 'Interactive 3D Portfolio',
-    description:
-      'This site: React with React Three Fiber scenes sharing one WebGL canvas, a canvas wave background and Tailwind design tokens.',
+    id: 'portfolio',
     tags: [
       {
         name: 'React',
@@ -239,21 +216,15 @@ const projects = [
   },
 ];
 
+// Degree, date and points: education.items.<id>
 const education = [
-  {
-    school: '42 Paris',
-    degree: 'RNCP Level 7, Network & Information Systems Architecture',
-    date: 'September 2026',
-    points: [],
-  },
-  {
-    school: '1337 Coding School',
-    degree: 'Common Core',
-    date: '2022 – 2024',
-    points: [
-      'Peer-to-peer, project-based curriculum: C and C++, UNIX processes and signals, networking, graphics and containers with Docker.',
-    ],
-  },
+  { id: 'paris42', school: '42 Paris' },
+  { id: 'school1337', school: '1337 Coding School' },
 ];
 
-export { services, technologies, experiences, projects, education };
+// "Today I learned" notes. Title and body: til.items.<id> in src/locales/<lang>/til.json. Code is
+// not translated, so comments inside snippets stay in English. Tag color: info, success, danger
+// or primary (theme tokens, see Til.jsx).
+const tils = [];
+
+export { services, technologies, experiences, projects, education, tils };
