@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 import { styles } from '../styles';
-import { profile } from '../assets';
+import { profile320, profile640 } from '../assets';
 import { person } from '../constans';
 import { reveal, staggerContainer } from '../utils/motion';
 
@@ -27,15 +27,18 @@ const Hero = () => {
           />
           <div className='card-glass relative p-2'>
             <img
-              src={profile}
+              // Pre-cropped to the frame's 4:5; 320w for phones, 640w for the 304px desktop frame at 2x
+              src={profile640}
+              srcSet={`${profile320} 320w, ${profile640} 640w`}
+              sizes='(min-width: 1024px) 304px, (min-width: 640px) 192px, 144px'
               alt='Portrait of Youssef El Hadraoui'
-              width={1280}
-              height={1920}
+              width={640}
+              height={800}
               // React 18 has no fetchPriority prop; the lowercase attribute passes through as-is
               // eslint-disable-next-line react/no-unknown-property
               fetchpriority='high'
               decoding='async'
-              className='aspect-[4/5] w-full rounded-[1.25rem] object-cover object-top'
+              className='aspect-[4/5] w-full rounded-[1.25rem] object-cover'
             />
           </div>
         </motion.figure>

@@ -52,7 +52,7 @@ Target folder:
 - tech icon → `src/assets/tech/`
 - company logo (experience) → `src/assets/company/`
 
-Pick an identifier that is also the file basename, as the existing assets do (`ft_irc` → `./ft_irc.webp`, `cub3D_42` → `./cub3D_42.webp`). It must be a valid JS identifier: letters, digits and `_`, not starting with a digit, no `-`, spaces or dots, and not a reserved word. Assets are stored as WebP at their display size (step below); SVGs stay SVG.
+Pick an identifier that is also the file basename, as the existing assets do (`github` → `./github.webp`, `aws` → `./tech/aws.webp`). It must be a valid JS identifier: letters, digits and `_`, not starting with a digit, no `-`, spaces or dots, and not a reserved word. Assets are stored as WebP at their display size (step below); SVGs stay SVG.
 
 Check for collisions before copying, with both checks:
 
