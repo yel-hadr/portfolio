@@ -42,25 +42,35 @@ There is no test suite and no Prettier config yet.
 
 **Data-driven content.** All portfolio content (`navLinks`, `services`, `technologies`, `experiences`, `projects`) lives in `src/constans/index.js`. Images live in `src/assets/` and are re-exported by name from `src/assets/index.js`, which the constants file imports. Section components just map over these arrays. Adding content means asset → `assets/index.js` export → entry in `constans/index.js`. Components should not need to change. The `/add-project` skill automates this.
 
-**Sections.** `App.jsx` renders Navbar, Hero, About, Experience, Tech, Works and Contact. Most sections are wrapped by the `SectionWrapper(Component, idName)` HOC (`src/hoc/sectionWrapper.jsx`). It adds the `motion.section` stagger-in animation, shared padding, and the `<span class="hash-link" id={idName}>` anchor that `navLinks` ids scroll to. Each section is also wrapped in `ErrorBoundary` in `App.jsx`. Shared Tailwind class strings (typography, padding) live in `src/styles.js`, and motion variants in `src/utils/motion.js`.
+**Sections and landmarks.** `App.jsx` renders a skip link, `Navbar` (`<nav>`), then `<main id="main">` with Hero, About, Experience, Tech, Works and Contact, then `Footer`. Each section is wrapped in `ErrorBoundary`. Sections other than Hero use the `SectionWrapper(Component, idName)` HOC (`src/hoc/sectionWrapper.jsx`). It renders `<section id={idName} aria-labelledby={`${idName}-title`}>` with shared padding, a `scroll-mt` offset for the fixed navbar, and the scroll reveal. `SectionHeader` (`src/components/SectionHeader.jsx`) renders the `h2` with that id. `navLinks` ids must match section ids.
 
-**3D rendering: one shared Canvas plus drei `View`s.** `App.jsx` mounts a single fixed, full-screen `<Canvas frameloop="demand" dpr={[1, 2]}>` behind the page. The Hero computer model (`canvas/Computers.jsx`) and the About earth (`canvas/Earth.jsx`) render into drei `<View track={ref}>` elements, which are tied to DOM refs on the Hero and About wrappers. The star field (`canvas/Stars.jsx`) renders in the same Canvas. Two exceptions create their own `<Canvas>`, each with its own WebGL context:
-- Tech: one `BallCanvas` (`canvas/Ball.jsx`) per technology.
-- Contact: `EarthCanvas` (`canvas/index.jsx`) mounts the same cached Earth scene a second time.
+**Design system.** Tokens live in `tailwind.config.js`:
+- Colors: `background`, `surface` / `surface-raised`, `foreground` / `foreground-muted`, `primary` (brand orange #FF6500 plus 400/600), `secondary`, `line` / `line-strong`. All text pairs meet WCAG AA. Put dark text on orange; white on orange is only 2.95:1.
+- Type: role presets in `src/styles.js` use Tailwind's default scale. Don't add arbitrary `text-[Npx]` sizes or hardcoded hexes.
+- Motion: one shared reveal in `src/utils/motion.js`. `<MotionConfig reducedMotion="user">` at the root drops transform animations for reduced-motion users.
+
+**3D rendering: one Canvas, many inline Views.**
+- `App.jsx` mounts a single `<Canvas>` with `style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}` behind the content. It's an inline style because R3F's own inline `position: relative` beats Tailwind classes. The Canvas renders `<View.Port />`.
+- Every scene is placed in the page with `<SceneView>` (`canvas/SceneView.jsx`), a drei inline `<View>` box whose children are tunnelled into the port: Hero `Computers`, About `Earth` (lg only), the 9 tech `Ball`s, Contact `Earth`, and the full-screen `Stars` (index 1, drawn first).
+- The result is one WebGL context for the whole page. **Never add another `<Canvas>`.** Add a `SceneView` instead.
+- Each scene sets its own camera with `ViewCamera`, except balls, which share the root camera.
+- `frameloop` is `always`, or `demand` plus redraw-on-scroll when the user prefers reduced motion. Use `usePrefersReducedMotion()`, which is live, to stop `AutoRotate`, `Float`, star rotation and parallax.
+- The opaque `herobg.png` backdrop must stay **below** the canvas, or it hides the hero model.
 
 **WebGL safety — must be preserved:**
-- `App.jsx` runs `useWebGL()` and renders the full-page `WebGLFallback` when WebGL is unavailable.
-- Every 3D scene/View must be wrapped in `CanvasErrorBoundary` (`sectionType` picks the fallback). It catches render-loop errors and context loss per section. Never remove these wrappers. New 3D content must be wrapped the same way. (Today the per-icon `BallCanvas` instances in `Tech.jsx` and the `EarthCanvas` in `Contact.jsx` are not wrapped yet.)
+- `useWebGL()` probes for **WebGL2** (three ≥ r163 is WebGL2-only) and `App` renders the full-page `WebGLFallback` when it's missing.
+- `CanvasErrorBoundary` wraps the Canvas itself (a failed renderer drops only the 3D layer) and every scene, inside `SceneView`. Inside the Canvas it renders `fallback ?? null`; DOM can't render there. `onError` makes the `SceneView` swap to its DOM `fallback` prop. `sectionType` is only a log label. Never remove these wrappers.
+- Boundaries do **not** catch `useFrame` exceptions or context loss. Keep `useFrame` callbacks null-safe. A context restore triggers `invalidate()` via `onCreated`.
 
-**GPU resource cleanup.** `src/hooks/useCleanup.js` provides `useCleanup`, `disposeObject`, `disposeMaterial` and `disposeGLTFScene` for disposing geometries, materials and textures on unmount. Use these for new 3D components.
+**GPU resources.** `useGLTF` / `useTexture` results are cached and shared. **Clone a cached scene per mount** (`Earth` does `scene.clone()`), because an Object3D has one parent. **Never dispose cached geometry, materials or textures** on unmount; the old `useCleanup` hook did, which blanked the Contact globe, and it was removed. R3F disposes the objects it creates declaratively.
 
-**Models** are gltf + textures in `public/desktop_pc/` and `public/planet/`, loaded with `useGLTF` plus `useGLTF.preload`.
+**Models** are gltf + textures in `public/desktop_pc/` and `public/planet/`, loaded with `useGLTF` plus `useGLTF.preload`. Compression is planned for Phase 3.
 
-## ESLint caveat
+## ESLint
 
-`npm run lint` passes, with 0 errors and some warnings:
+`npm run lint` passes with 0 errors:
 - `react/prop-types` is off, because the project doesn't use PropTypes.
 - R3F props are allowed through `react/no-unknown-property`'s `ignore` list (`R3F_PROPS`). This only applies in `src/App.jsx` and `src/components/canvas/**`.
-- Legacy debt is downgraded to warnings for the specific files listed in `LEGACY` in `eslint.config.js`. When you clean up one of those files, remove it from `LEGACY` so its rules go back to being errors.
+- The remaining warnings are `react-refresh/only-export-components` on the `SectionWrapper(...)` default exports.
 
 ESLint 9 flat config ignores `.eslintignore`. Use the `ignores` key in the config instead.

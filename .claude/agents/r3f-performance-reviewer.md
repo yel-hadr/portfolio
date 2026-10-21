@@ -1,6 +1,6 @@
 ---
 name: r3f-performance-reviewer
-description: Read-only performance audit of the React Three Fiber / drei scenes. Use proactively after changing anything under src/components/canvas/, the shared <Canvas> or <View>s in src/App.jsx, Tech.jsx's BallCanvas grid, Contact.jsx's EarthCanvas, or the models in public/desktop_pc/ and public/planet/. Reports prioritized findings with measurements; never edits files.
+description: Read-only performance audit of the React Three Fiber / drei scenes. Use proactively after changing anything under src/components/canvas/, the shared <Canvas> in src/App.jsx, any SceneView placement (Hero, About, Tech, Contact), or the models in public/desktop_pc/ and public/planet/. Reports prioritized findings with measurements; never edits files.
 tools: Read, Grep, Glob, Bash, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs
 color: cyan
 ---
@@ -18,13 +18,17 @@ You audit the 3D rendering performance of this portfolio (Vite 5, React 18, Java
 
 ## Map of the 3D code (verify, line numbers drift)
 
-- `src/App.jsx`: one fixed `<Canvas frameloop="demand" dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>` with `<Preload all />`, two drei `<View track={…} frames={1}>` (Hero → `Computers`, About → `Earth`), each with `<OrbitControls autoRotate>`, plus `<StarsCanvas />` (= `canvas/Stars.jsx`).
-- `src/components/canvas/Computers.jsx`: `useGLTF("./desktop_pc/scene.gltf")`, `useFrame` mouse parallax, hemisphere + point + spot light (`castShadow`, `shadow-mapSize={1024}`).
-- `src/components/canvas/Earth.jsx`: `useGLTF("./planet/scene.gltf")`, `<primitive object={scene}>`, `useCleanup`.
-- `src/components/canvas/Stars.jsx`: `Points` from `random.inSphere(new Float32Array(STAR_CONFIG.COUNT))`, rotated in `useFrame`.
-- `src/components/canvas/Ball.jsx` → `BallCanvas`: its own `<Canvas>` per icon, `useTexture` + `Decal`, `Float`, `OrbitControls autoRotate`. `src/components/Tech.jsx` renders one per `technologies` entry in `src/constans/index.js`.
-- `src/components/canvas/index.jsx` → `EarthCanvas`: another separate `<Canvas shadows>` rendering the same `Earth`, used by `src/components/Contact.jsx`. Neither `EarthCanvas` nor the `BallCanvas` instances are wrapped in `CanvasErrorBoundary` yet; any fix that moves them must add the wrapper.
-- `src/hooks/useCleanup.js`: `useCleanup`, `disposeObject`, `disposeMaterial`, `disposeGLTFScene`.
+- `src/App.jsx`: the only `<Canvas>`. Inline `style` makes it fixed and full-screen behind the content (`zIndex: 0`, `pointerEvents: 'none'`, no `eventSource`). `frameloop` is `always`, or `demand` plus `InvalidateOnScroll` under reduced motion. It renders `<View.Port />` and is wrapped in `CanvasErrorBoundary`. `onCreated` redraws after `webglcontextrestored`.
+- `src/components/canvas/SceneView.jsx`: a DOM slot. A drei inline `<View>` tunnels its children into the port, wrapped in `CanvasErrorBoundary` plus `Suspense`. It swaps to a DOM `fallback` on error.
+- Scenes placed with `SceneView`:
+  - `Hero.jsx` → `Computers` (`useGLTF("./desktop_pc/scene.gltf")`, `ViewCamera`, `AutoRotate`, window-pointer parallax).
+  - `About.jsx` → `Earth` (lg only, via `useMediaQuery`).
+  - `Tech.jsx` → 9 × `Ball` (`useTexture` + `Decal` + `Float`; shares the root camera).
+  - `Contact.jsx` → `Earth`.
+  - `App.jsx` → full-screen `Stars` (`index={1}`, drawn first, `depthWrite={false}`).
+- `src/components/canvas/Earth.jsx`: clones the cached scene per mount (`scene.clone()`).
+- `src/components/canvas/helpers.jsx`: `ViewCamera` (`makeDefault` + `lookAt`) and `AutoRotate` (stops under `usePrefersReducedMotion()`).
+- There is no manual disposal of cached `useGLTF`/`useTexture` resources. That is intentional: never dispose shared cache entries.
 
 ## Measure first
 
@@ -37,7 +41,7 @@ npx --yes @gltf-transform/cli@4.5.1 inspect public/desktop_pc/scene.gltf
 npx --yes @gltf-transform/cli@4.5.1 inspect public/planet/scene.gltf
 du -ah src/assets | sort -h | tail -10                       # DOM images (project screenshots, herobg.png)
 identify -format '%f %wx%h %b\n' src/assets/*.png src/assets/tech/*.png src/assets/company/*
-grep -c "name:" <(sed -n '/const technologies/,/];/p' src/constans/index.js)   # BallCanvas count
+grep -c "name:" <(sed -n '/const technologies/,/];/p' src/constans/index.js)   # Ball view count
 mkdir -p /tmp/r3f-audit && npm run build -- --outDir /tmp/r3f-audit/dist --emptyOutDir 2>&1 | tail -30   # chunk sizes
 ```
 
@@ -56,14 +60,14 @@ Report before/after bytes. `optimize` also runs `--simplify` by default, which c
 
 ## Checklist
 
-1. **Preloading.** `useGLTF.preload` path must match the `useGLTF` path exactly (after a .glb switch, both change). `useTexture.preload` for tech icons? `<Preload all />` placement: inside `<Suspense>`, and once per Canvas; note `BallCanvas` puts it outside `Suspense`.
+1. **Preloading.** `useGLTF.preload` path must match the `useGLTF` path exactly (after a .glb switch, both change). `useTexture.preload` for tech icons? First-reveal shader compilation per view (no `<Preload>`; with Views the root scene is empty, so `<Preload all />` would do nothing without `scene`/`camera` props).
 2. **Model weight.** gltf + `.bin` + loose PNG/JPEG vs one compressed GLB. Total bytes per model, draw calls/meshes/materials from `inspect`, largest textures (e.g. `Material_baseColor.jpeg`, `Material.074_25_baseColor.jpeg`).
-3. **dpr.** Every `<Canvas>` (App, each BallCanvas, EarthCanvas) clamped; consider lower max on mobile (the `isMobile` media query in `App.jsx`) and drei `PerformanceMonitor` / `AdaptiveDpr`.
-4. **`frameloop="demand"` pitfalls.** `useFrame` in `Stars.jsx` and `Computers.jsx` only runs when a frame is requested: does anything call `invalidate()`? Check whether `OrbitControls autoRotate` invalidates every frame (effectively turning demand into always), and what `View frames={1}` does to those views. State which animations actually run, with evidence.
-5. **WebGL contexts.** Count live contexts: 1 (App) + N `BallCanvas` + 1 `EarthCanvas`. Browsers cap active contexts (Chrome ~16) and drop the oldest with a "Too many active WebGL contexts" warning. Recommend moving Ball and Contact Earth into the shared Canvas via drei `View` (wrapped in `CanvasErrorBoundary`), or rendering balls only while in viewport.
+3. **dpr.** The single Canvas uses `dpr={[1, 2]}`; consider a lower max on mobile and drei `PerformanceMonitor` driving `dpr` (`AdaptiveDpr` needs controls' regress flag, and there are no controls).
+4. **Render loop.** `frameloop="always"` while motion is allowed: the full-screen Stars view draws every frame, and drei skips offscreen views but still measures all of them. Under reduced motion it is `demand` plus redraw-on-scroll (`invalidate(2)`). Check what runs offscreen, and whether pausing when nothing animates is worth it.
+5. **WebGL contexts.** The expected count is 1 live context (the probe in `src/utils/webgl.js` releases itself). Flag any new `<Canvas>` or `getContext` call: new 3D must be a `SceneView`.
 6. **Textures.** DOM images in `src/assets/` → WebP/AVIF at display size (project cards, `herobg.png` from `tailwind.config.js`). GPU textures → KTX2/Basis, ≤2048, power-of-two.
-7. **Disposal and re-creation.** `useGLTF` returns a cached, shared `scene` (one cache per URL, across Canvases): the same `Earth` scene is mounted as `<primitive object={scene}>` in the About `View` and in Contact's `EarthCanvas`. A three `Object3D` has one parent, so the second mount re-parents it away from the first; and `useCleanup` disposes cached resources on unmount, so a remount re-uploads or renders disposed data. Check for `scene.clone()` / drei `<Clone>` / `useMemo`. Check `Decal` texture disposal in `Ball.jsx`. Flag inline objects/arrays created per render in hot components and missing `useMemo`.
-8. **Lighting and shadows.** `castShadow`/`receiveShadow` with or without `shadows` on the Canvas (wasted or missing), shadow map size, light counts (3 in `Computers.jsx`, 2 per BallCanvas = 2 × N), `antialias` at dpr 2, star count (verify: `Float32Array(COUNT)` with `stride={3}` yields COUNT/3 points).
+7. **Disposal and re-creation.** `useGLTF` returns a cached, shared `scene` (one cache per URL, across Canvases): a scene mounted more than once must be cloned per mount (Earth does), because a three `Object3D` has one parent. Cached geometry, materials and textures must never be disposed on unmount. Check `Computers` still mounts only once (it does not clone). Flag inline objects/arrays created per render in hot components and missing `useMemo`.
+8. **Lighting and shadows.** `castShadow`/`receiveShadow` with or without `shadows` on the Canvas (wasted or missing), shadow map size, light counts (3 in `Computers.jsx`, 2 per Ball = 2 × N), `antialias` at dpr 2, star count (`COUNT * 3` floats, `stride={3}`).
 9. **Bundle and loading.** Is three/R3F/drei in the entry chunk? Recommend `React.lazy` + dynamic `import()` for heavy canvases behind `Suspense`, and `build.rollupOptions.output.manualChunks` in `vite.config.js` (vendor-three). Give chunk sizes from `npm run build`.
 10. **Reduced motion.** `prefers-reduced-motion: reduce` should disable `autoRotate`, `Float`, Stars rotation and the parallax `useFrame`. Grep shows whether any `matchMedia('(prefers-reduced-motion: reduce)')` exists.
 
@@ -76,7 +80,7 @@ Return markdown only, no preamble:
 - **<title>** — `path/to/file.jsx:LINE`
   Evidence: <measured numbers / quoted code>
   Fix: <concrete change; JSX snippet or exact CLI command>
-  Impact: <e.g. -12 MB transfer, -11 WebGL contexts, LCP>   Effort: S | M | L
+  Impact: <e.g. -12 MB transfer, -40% pixels, LCP>   Effort: S | M | L
   Verified: context7 (<library>) | measured | unverified
 ## High
 ## Medium

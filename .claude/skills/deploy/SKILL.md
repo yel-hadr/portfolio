@@ -161,7 +161,7 @@ Then use the `playwright` MCP server at each viewport, 390x844 (mobile) and 1440
 3. `mcp__playwright__browser_take_screenshot` (`deploy-390.png` / `deploy-1440.png`).
 4. `mcp__playwright__browser_console_messages` for errors, and `mcp__playwright__browser_network_requests` for failed requests.
 
-404s on `.gltf`, `.bin`, textures or `/assets/*` almost always mean a base-path problem (step 2). Look at the screenshots: a blank hero, or the full-page WebGL fallback, means the 3D scene did not load. Before blaming the deploy for a WebGL fallback, check the console for WebGL context-creation errors: headless Chromium sometimes has no GPU, which is an environment limit, not a site bug. "Too many active WebGL contexts" warnings come from the per-icon `BallCanvas` instances in `Tech.jsx` and predate this deploy; report them, but they are not a deploy failure.
+404s on `.gltf`, `.bin`, textures or `/assets/*` almost always mean a base-path problem (step 2). Look at the screenshots: a blank hero, or the full-page WebGL fallback, means the 3D scene did not load. Before blaming the deploy for a WebGL fallback, check the console for WebGL context-creation errors: headless Chromium sometimes has no GPU, which is an environment limit, not a site bug. The site uses a single WebGL context, so a "Too many active WebGL contexts" warning is a regression; report it.
 
 ## Report
 

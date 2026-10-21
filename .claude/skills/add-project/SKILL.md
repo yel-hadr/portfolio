@@ -38,7 +38,7 @@ Read these files so field names and style come from the code:
 
 - `src/components/Works.jsx`: `ProjectCard` destructures the project fields. `tag.color` is used as a class name.
 - `src/components/Experience.jsx`: `ExperienceCard` reads `experience.*` fields.
-- `src/components/Tech.jsx`: maps `technologies` and renders one `BallCanvas` per entry.
+- `src/components/Tech.jsx`: maps `technologies` and renders a `SceneView` + `Ball` per entry, with the name shown under it.
 - `src/assets/index.js` and `src/constans/index.js`: current imports, exports and arrays.
 - `grep -n "text-gradient {" src/index.css`: valid tag colors. Today these are `blue-text-gradient`, `green-text-gradient`, `pink-text-gradient` and `orange-text-gradient`. Existing projects only use blue, green and pink.
 
@@ -117,7 +117,7 @@ Both are required. A missing export becomes `undefined` at runtime, and the buil
 
 Tags: rotate through the gradient classes the way existing projects do (first tag blue, then pink or green). Do not create new CSS classes.
 
-**WebGL budget for tech entries.** Every `technologies` entry mounts its own `BallCanvas`, which is a separate `<Canvas>` and a separate WebGL context. The shared Canvas in `App.jsx` adds one more. Browsers allow about 16 active contexts and silently drop the oldest one when you go over. Count the entries with `sed -n '/const technologies/,/^  \];/p' src/constans/index.js | grep -c "name:"`. Today there are 9 tech entries, so 10 contexts. If the new total of tech entries plus 1 is **12 or more**, warn the user and suggest removing an icon or moving the balls into the shared Canvas with drei `View` (a component change, so only on request, and any such change must keep `CanvasErrorBoundary` around each 3D scene and the `WebGLFallback` path in `App.jsx`). Note that the `BallCanvas` instances are not wrapped in `CanvasErrorBoundary` yet, so a lost context there is not caught.
+**Tech entries and 3D.** Each `technologies` entry renders one `Ball` through a `SceneView` into the single shared Canvas (still one WebGL context, so no context budget applies). Each ball is another view drawn per frame, though, so if the list grows past about 15 icons, mention the extra render cost to the user.
 
 ## 6. Verify
 
@@ -144,6 +144,6 @@ Reply with:
 - The image file created, with its size (and the >300 KB warning if it applies).
 - Each edit with `file:line` references: the import and export lines in `src/assets/index.js`, and the import line and new entry in `src/constans/index.js` (use `grep -n <identifier>` to get the line numbers).
 - ESLint and build results, plus screenshots if you took them.
-- Open issues: unrendered fields (experience `icon`), the WebGL context count for tech, renames made to avoid a collision.
+- Open issues: unrendered fields (experience `icon`), renames made to avoid a collision.
 
 Do not commit. Leave that to the user.
