@@ -7,6 +7,15 @@ Personal portfolio of Youssef El Hadraoui (Jebril), Software Engineer in cloud i
 
 Built with Vite 5, React 18, React Three Fiber and drei (one shared WebGL canvas), Tailwind CSS 3 and framer-motion. The background is a 2D-canvas interactive waves effect.
 
+## Features
+
+- **English / French.** Use the EN | FR toggle in the navbar. All text, content included, comes from JSON dictionaries in `src/locales/`.
+- **Dark / light mode.** The theme toggle in the navbar switches every color, which come from CSS variables. In light mode the glass becomes frosted white and the waves turn pastel.
+- **Terminal.** Press <kbd>Ctrl</kbd>+<kbd>`</kbd> or use the terminal button, then type `help`. Commands like `whoami`, `projects`, `skills`, `experience`, `contact`, `resume`, `goto <section>`, `lang fr` and `theme light` navigate the site and read the resume in terminal format.
+- **Architecture diagrams.** The Cloud-1 and Inception-of-Things cards have a "View architecture" button that opens an interactive diagram of how the system works.
+- **System status.** The footer shows the latest CI/CD deploy (linked to its run) and recent commits, live from the GitHub API.
+- **Today I learned.** Short DevOps and backend notes with code snippets, stored as data in `src/constans/index.js` with their text in `src/locales/<lang>/til.json`.
+
 ## Run locally
 
 Requirements: Node.js 20 or newer, and npm.
