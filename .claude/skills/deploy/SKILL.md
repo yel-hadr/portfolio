@@ -35,7 +35,6 @@ gh auth status 2>&1 | grep -E 'Logged in|not logged'   # needed for steps 7-8; n
 
 ```bash
 grep -n "base:" vite.config.js                                   # must be: base: '/portfolio/'
-grep -n "basename={import.meta.env.BASE_URL}" src/App.jsx        # must match once
 grep -rnE "[\"'\`(]/(desktop_pc|planet|logo\.svg|vite\.svg)" src  # must print nothing
 ```
 

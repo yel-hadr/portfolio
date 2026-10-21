@@ -39,8 +39,8 @@ du -sh public/desktop_pc public/planet; du -ah public/*/textures | sort -h | tai
 identify -format '%f %wx%h %b\n' public/*/textures/*        # dimensions, flag >2048 and non power-of-two
 npx --yes @gltf-transform/cli@4.5.1 inspect public/desktop_pc/scene.gltf
 npx --yes @gltf-transform/cli@4.5.1 inspect public/planet/scene.gltf
-du -ah src/assets | sort -h | tail -10                       # DOM images (project screenshots, herobg.png)
-identify -format '%f %wx%h %b\n' src/assets/*.png src/assets/tech/*.png src/assets/company/*
+du -ah src/assets | sort -h | tail -10                       # DOM images (WebP project screenshots, herobg.webp)
+identify -format '%f %wx%h %b\n' src/assets/*.webp src/assets/tech/*.webp
 grep -c "name:" <(sed -n '/const technologies/,/];/p' src/constans/index.js)   # Ball view count
 mkdir -p /tmp/r3f-audit && npm run build -- --outDir /tmp/r3f-audit/dist --emptyOutDir 2>&1 | tail -30   # chunk sizes
 ```
@@ -65,7 +65,7 @@ Report before/after bytes. `optimize` also runs `--simplify` by default, which c
 3. **dpr.** The single Canvas uses `dpr={[1, 2]}`; consider a lower max on mobile and drei `PerformanceMonitor` driving `dpr` (`AdaptiveDpr` needs controls' regress flag, and there are no controls).
 4. **Render loop.** `frameloop="always"` while motion is allowed: the full-screen Stars view draws every frame, and drei skips offscreen views but still measures all of them. Under reduced motion it is `demand` plus redraw-on-scroll (`invalidate(2)`). Check what runs offscreen, and whether pausing when nothing animates is worth it.
 5. **WebGL contexts.** The expected count is 1 live context (the probe in `src/utils/webgl.js` releases itself). Flag any new `<Canvas>` or `getContext` call: new 3D must be a `SceneView`.
-6. **Textures.** DOM images in `src/assets/` → WebP/AVIF at display size (project cards, `herobg.png` from `tailwind.config.js`). GPU textures → KTX2/Basis, ≤2048, power-of-two.
+6. **Textures.** DOM images in `src/assets/` → WebP/AVIF at display size (already WebP at display size since Phase 3; keep it that way). GPU textures → KTX2/Basis, ≤2048, power-of-two.
 7. **Disposal and re-creation.** `useGLTF` returns a cached, shared `scene` (one cache per URL, across Canvases): a scene mounted more than once must be cloned per mount (Earth does), because a three `Object3D` has one parent. Cached geometry, materials and textures must never be disposed on unmount. Check `Computers` still mounts only once (it does not clone). Flag inline objects/arrays created per render in hot components and missing `useMemo`.
 8. **Lighting and shadows.** `castShadow`/`receiveShadow` with or without `shadows` on the Canvas (wasted or missing), shadow map size, light counts (3 in `Computers.jsx`, 2 per Ball = 2 × N), `antialias` at dpr 2, star count (`COUNT * 3` floats, `stride={3}`).
 9. **Bundle and loading.** Is three/R3F/drei in the entry chunk? Recommend `React.lazy` + dynamic `import()` for heavy canvases behind `Suspense`, and `build.rollupOptions.output.manualChunks` in `vite.config.js` (vendor-three). Give chunk sizes from `npm run build`.

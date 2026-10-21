@@ -52,24 +52,31 @@ Target folder:
 - tech icon → `src/assets/tech/`
 - company logo (experience) → `src/assets/company/`
 
-Pick an identifier that is also the file basename, as the existing assets do (`ft_irc` → `./ft_irc.png`, `cub3D_42` → `./cub3D_42.png`). It must be a valid JS identifier: letters, digits and `_`, not starting with a digit, no `-`, spaces or dots, and not a reserved word. Keep the original extension.
+Pick an identifier that is also the file basename, as the existing assets do (`ft_irc` → `./ft_irc.webp`, `cub3D_42` → `./cub3D_42.webp`). It must be a valid JS identifier: letters, digits and `_`, not starting with a digit, no `-`, spaces or dots, and not a reserved word. Assets are stored as WebP at their display size (step below); SVGs stay SVG.
 
 Check for collisions before copying, with both checks:
 
 ```bash
+mkdir -p src/assets/company   # only exists once a logo has been added
 ls src/assets src/assets/tech src/assets/company
 grep -nw "<identifier>" src/assets/index.js src/constans/index.js
 ```
 
 If the name is taken, choose another one (for example append `_project` or `_logo`) and tell the user.
 
-Check the size of the source before copying: `wc -c < "<source>"` (and, optionally, the dimensions with `identify "<source>"`). Above **300 KB** (307200 bytes), warn the user and suggest WebP. Several existing screenshots are 0.7–3.4 MB and slow down the first load. **Do not convert unless the user agrees.** If they agree, write the WebP straight into the target folder instead of copying the original, so no unused file is left behind: `magick "<source>" -quality 80 src/assets/<folder>/<identifier>.webp` (check first that this path does not exist), and use `.webp` as the extension from here on.
-
-Otherwise copy without clobbering, and make sure the copy happened:
+Every raster asset in the repo is WebP at the size it is displayed (Phase 3 cut `src/assets` from 12 MB to 428 KB), so convert while copying; never commit the original PNG/JPEG. Write straight into the target folder after checking the path does not exist:
 
 ```bash
-cp -n "<source>" src/assets/<folder>/<identifier>.<ext> && ls -l src/assets/<folder>/<identifier>.<ext>
+# project screenshot: cards show a centred 16:9 crop, so store exactly that
+magick "<source>" -resize '800x450^' -gravity center -extent 800x450 -quality 80 -define webp:method=6 src/assets/<identifier>.webp
+# tech icon (decal texture on the ball): square, transparent background
+magick "<source>" -resize '256x256>' -quality 85 -define webp:method=6 src/assets/tech/<identifier>.webp
+# company logo
+magick "<source>" -resize '128x128>' -quality 85 -define webp:method=6 src/assets/company/<identifier>.webp
+ls -l src/assets/<folder>/<identifier>.webp && identify src/assets/<folder>/<identifier>.webp
 ```
+
+Tell the user the source and output sizes. If the result is still above about 150 KB, say so. If the source is an SVG, copy it as-is with `cp -n`.
 
 ## 4. Register the asset in `src/assets/index.js`
 
@@ -141,7 +148,7 @@ Optional visual check, if the dev server starts:
 
 Reply with:
 
-- The image file created, with its size (and the >300 KB warning if it applies).
+- The image file created, with source and output sizes (and a note if the WebP is still above about 150 KB).
 - Each edit with `file:line` references: the import and export lines in `src/assets/index.js`, and the import line and new entry in `src/constans/index.js` (use `grep -n <identifier>` to get the line numbers).
 - ESLint and build results, plus screenshots if you took them.
 - Open issues: unrendered fields (experience `icon`), renames made to avoid a collision.
