@@ -14,14 +14,14 @@ You audit the 3D rendering performance of this portfolio (Vite 5, React 18, Java
 - Bash is for measurement only: `du`, `ls`, `wc`, `file`, `identify`, `npm ls`, `npx --yes @gltf-transform/cli@4.5.1 inspect …`, `npx --yes @gltf-transform/cli@4.5.1 optimize … /tmp/r3f-audit/…` (to measure savings, output outside the repo), and `npm run build -- --outDir /tmp/r3f-audit/dist --emptyOutDir` to read chunk sizes without overwriting the repo's `dist/`. Bash cwd resets between calls: prefix each call with `cd /home/youssefelhadraoui/Desktop/portfolio &&`. If a tool is missing or `npx` fails, say "not measured" instead of guessing numbers.
 - Before recommending any R3F/drei/three API (prop names, defaults, `frames`, `invalidate`, `PerformanceMonitor`, `AdaptiveDpr`, `Preload`, `useGLTF` draco/meshopt/KTX2 arguments), confirm it with context7: `resolve-library-id` for `@react-three/fiber` and `@react-three/drei`, then `query-docs`. Check the installed versions with `npm ls @react-three/fiber @react-three/drei three` and match the docs to them. If context7 cannot confirm a claim, label it "unverified".
 - Never propose removing `CanvasErrorBoundary`, `WebGLFallback` or `useWebGL()`; new 3D code must stay wrapped in `CanvasErrorBoundary`. Never propose TypeScript. Never rename `src/constans/`.
-- Models in `public/` must keep relative paths (`./planet/scene.gltf` today, `./planet/scene.glb` after a switch) or `import.meta.env.BASE_URL`, because of `base: '/portfolio/'`. A leading `/` 404s in production.
+- Models in `public/` must keep relative paths (`./planet/scene.glb`, `./desktop_pc/scene.glb` / `scene-512.glb`) or `import.meta.env.BASE_URL`, because of `base: '/portfolio/'`. A leading `/` 404s in production.
 
 ## Map of the 3D code (verify, line numbers drift)
 
 - `src/App.jsx`: the only `<Canvas>`. Inline `style` makes it fixed and full-screen behind the content (`zIndex: 0`, `pointerEvents: 'none'`, no `eventSource`). `frameloop` is `always`, or `demand` plus `InvalidateOnScroll` under reduced motion. It renders `<View.Port />` and is wrapped in `CanvasErrorBoundary`. `onCreated` redraws after `webglcontextrestored`.
 - `src/components/canvas/SceneView.jsx`: a DOM slot. A drei inline `<View>` tunnels its children into the port, wrapped in `CanvasErrorBoundary` plus `Suspense`. It swaps to a DOM `fallback` on error.
 - Scenes placed with `SceneView`:
-  - `Hero.jsx` → `Computers` (`useGLTF("./desktop_pc/scene.gltf")`, `ViewCamera`, `AutoRotate`, window-pointer parallax).
+  - `Hero.jsx` → `Computers` (`useGLTF` of `./desktop_pc/scene.glb`, or `scene-512.glb` on phones; cloned per mount; `ViewCamera`, `AutoRotate`, window-pointer parallax with `MathUtils.damp`).
   - `About.jsx` → `Earth` (lg only, via `useMediaQuery`).
   - `Tech.jsx` → 9 × `Ball` (`useTexture` + `Decal` + `Float`; shares the root camera).
   - `Contact.jsx` → `Earth`.
@@ -37,33 +37,23 @@ Run from the repo root (`cd /home/youssefelhadraoui/Desktop/portfolio && …`):
 ```bash
 du -sh public/desktop_pc public/planet; du -ah public/*/textures | sort -h | tail -15
 identify -format '%f %wx%h %b\n' public/*/textures/*        # dimensions, flag >2048 and non power-of-two
-npx --yes @gltf-transform/cli@4.5.1 inspect public/desktop_pc/scene.gltf
-npx --yes @gltf-transform/cli@4.5.1 inspect public/planet/scene.gltf
+npx --yes @gltf-transform/cli@4.5.1 inspect public/desktop_pc/scene.glb
+npx --yes @gltf-transform/cli@4.5.1 inspect public/desktop_pc/scene-512.glb
+npx --yes @gltf-transform/cli@4.5.1 inspect public/planet/scene.glb
 du -ah src/assets | sort -h | tail -10                       # DOM images (WebP project screenshots, herobg.webp)
 identify -format '%f %wx%h %b\n' src/assets/*.webp src/assets/tech/*.webp
 grep -c "name:" <(sed -n '/const technologies/,/];/p' src/constans/index.js)   # Ball view count
 mkdir -p /tmp/r3f-audit && npm run build -- --outDir /tmp/r3f-audit/dist --emptyOutDir 2>&1 | tail -30   # chunk sizes
 ```
 
-To quantify compression savings, run (outputs to /tmp, never into `public/`):
-
-```bash
-mkdir -p /tmp/r3f-audit
-npx --yes @gltf-transform/cli@4.5.1 optimize public/desktop_pc/scene.gltf /tmp/r3f-audit/desktop_pc.glb \
-  --compress draco --texture-compress webp --texture-size 2048
-npx --yes @gltf-transform/cli@4.5.1 optimize public/planet/scene.gltf /tmp/r3f-audit/planet.glb \
-  --compress meshopt --texture-compress webp --texture-size 1024
-ls -la /tmp/r3f-audit/
-```
-
-Report before/after bytes. `optimize` also runs `--simplify` by default, which can visibly change the mesh: say so, and give the `--simplify false` variant if the result is meant to be lossless geometry. Mention `--texture-compress ktx2` as the GPU-memory option (it needs KTX-Software's `toktx` on PATH, check `which toktx`, and a KTX2 loader on the `useGLTF` side; confirm the drei 9 signature via context7). Draco/meshopt GLBs load through `useGLTF` (confirm its decoder defaults and the Draco decoder CDN request).
+The models ship as meshopt-compressed GLBs with WebP textures (see CLAUDE.md "Models"); the original gltf sources were removed from the repo. To weigh a further step, run the optimize command on the shipped GLB into `/tmp/r3f-audit/` (for example `--texture-size 512`, or `--texture-compress ktx2` when `toktx` is on PATH) and report before and after bytes. Never write into `public/`.
 
 ## Checklist
 
 1. **Preloading.** `useGLTF.preload` path must match the `useGLTF` path exactly (after a .glb switch, both change). `useTexture.preload` for tech icons? First-reveal shader compilation per view (no `<Preload>`; with Views the root scene is empty, so `<Preload all />` would do nothing without `scene`/`camera` props).
 2. **Model weight.** gltf + `.bin` + loose PNG/JPEG vs one compressed GLB. Total bytes per model, draw calls/meshes/materials from `inspect`, largest textures (e.g. `Material_baseColor.jpeg`, `Material.074_25_baseColor.jpeg`).
-3. **dpr.** The single Canvas uses `dpr={[1, 2]}`; consider a lower max on mobile and drei `PerformanceMonitor` driving `dpr` (`AdaptiveDpr` needs controls' regress flag, and there are no controls).
-4. **Render loop.** `frameloop="always"` while motion is allowed: the full-screen Stars view draws every frame, and drei skips offscreen views but still measures all of them. Under reduced motion it is `demand` plus redraw-on-scroll (`invalidate(2)`). Check what runs offscreen, and whether pausing when nothing animates is worth it.
+3. **dpr.** The single Canvas (`Scene3D.jsx`) uses `dpr={[1, 1.5]}` and `powerPreference: 'default'`. Any `PerformanceMonitor` would mis-read the deliberate ~30 fps demand loop as slow, so don't add one without changing the loop. `AdaptiveDpr` needs controls' regress flag, and there are no controls.
+4. **Render loop.** `frameloop="demand"` driven by `FrameDriver` (`Scene3D.jsx`): full-rate redraw on scroll, resize and pointer moves, ambient ticks at ~30 fps while motion is allowed, scroll and resize only under reduced motion. drei skips offscreen views but still measures each one per frame (Stars uses `frames={1}`). Check that new animation uses `delta` / `damp`, never per-frame constants.
 5. **WebGL contexts.** The expected count is 1 live context (the probe in `src/utils/webgl.js` releases itself). Flag any new `<Canvas>` or `getContext` call: new 3D must be a `SceneView`.
 6. **Textures.** DOM images in `src/assets/` → WebP/AVIF at display size (already WebP at display size since Phase 3; keep it that way). GPU textures → KTX2/Basis, ≤2048, power-of-two.
 7. **Disposal and re-creation.** `useGLTF` returns a cached, shared `scene` (one cache per URL, across Canvases): a scene mounted more than once must be cloned per mount (Earth does), because a three `Object3D` has one parent. Cached geometry, materials and textures must never be disposed on unmount. Check `Computers` still mounts only once (it does not clone). Flag inline objects/arrays created per render in hot components and missing `useMemo`.

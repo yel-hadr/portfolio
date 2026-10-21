@@ -38,7 +38,7 @@ There is no test suite. Prettier style is semicolons, single quotes in JS and JS
 `vite.config.js` sets `base: '/portfolio/'`. There is no router; in-page navigation uses `#section` anchors. Consequences:
 - The dev server URL is `http://localhost:5173/portfolio/`.
 - Imported assets and `url()` in CSS are rewritten by Vite automatically.
-- Files in `public/` (the gltf models) must be referenced relatively (`./planet/scene.gltf`) or via `import.meta.env.BASE_URL`. A leading `/` will 404 in production.
+- Files in `public/` (the GLB models) must be referenced relatively (`./planet/scene.glb`) or via `import.meta.env.BASE_URL`. A leading `/` will 404 in production.
 
 ## Architecture
 
@@ -61,11 +61,11 @@ There is no test suite. Prettier style is semicolons, single quotes in JS and JS
 - The opaque `herobg.png` backdrop must stay **below** the canvas, or it hides the hero model.
 
 **WebGL safety — must be preserved:**
-- `useWebGL()` probes for **WebGL2** (three ≥ r163 is WebGL2-only). Without it, `App` skips the 3D layer and every `SceneView` renders its static `fallback` (via `WebGLContext`); the content still renders, with `WebGLFallback` shown as a notice after the hero.
+- `useWebGL()` probes for **WebGL2** (three ≥ r163 is WebGL2-only). Without it (or when the lazy 3D layer later fails: renderer creation or chunk load), `App` turns `WebGLContext` off, so the 3D layer is skipped and every `SceneView` renders its static `fallback`; the content still renders, with `WebGLFallback` shown as a notice after the hero.
 - `CanvasErrorBoundary` wraps the lazy 3D layer, catching a failed renderer or a failed chunk load and dropping only the 3D layer. It also wraps each `SceneView`'s lazy half (outer, for a chunk failure) and every scene (inner, inside `SceneViewImpl`). Inside the Canvas it renders `fallback ?? null`; DOM can't render there. `onError` makes the `SceneView` swap to its DOM `fallback` prop. `sectionType` is only a log label. Never remove these wrappers.
 - Boundaries do **not** catch `useFrame` exceptions or context loss. Keep `useFrame` callbacks null-safe. A context restore triggers `invalidate()` via `onCreated`.
 
-**GPU resources.** `useGLTF` / `useTexture` results are cached and shared. **Clone a cached scene per mount** (`Earth` does `scene.clone()`), because an Object3D has one parent. **Never dispose cached geometry, materials or textures** on unmount; the old `useCleanup` hook did, which blanked the Contact globe, and it was removed. R3F disposes the objects it creates declaratively.
+**GPU resources.** `useGLTF` / `useTexture` results are cached and shared. **Clone a cached scene per mount** (`Earth` and `Computers` do `scene.clone()`), because an Object3D has one parent. **Never dispose cached geometry, materials or textures** on unmount; the old `useCleanup` hook did, which blanked the Contact globe, and it was removed. R3F disposes the objects it creates declaratively.
 
 **Models** are meshopt-compressed GLBs with WebP textures in `public/desktop_pc/` (`scene.glb`, plus `scene-512.glb` for phones ≤768px) and `public/planet/scene.glb`. They're loaded with `useGLTF` + `useGLTF.preload`; drei's bundled MeshoptDecoder means no CDN decoder is needed. Keep each folder's `license.txt` (Sketchfab attribution). To regenerate from a source gltf, run:
 `npx --yes @gltf-transform/cli@4.5.1 optimize <in>.gltf <out>.glb --compress meshopt --texture-compress webp --texture-size 1024 --simplify false`

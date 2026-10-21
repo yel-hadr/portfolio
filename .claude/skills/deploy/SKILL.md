@@ -38,7 +38,7 @@ grep -n "base:" vite.config.js                                   # must be: base
 grep -rnE "[\"'\`(]/(desktop_pc|planet|logo\.svg|vite\.svg)" src  # must print nothing
 ```
 
-Files in `public/` (`desktop_pc/`, `planet/`, `logo.svg`, `vite.svg`) must be referenced relatively (`useGLTF("./planet/scene.gltf")`, as in `canvas/Earth.jsx` and `canvas/Computers.jsx`) or through `import.meta.env.BASE_URL`. A leading `/` 404s in production. `index.html` uses `/src/...` paths, which is fine because Vite rewrites them. If any check fails, **stop** and show the offending lines.
+Files in `public/` (`desktop_pc/`, `planet/`, `logo.svg`, `vite.svg`) must be referenced relatively (`./planet/scene.glb`, `./desktop_pc/scene.glb`, as in `canvas/Earth.jsx` and `canvas/Computers.jsx`) or through `import.meta.env.BASE_URL`. A leading `/` 404s in production. `index.html` uses `/src/...` paths, which is fine because Vite rewrites them. If any check fails, **stop** and show the offending lines.
 
 ## 3. EmailJS env (names and counts only)
 
@@ -54,7 +54,7 @@ for v in VITE_EMAILJS_SERVICE_ID VITE_EMAILJS_TEMPLATE_ID VITE_EMAILJS_PUBLIC_KE
 done
 ```
 
-If any variable has 0 definitions and is not set in the shell, warn: the contact form will show "Configuration error: EmailJS credentials are missing" in production (see `src/components/Contact.jsx`). Ask whether to continue. Do not offer to write the `.env` (the PreToolUse hook blocks it anyway). The user adds the values themselves.
+If any variable has 0 definitions and is not set in the shell, warn: the contact form will answer every submission with "Message not sent: the contact form isn't configured yet" in production (see `src/components/Contact.jsx`). Ask whether to continue. Do not offer to write the `.env` (the PreToolUse hook blocks it anyway). The user adds the values themselves.
 
 ## 4. Lint and build
 
@@ -150,8 +150,9 @@ done
 
 ```bash
 curl -sI https://yel-hadr.github.io/portfolio/ | head -1                      # expect 200
-curl -sI https://yel-hadr.github.io/portfolio/planet/scene.gltf | head -1     # expect 200
-curl -sI https://yel-hadr.github.io/portfolio/desktop_pc/scene.gltf | head -1 # expect 200
+curl -sI https://yel-hadr.github.io/portfolio/planet/scene.glb | head -1         # expect 200
+curl -sI https://yel-hadr.github.io/portfolio/desktop_pc/scene.glb | head -1     # expect 200
+curl -sI https://yel-hadr.github.io/portfolio/desktop_pc/scene-512.glb | head -1 # expect 200 (phones)
 ```
 
 Then use the `playwright` MCP server at each viewport, 390x844 (mobile) and 1440x900 (desktop):
@@ -160,7 +161,7 @@ Then use the `playwright` MCP server at each viewport, 390x844 (mobile) and 1440
 3. `mcp__playwright__browser_take_screenshot` (`deploy-390.png` / `deploy-1440.png`).
 4. `mcp__playwright__browser_console_messages` for errors, and `mcp__playwright__browser_network_requests` for failed requests.
 
-404s on `.gltf`, `.bin`, textures or `/assets/*` almost always mean a base-path problem (step 2). Look at the screenshots: a blank hero, or the full-page WebGL fallback, means the 3D scene did not load. Before blaming the deploy for a WebGL fallback, check the console for WebGL context-creation errors: headless Chromium sometimes has no GPU, which is an environment limit, not a site bug. The site uses a single WebGL context, so a "Too many active WebGL contexts" warning is a regression; report it.
+404s on `.glb` files or `/assets/*` (including the lazy `vendor-three` / `Scene3D` chunks) almost always mean a base-path problem (step 2). Look at the screenshots: a blank hero, or the "3D scenes are turned off" notice, means the 3D layer did not load. Before blaming the deploy for a WebGL fallback, check the console for WebGL context-creation errors: headless Chromium sometimes has no GPU, which is an environment limit, not a site bug. The site uses a single WebGL context, so a "Too many active WebGL contexts" warning is a regression; report it.
 
 ## Report
 
