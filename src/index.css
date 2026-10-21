@@ -3,6 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+  /* Tokens as CSS variables, for places that only take inline styles (the timeline library). */
+  :root {
+    --color-background: theme('colors.background');
+    --color-surface: theme('colors.surface.DEFAULT');
+    --color-foreground: theme('colors.foreground.DEFAULT');
+    --color-line: theme('colors.line.DEFAULT');
+  }
+
   /* No global smooth scrolling: it also animated scrolling to keyboard focus. Nav links
      smooth-scroll explicitly (Navbar goTo) unless reduced motion is preferred. */
   html {

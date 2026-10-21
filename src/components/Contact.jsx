@@ -165,7 +165,8 @@ const Contact = () => {
 
         <motion.div variants={reveal(0.1)} className='h-80 md:h-96 xl:h-auto'>
           <SceneView sectionType='earth' className='h-full w-full'>
-            <Earth />
+            {/* Contact's globe always mounts (About's is desktop-only), so it warms up the shaders */}
+            <Earth warmUp />
           </SceneView>
         </motion.div>
       </div>

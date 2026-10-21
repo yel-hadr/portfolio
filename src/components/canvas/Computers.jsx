@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { MathUtils } from 'three';
@@ -15,6 +15,8 @@ const MODEL = window.matchMedia('(max-width: 768px)').matches
 
 const Computers = () => {
   const { scene } = useGLTF(MODEL);
+  // Clone per mount: the cached scene is shared and an Object3D can only have one parent
+  const desk = useMemo(() => scene.clone(), [scene]);
   const isMobile = useMediaQuery('(max-width: 768px)');
   const reduced = usePrefersReducedMotion();
   const parallaxRef = useRef();
@@ -50,7 +52,7 @@ const Computers = () => {
           <pointLight intensity={1} />
           <spotLight position={[-20, 50, 10]} angle={0.12} penumbra={1} intensity={1} />
           <primitive
-            object={scene}
+            object={desk}
             scale={isMobile ? 0.5 : 0.75}
             position={isMobile ? [0, -3, -1.5] : [0, -2.9, -1.5]}
             rotation={[0, -0.1, -0.1]}

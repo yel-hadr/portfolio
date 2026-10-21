@@ -5,12 +5,12 @@ import { experiences } from '../constans';
 import { SectionWrapper } from '../hoc';
 import SectionHeader from './SectionHeader';
 
-// The timeline library styles via inline props, so token values are repeated here
-// (surface #0e0b22, line rgb(255 255 255 / 0.1)); keep in sync with tailwind.config.js.
+// The timeline library only takes inline styles, so read the Tailwind tokens through the
+// CSS variables defined in src/index.css.
 const CARD_STYLE = {
-  background: '#0e0b22',
-  color: '#f2f1f7',
-  border: '1px solid rgb(255 255 255 / 0.1)',
+  background: 'var(--color-surface)',
+  color: 'var(--color-foreground)',
+  border: '1px solid var(--color-line)',
   borderRadius: '1.5rem',
   boxShadow: 'none',
   padding: '1.5rem',
@@ -20,12 +20,12 @@ const ExperienceCard = ({ experience }) => {
   return (
     <VerticalTimelineElement
       contentStyle={CARD_STYLE}
-      contentArrowStyle={{ borderRight: '7px solid rgb(255 255 255 / 0.1)' }}
+      contentArrowStyle={{ borderRight: '7px solid var(--color-line)' }}
       date={<span aria-hidden='true'>{experience.date}</span>}
       dateClassName='!text-foreground-muted !opacity-100 font-medium'
       iconStyle={{
         background: experience.iconBg,
-        boxShadow: '0 0 0 4px #050816, 0 0 0 5px rgb(255 255 255 / 0.1)',
+        boxShadow: '0 0 0 4px var(--color-background), 0 0 0 5px var(--color-line)',
       }}
     >
       <h3 className='text-foreground text-xl sm:text-2xl font-bold'>{experience.title}</h3>

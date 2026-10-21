@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { MotionConfig } from 'framer-motion';
 
 import {
@@ -21,20 +21,24 @@ import { WebGLContext } from './components/canvas/WebGLContext';
 import { useWebGL } from './hooks/useWebGL';
 
 function App() {
-  const { supported: webgl } = useWebGL();
+  const { supported } = useWebGL();
+  // The probe can pass while the renderer or the 3D chunk still fails later; treat that the
+  // same as no WebGL so every SceneView shows its static fallback and the notice appears.
+  const [canvasFailed, setCanvasFailed] = useState(false);
+  const webgl = supported && !canvasFailed;
 
   // reducedMotion="user": framer-motion drops transform animations (keeps opacity)
   // when the OS asks for reduced motion.
   return (
     <MotionConfig reducedMotion='user'>
       <WebGLContext.Provider value={webgl}>
-        <AppContent webgl={webgl} />
+        <AppContent webgl={webgl} onCanvasError={() => setCanvasFailed(true)} />
       </WebGLContext.Provider>
     </MotionConfig>
   );
 }
 
-const AppContent = ({ webgl }) => (
+const AppContent = ({ webgl, onCanvasError }) => (
   <div id='top' className='relative bg-background'>
     <a
       href='#main'
@@ -53,7 +57,7 @@ const AppContent = ({ webgl }) => (
         SceneView renders its static fallback. If the renderer or its chunk fails, the
         boundary drops only the 3D layer. */}
     {webgl && (
-      <CanvasErrorBoundary sectionType='canvas'>
+      <CanvasErrorBoundary sectionType='canvas' onError={onCanvasError}>
         <Suspense fallback={null}>
           <Scene3D />
         </Suspense>

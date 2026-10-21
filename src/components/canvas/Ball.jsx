@@ -3,14 +3,14 @@ import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 
 // Rendered through a SceneView, so it shares the root camera (fov 75 at z=5), like the old per-icon Canvas.
 // No continuous spin: the logo decal is only on the front face, so the ball floats in place.
-const Ball = ({ imgUrl }) => {
+// `warmUp`: compile the shared ball shaders while loading; one instance is enough.
+const Ball = ({ imgUrl, warmUp = false }) => {
   const decal = useTexture(imgUrl);
   const reduced = usePrefersReducedMotion();
 
   return (
     <>
-      {/* Compile shaders and upload the decal while loading, not on the first scroll into view */}
-      <Preload all />
+      {warmUp && <Preload all />}
       <Float
         speed={reduced ? 0 : 1.75}
         rotationIntensity={reduced ? 0 : 1}

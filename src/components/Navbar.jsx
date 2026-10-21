@@ -13,6 +13,7 @@ const Navbar = () => {
   const [active, setActive] = useState('');
   const [open, setOpen] = useState(false);
   const toggleRef = useRef(null);
+  const lastJumpAt = useRef(0);
   const reduced = usePrefersReducedMotion();
 
   // Sync the active link with the URL hash (back/forward). On first load, sections mount after
@@ -26,11 +27,12 @@ const Navbar = () => {
     return () => window.removeEventListener('hashchange', syncFromHash);
   }, []);
 
-  // Back at the top of the page, no section is current any more
+  // Back at the top of the page, no section is current any more. Ignore the first moments
+  // of a nav jump: a smooth scroll that starts at the top fires scroll events below 200px.
   useEffect(() => {
     if (!active) return undefined;
     const onScroll = () => {
-      if (window.scrollY < 200) setActive('');
+      if (window.scrollY < 200 && performance.now() - lastJumpAt.current > 1500) setActive('');
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -53,6 +55,7 @@ const Navbar = () => {
     const target = document.getElementById(id);
     if (!target) return; // let the browser handle the hash
     e.preventDefault();
+    lastJumpAt.current = performance.now();
     setActive(id);
     setOpen(false);
     target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });

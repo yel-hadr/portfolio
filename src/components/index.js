@@ -10,7 +10,6 @@ import ErrorBoundary from './ErrorBoundary';
 import ErrorFallback from './ErrorFallback';
 import WebGLFallback from './WebGLFallback';
 import CanvasErrorBoundary from './CanvasErrorBoundary';
-import LoadingProgress from './LoadingProgress';
 import Footer from './Footer';
 import SectionHeader from './SectionHeader';
 
@@ -32,7 +31,6 @@ export {
   ErrorFallback,
   WebGLFallback,
   CanvasErrorBoundary,
-  LoadingProgress,
   Footer,
   SectionHeader,
 };
