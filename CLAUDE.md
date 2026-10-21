@@ -74,6 +74,6 @@ Use `--texture-size 512` for the phone variant. Leave `--simplify false`: simpli
 `npm run lint` passes with 0 errors:
 - `react/prop-types` is off, because the project doesn't use PropTypes.
 - R3F props are allowed through `react/no-unknown-property`'s `ignore` list (`R3F_PROPS`). This only applies in `src/App.jsx` and `src/components/canvas/**`.
-- The remaining warnings are `react-refresh/only-export-components` on the `SectionWrapper(...)` default exports.
+- It runs with no warnings. Name wrapped sections (`const AboutSection = SectionWrapper(About, 'about')`) so React Fast Refresh keeps working.
 
 ESLint 9 flat config ignores `.eslintignore`. Use the `ignores` key in the config instead.
