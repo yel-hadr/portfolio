@@ -16,5 +16,6 @@
   "commits": "Recent commits",
   "commit": "Commit",
   "in": "in repository",
-  "newTab": "(opens in a new tab)"
+  "newTab": "(opens in a new tab)",
+  "fullPage": "Full status page"
 }

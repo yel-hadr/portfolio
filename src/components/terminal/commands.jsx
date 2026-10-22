@@ -1,6 +1,8 @@
 // The terminal's commands. Each one gets ({ args, rest }, ctx) and returns the output to print
 // (or null). ctx: { t, lang, setLang, theme, setTheme, history, close, reduced }.
-import { education, experiences, person, projects, tils } from '../../constans';
+import { blogPath, blogPosts, feedPath } from 'virtual:blog-posts';
+
+import { education, experiences, person, projects } from '../../constans';
 import { dictionaries } from '../../i18n/dictionaries';
 import { closest, completeWord, normalize } from './helpers';
 import { Block, Bullets, Cmd, ErrorLine, ExtLink, Heading, Link, Muted, Rich } from './output';
@@ -20,10 +22,11 @@ const sectionAliases = {
   projets: 'works',
   education: 'education',
   formation: 'education',
-  til: 'til',
+  blog: 'blog',
+  til: 'blog',
   contact: 'contact',
 };
-const sectionIds = ['about', 'experience', 'tech', 'works', 'education', 'til', 'contact'];
+const sectionIds = ['about', 'experience', 'tech', 'works', 'education', 'blog', 'contact'];
 // Shown in listings and offered by Tab: the canonical id plus the French name where it differs
 const sectionNames = [...sectionIds, 'projects', 'projets', 'formation', 'a-propos'];
 
@@ -394,18 +397,40 @@ export const COMMANDS = [
     ),
   },
   {
-    name: 'til',
-    aliases: [],
-    run: (_, { t }) => (
+    name: 'blog',
+    // "til" was the section's name before it became a blog
+    aliases: ['til'],
+    run: (_, { t, lang }) => (
       <Block>
-        <Heading>{t('terminal.til.title')}</Heading>
-        {tils.length === 0 ? (
-          <Muted>{t('terminal.til.empty')}</Muted>
+        <Heading>{t('terminal.blog.title')}</Heading>
+        {blogPosts.length === 0 ? (
+          <Muted>{t('terminal.blog.empty')}</Muted>
         ) : (
           <>
-            <Bullets items={tils.map((til) => t(`til.items.${til.id}.title`))} />
+            <ul className='space-y-0.5'>
+              {blogPosts.map((post) => (
+                <li key={post.slug} className='flex gap-2'>
+                  <span aria-hidden='true' className='text-foreground-muted'>
+                    -
+                  </span>
+                  {/* Titles wrap between words, unlike the URLs that Link breaks anywhere */}
+                  <Link
+                    href={blogPath(lang, post.slug)}
+                    className='py-1 text-info underline underline-offset-2 transition-colors hover:text-foreground'
+                  >
+                    {post.title[lang] ?? post.title.en}
+                  </Link>
+                </li>
+              ))}
+            </ul>
             <Muted>
-              <Rich text={t('terminal.til.more')} values={{ cmd: <Cmd>goto til</Cmd> }} />
+              <Rich
+                text={t('terminal.blog.more')}
+                values={{
+                  all: <Link href={blogPath(lang)}>{blogPath(lang)}</Link>,
+                  rss: <Link href={feedPath(lang)}>{feedPath(lang)}</Link>,
+                }}
+              />
             </Muted>
           </>
         )}

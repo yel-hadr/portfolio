@@ -1,0 +1,200 @@
+<!doctype html>
+<!--
+  Social card template (1200x630), rendered by scripts/og/generate.mjs. The generator fills the
+  {{...}} placeholders: theme tokens read from src/index.css, Poppins from @fontsource and the
+  profile photo as data URLs, so the page needs no network or dev server.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      {{FONTS}}
+      :root {
+        {{TOKENS}}
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        background: rgb(var(--c-background));
+        font-family: Poppins, sans-serif;
+        color: rgb(var(--c-foreground));
+      }
+      canvas,
+      .wash {
+        position: absolute;
+        inset: 0;
+      }
+      /* The site's readability overlays: a wash behind the text and darker edges */
+      .wash {
+        background:
+          radial-gradient(ellipse at 24% 42%, rgb(var(--c-background) / 0.78), transparent 60%),
+          linear-gradient(rgb(var(--c-background) / 0.35), transparent 40%, rgb(var(--c-background) / 0.6));
+      }
+      main {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 64px;
+        height: 100%;
+        padding: 64px 80px;
+      }
+      .text {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        justify-content: center;
+      }
+      h1 {
+        font-weight: 900;
+        font-size: 84px;
+        line-height: 1.02;
+        letter-spacing: -0.025em;
+      }
+      .title {
+        margin-top: 28px;
+        font-weight: 600;
+        font-size: 34px;
+        line-height: 1.3;
+        color: rgb(var(--c-primary-400));
+      }
+      .domain {
+        position: absolute;
+        bottom: 56px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-weight: 500;
+        font-size: 28px;
+        color: rgb(var(--c-foreground-muted));
+      }
+      .domain::before {
+        content: '';
+        width: 36px;
+        height: 6px;
+        border-radius: 3px;
+        background: linear-gradient(90deg, rgb(var(--c-primary)), rgb(var(--c-secondary)));
+      }
+      figure {
+        position: relative;
+        flex: none;
+        width: 328px;
+      }
+      /* Brand glow behind the frame, as in the hero */
+      figure::before {
+        content: '';
+        position: absolute;
+        inset: -36px;
+        border-radius: 50%;
+        background: rgb(var(--c-primary) / 0.22);
+        filter: blur(48px);
+      }
+      .frame {
+        position: relative;
+        padding: 10px;
+        border-radius: 30px;
+        border: 1px solid var(--color-line);
+        background: var(--color-glass);
+      }
+      img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 5;
+        object-fit: cover;
+        border-radius: 22px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="waves" width="1200" height="630"></canvas>
+    <div class="wash"></div>
+    <main>
+      <div class="text">
+        <h1>{{NAME}}</h1>
+        <p class="title">{{TITLE}}</p>
+        <p class="domain">{{DOMAIN}}</p>
+      </div>
+      <figure>
+        <div class="frame"><img src="{{PHOTO}}" alt="" /></div>
+      </figure>
+    </main>
+    <script>
+      // One still frame of the site's waves (src/components/WavesBackground.jsx): vertical lines
+      // displaced by 2D gradient noise, stroked orange -> violet -> blue. Seeded, so every run
+      // draws the same card.
+      (function () {
+        let seed = 0x1337;
+        const random = () => {
+          seed = (seed + 0x6d2b79f5) | 0;
+          let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const perm = Array.from({ length: 256 }, (_, i) => i);
+        for (let i = 255; i > 0; i--) {
+          const j = Math.floor(random() * (i + 1));
+          [perm[i], perm[j]] = [perm[j], perm[i]];
+        }
+        const grads = Array.from({ length: 8 }, (_, i) => [
+          Math.cos((i * Math.PI) / 4),
+          Math.sin((i * Math.PI) / 4),
+        ]);
+        const grad = (x, y) => grads[perm[(perm[x & 255] + y) & 255] & 7];
+        const fade = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const noise = (x, y) => {
+          const X = Math.floor(x);
+          const Y = Math.floor(y);
+          const fx = x - X;
+          const fy = y - Y;
+          const dot = (gx, gy, dx, dy) => {
+            const g = grad(X + gx, Y + gy);
+            return g[0] * dx + g[1] * dy;
+          };
+          const u = fade(fx);
+          return lerp(
+            lerp(dot(0, 0, fx, fy), dot(1, 0, fx - 1, fy), u),
+            lerp(dot(0, 1, fx, fy - 1), dot(1, 1, fx - 1, fy - 1), u),
+            fade(fy)
+          );
+        };
+
+        const canvas = document.getElementById('waves');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width;
+        const H = canvas.height;
+        const css = getComputedStyle(document.documentElement);
+        const rgb = (token) => css.getPropertyValue(token).trim();
+        // The site's stops, a little stronger: the card is often shown at a third of its size
+        const gradient = ctx.createLinearGradient(0, H, W, 0);
+        gradient.addColorStop(0, `rgb(${rgb('--c-primary')} / 0.7)`);
+        gradient.addColorStop(0.45, `rgb(${rgb('--c-secondary')} / 0.45)`);
+        gradient.addColorStop(1, `rgb(${rgb('--c-tertiary')} / 0.4)`);
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = 1.25;
+
+        const xGap = 12;
+        const yGap = 36;
+        const t = 4200;
+        ctx.beginPath();
+        for (let x = -100; x <= W + 100; x += xGap) {
+          for (let y = -yGap; y <= H + yGap; y += yGap) {
+            const move = noise((x + t * 0.0125) * 0.002, (y + t * 0.005) * 0.0015) * 12;
+            const px = x + Math.cos(move) * 36;
+            const py = y + Math.sin(move) * 18;
+            if (y === -yGap) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+        }
+        ctx.stroke();
+        document.body.dataset.ready = 'true';
+      })();
+    </script>
+  </body>
+</html>

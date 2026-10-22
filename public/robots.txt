@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://yel-hadr.github.io/sitemap.xml

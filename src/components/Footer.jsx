@@ -7,8 +7,8 @@ const LINK = 'font-medium text-foreground-muted hover:text-foreground transition
 
 const Footer = () => {
   const { t } = useI18n();
-  // The TIL section is reachable from the footer and the terminal, not the main nav
-  const links = [...navLinks, { id: 'til' }];
+  // The Blog section is reachable from the footer and the terminal, not the main nav
+  const links = [...navLinks, { id: 'blog' }];
 
   return (
     <footer className='relative border-t border-line bg-background/80 backdrop-blur-md'>

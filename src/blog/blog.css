@@ -1,0 +1,200 @@
+/* Styles of the generated blog pages (build/blog.js), on top of src/index.css: theme tokens
+   only, so both themes come for free. Plain rules with @apply (this file has no @tailwind
+   directives, so it cannot use @layer). */
+
+/* Soft brand glow behind the content, in place of the portfolio's waves canvas. Low alpha keeps
+   every text pair at its AA contrast. */
+.blog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 30rem at 10% -10%, rgb(var(--c-secondary) / 0.12), transparent 70%),
+    radial-gradient(50rem 30rem at 100% 0%, rgb(var(--c-primary) / 0.08), transparent 70%);
+}
+
+.blog-container {
+  @apply mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8;
+}
+
+.skip-link {
+  @apply sr-only;
+}
+.skip-link:focus {
+  @apply not-sr-only fixed left-4 top-4 z-[60] rounded-xl bg-primary px-4 py-2 font-bold text-on-primary;
+}
+
+/* Header ------------------------------------------------------------------------------------ */
+
+.header-link {
+  @apply inline-flex min-h-10 items-center gap-1.5 rounded-xl px-2.5 font-medium text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground;
+}
+.header-link[aria-current='page'] {
+  @apply text-foreground underline decoration-primary decoration-2 underline-offset-8;
+}
+
+.lang-switch {
+  @apply flex rounded-xl border border-line-strong p-0.5 text-sm font-semibold;
+}
+.lang-option {
+  @apply rounded-[0.6rem] px-2.5 py-1.5 text-foreground-muted transition-colors hover:text-foreground;
+}
+.lang-option.is-active {
+  @apply bg-primary text-on-primary hover:text-on-primary forced-colors:underline forced-colors:decoration-2 forced-colors:underline-offset-4;
+}
+
+.icon-btn {
+  @apply inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground;
+}
+.icon-btn[hidden] {
+  display: none;
+}
+/* The toggle shows what it switches to: a sun in the dark theme, a moon in the light one */
+:root[data-theme='light'] .theme-icon-sun,
+:root:not([data-theme='light']) .theme-icon-moon {
+  display: none;
+}
+
+/* Lists, cards and post meta ---------------------------------------------------------------- */
+
+.post-card {
+  @apply relative flex flex-col gap-4 p-6 transition-colors hover:border-line-strong sm:p-8;
+}
+/* The title link covers the whole card; only one link per card */
+.stretched-link {
+  @apply rounded-sm underline-offset-4 after:absolute after:inset-0 after:rounded-3xl hover:underline;
+}
+.stretched-link:focus-visible {
+  outline: none;
+}
+.stretched-link:focus-visible::after {
+  outline: 2px solid theme('colors.primary.DEFAULT');
+  outline-offset: 3px;
+}
+
+.post-meta {
+  @apply flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-foreground-muted;
+}
+
+.tag {
+  @apply rounded-full border border-line bg-surface-raised px-3 py-1 text-sm font-medium;
+}
+
+.text-link {
+  @apply font-medium text-primary-400 underline underline-offset-4 hover:decoration-2;
+}
+
+.back-link {
+  @apply inline-flex items-center gap-2 font-medium text-foreground-muted underline-offset-4 transition-colors hover:text-foreground hover:underline;
+}
+
+.post-nav-link {
+  @apply flex flex-col gap-2 p-5 transition-colors hover:border-line-strong;
+}
+.post-nav-label {
+  @apply flex items-center gap-2 text-sm text-foreground-muted;
+}
+
+.footer-link {
+  @apply font-medium text-foreground-muted transition-colors hover:text-foreground;
+}
+
+/* Article body (rendered Markdown) ------------------------------------------------------------ */
+
+.prose-blog {
+  @apply max-w-prose text-base leading-relaxed text-foreground sm:text-lg sm:leading-relaxed;
+}
+.prose-blog > * + * {
+  @apply mt-5;
+}
+.prose-blog h2 {
+  @apply mt-12 text-2xl font-bold leading-snug text-foreground sm:text-3xl;
+}
+.prose-blog h3 {
+  @apply mt-8 text-xl font-semibold leading-snug text-foreground;
+}
+.prose-blog > h2:first-child,
+.prose-blog > h3:first-child {
+  @apply mt-0;
+}
+.prose-blog h2 + *,
+.prose-blog h3 + * {
+  @apply mt-3;
+}
+.prose-blog a {
+  @apply font-medium text-primary-400 underline underline-offset-4 hover:decoration-2;
+}
+.prose-blog strong {
+  @apply font-semibold text-foreground;
+}
+.prose-blog ul {
+  @apply list-disc space-y-2 pl-6;
+}
+.prose-blog ol {
+  @apply list-decimal space-y-2 pl-6;
+}
+.prose-blog li::marker {
+  @apply text-primary-400;
+}
+.prose-blog blockquote {
+  @apply border-l-4 border-primary pl-4 italic text-foreground-muted;
+}
+.prose-blog hr {
+  @apply border-line;
+}
+/* Inline code; code blocks reset it below */
+.prose-blog code {
+  @apply rounded bg-surface-raised px-1.5 py-0.5 font-mono text-sm text-foreground;
+  overflow-wrap: anywhere;
+}
+
+.table-wrap {
+  @apply overflow-x-auto;
+}
+.prose-blog table {
+  @apply w-full border-collapse text-left text-base;
+}
+.prose-blog th,
+.prose-blog td {
+  @apply border-b border-line px-3 py-2 align-top;
+}
+.prose-blog th {
+  @apply font-semibold text-foreground;
+}
+.prose-blog tbody tr:last-child td {
+  @apply border-b-0;
+}
+
+/* Code blocks: a header (language, copy button, status) above a scrolling <pre> */
+.code-block {
+  @apply min-w-0;
+}
+.prose-blog .code-block {
+  @apply mt-6;
+}
+.code-head {
+  @apply flex flex-wrap items-center gap-x-3 gap-y-2 rounded-t-xl border border-b-0 border-line bg-surface-raised py-2 pl-4 pr-2;
+}
+.code-lang {
+  @apply mr-auto font-mono text-xs font-semibold uppercase tracking-wider text-foreground-muted;
+}
+.code-status {
+  @apply text-xs font-semibold text-success;
+}
+.code-status.is-error {
+  @apply text-danger;
+}
+.code-copy {
+  @apply ml-auto inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3 py-1 text-sm font-semibold text-foreground transition-colors hover:border-foreground-muted;
+}
+.code-block pre {
+  @apply overflow-x-auto rounded-b-xl border border-line bg-surface p-4 font-mono text-sm leading-relaxed text-foreground;
+}
+.code-block pre code {
+  @apply rounded-none bg-transparent p-0;
+  overflow-wrap: normal;
+}
+.tok-comment {
+  @apply italic text-foreground-muted;
+}

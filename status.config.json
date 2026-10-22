@@ -1,0 +1,65 @@
+{
+  "$comment": "What the Status monitor (scripts/status/check.mjs, run by .github/workflows/status.yml every 30 minutes) checks. Results are published to https://yel-hadr.github.io/status.json and shown on https://yel-hadr.github.io/status/.",
+  "site": "https://yel-hadr.github.io",
+  "intervalMinutes": 30,
+  "retentionDays": 7,
+  "defaults": {
+    "method": "GET",
+    "expectStatus": 200,
+    "timeoutMs": 10000,
+    "slowMs": 3000
+  },
+  "monitors": [
+    {
+      "id": "portfolio",
+      "name": "Portfolio",
+      "url": "https://yel-hadr.github.io/",
+      "critical": true
+    },
+    {
+      "id": "resume",
+      "name": "Resume (PDF)",
+      "url": "https://yel-hadr.github.io/Youssef_Elhadraoui_Resume.pdf"
+    },
+    {
+      "id": "blog-feed",
+      "name": "Blog RSS feed",
+      "url": "https://yel-hadr.github.io/blog/rss.xml"
+    },
+    {
+      "id": "github-api",
+      "name": "GitHub API",
+      "url": "https://api.github.com",
+      "$comment": "A dependency of the site: the footer status widget reads it from the browser."
+    }
+  ],
+  "$serversComment": "Your own servers, checked like the monitors above. Shape: { \"name\": \"My VPS\", \"url\": \"https://vps.example.com/healthz\", \"method\": \"GET\", \"expectStatus\": 200, \"timeoutMs\": 10000 }. Optional: \"id\" (default: from the name), \"critical\": true (down = outage), \"slowMs\". Only public URLs: the results are published.",
+  "servers": [],
+  "pipelines": [
+    {
+      "id": "portfolio-cicd",
+      "name": "CI/CD Pipeline",
+      "repo": "yel-hadr/portfolio",
+      "workflow": "deploy.yml",
+      "branch": "main",
+      "events": ["push", "workflow_dispatch"],
+      "affectsOverall": true
+    },
+    {
+      "id": "pages-build",
+      "name": "pages-build-deployment",
+      "repo": "yel-hadr/yel-hadr.github.io",
+      "workflow": 83979990,
+      "branch": "main",
+      "affectsOverall": true
+    },
+    {
+      "id": "iot-codeql",
+      "name": "CodeQL",
+      "repo": "yel-hadr/-Inception-of-Things",
+      "workflow": 276425880,
+      "branch": "master",
+      "affectsOverall": false
+    }
+  ]
+}

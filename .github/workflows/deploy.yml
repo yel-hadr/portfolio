@@ -48,6 +48,11 @@ jobs:
           VITE_EMAILJS_SERVICE_ID: ${{ secrets.VITE_EMAILJS_SERVICE_ID }}
           VITE_EMAILJS_TEMPLATE_ID: ${{ secrets.VITE_EMAILJS_TEMPLATE_ID }}
           VITE_EMAILJS_PUBLIC_KEY: ${{ secrets.VITE_EMAILJS_PUBLIC_KEY }}
+          # Optional, non-secret (repository *variables*, not secrets). Unset = feature off:
+          # Umami analytics (cookieless) and the Grafana dashboard embedded on /status/.
+          VITE_UMAMI_WEBSITE_ID: ${{ vars.VITE_UMAMI_WEBSITE_ID }}
+          VITE_UMAMI_SCRIPT_URL: ${{ vars.VITE_UMAMI_SCRIPT_URL }}
+          VITE_GRAFANA_DASHBOARD_URL: ${{ vars.VITE_GRAFANA_DASHBOARD_URL }}
 
       - name: Check asset paths
         # Every URL in index.html must start with /assets/ (base '/'); a /portfolio/ prefix
@@ -85,6 +90,29 @@ jobs:
         with:
           name: dist
           path: dist
+
+      - name: Keep the monitoring data
+        # The publish below replaces the branch with dist/; carry over the two files the Status
+        # monitor (status.yml) writes, so a site deploy does not reset them. Read from the branch
+        # first (no CDN delay right after a monitor run), then from the live site. Missing files
+        # (before the first monitor run) are fine.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dist/status
+          for file in status.json status/history.json; do
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.raw+json" \
+              "https://api.github.com/repos/yel-hadr/yel-hadr.github.io/contents/$file?ref=main" -o "dist/$file.tmp" \
+              || curl -fsSL "https://yel-hadr.github.io/$file?ts=$(date +%s)" -o "dist/$file.tmp" \
+              || true
+            # Keep only valid JSON: never publish an error page as status data
+            if [ -s "dist/$file.tmp" ] && jq empty "dist/$file.tmp" 2>/dev/null; then
+              mv "dist/$file.tmp" "dist/$file"
+            else
+              rm -f "dist/$file.tmp"
+            fi
+          done
+          ls -l dist/status.json dist/status/history.json 2>/dev/null || true
 
       - name: Publish to yel-hadr.github.io (main)
         # Pinned to the commit behind the v4 tag (v4.1.0): this job holds a write deploy key,

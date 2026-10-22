@@ -14,7 +14,10 @@ Built with Vite 5, React 18, React Three Fiber and drei (one shared WebGL canvas
 - **Terminal.** Press <kbd>Ctrl</kbd>+<kbd>`</kbd> or use the terminal button, then type `help`. Commands like `whoami`, `projects`, `skills`, `experience`, `contact`, `resume`, `goto <section>`, `lang fr` and `theme light` navigate the site and read the resume in terminal format.
 - **Architecture diagrams.** The Cloud-1 and Inception-of-Things cards have a "View architecture" button that opens an interactive diagram of how the system works.
 - **System status.** The footer shows the latest CI/CD deploy (linked to its run) and recent commits, live from the GitHub API.
-- **Today I learned.** Short DevOps and backend notes with code snippets, stored as data in `src/constans/index.js` with their text in `src/locales/<lang>/til.json`.
+- **Blog with RSS.** Posts are Markdown files in `content/blog/<slug>/<en|fr>.md`, indexed in `src/constans/posts.js`. The build turns them into static pages at [/blog/](https://yel-hadr.github.io/blog/) and [/fr/blog/](https://yel-hadr.github.io/fr/blog/), with feeds at [/blog/rss.xml](https://yel-hadr.github.io/blog/rss.xml) and [/fr/blog/rss.xml](https://yel-hadr.github.io/fr/blog/rss.xml). The home page shows the latest posts.
+- **SEO.** Open Graph and Twitter cards (with a 1200x630 social image), JSON-LD for the profile (`ProfilePage`/`Person`), blog posts (`BlogPosting`), a sitemap and `robots.txt`.
+- **Privacy-friendly analytics.** [Umami](https://umami.is/): no cookies, Do Not Track respected, and never active on localhost. It is off until you configure it (see below).
+- **System status.** [/status/](https://yel-hadr.github.io/status/) shows uptime, response times and CI/CD pipeline health. A GitHub Actions monitor checks every 30 minutes, and the JSON endpoint [/status.json](https://yel-hadr.github.io/status.json) returns the same data for scripts. The footer widget shows the latest deploy and links to that page.
 
 ## Run locally
 
@@ -63,6 +66,19 @@ Repository secrets used by the workflow:
 | `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`, `VITE_EMAILJS_PUBLIC_KEY` | EmailJS values for the contact form (optional) |
 
 To deploy by hand, without CI: `npm run deploy`. It lints, builds and publishes `dist/` to the same repo and branch.
+
+## Optional services
+
+All of these are off until configured, and the site works without them.
+
+| What | Where (GitHub repo settings) | Value |
+|---|---|---|
+| Umami analytics | Variables: `VITE_UMAMI_WEBSITE_ID` (and `VITE_UMAMI_SCRIPT_URL` if self-hosted) | The Website ID from Umami Cloud (free tier) for the domain `yel-hadr.github.io` |
+| Grafana dashboard on /status/ | Variable: `VITE_GRAFANA_DASHBOARD_URL` | The https URL of a publicly shared dashboard that allows embedding |
+| Monitor metrics in Grafana Cloud | Secrets: `GRAFANA_INFLUX_URL`, `GRAFANA_INFLUX_USER`, `GRAFANA_INFLUX_TOKEN` | The Influx write endpoint, the metrics instance ID and a token with metrics:write |
+| Your own servers on /status/ | `status.config.json` → `servers` | `{ "name", "url", "method", "expectStatus", "timeoutMs" }`, public URLs only |
+
+The status monitor (Actions → "Status monitor") needs no setup: it uses `GITHUB_TOKEN` and the existing deploy key. Run it manually once after merging to publish the first data.
 
 ## Credits
 

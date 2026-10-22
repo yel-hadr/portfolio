@@ -1,13 +1,23 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
+
+import blog from './build/blog.js';
+import seo from './build/seo.js';
 
 // https://vite.dev/config/
 export default defineConfig({
   // Served from the root of https://yel-hadr.github.io/ (the yel-hadr.github.io user-site repo)
   base: '/',
-  plugins: [react()],
+  // blog: Markdown posts -> static /blog/ pages + RSS. seo: meta/OG/JSON-LD, analytics, sitemap.
+  plugins: [react(), blog(), seo()],
   build: {
     rollupOptions: {
+      // Pages: the portfolio and the /status/ page (its own small React entry)
+      input: {
+        main: resolve(import.meta.dirname, 'index.html'),
+        status: resolve(import.meta.dirname, 'status/index.html'),
+      },
       output: {
         // Long-lived vendor chunks. three/R3F/drei are only reached through the lazy 3D
         // layer (Scene3D, SceneViewImpl, scene components), so they stay off the first paint.

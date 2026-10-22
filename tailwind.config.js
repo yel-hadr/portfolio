@@ -4,7 +4,8 @@ const token = (name) => `rgb(var(--c-${name}) / <alpha-value>)`;
 
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./src/**/*.{js,jsx}'],
+  // build/ holds the HTML templates of the generated blog pages
+  content: ['./src/**/*.{js,jsx}', './build/**/*.js', './status/**/*.html'],
   theme: {
     extend: {
       // Design tokens. Values live in CSS variables (src/index.css): `:root` is the dark theme,

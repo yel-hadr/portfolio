@@ -1,19 +1,19 @@
 // One JSON dictionary per area and language. Feature components own their namespace file.
-// core, status and til ship with the page. The terminal and diagram namespaces are large
+// core, status and blog ship with the page. The terminal and diagram namespaces are large
 // (about 300 keys) and only needed once those lazy components open, so their modules register
 // them with registerNamespace() when they load (see Terminal.jsx and ArchitectureModal.jsx).
 import enCore from '../locales/en/core.json';
 import enStatus from '../locales/en/status.json';
-import enTil from '../locales/en/til.json';
+import enBlog from '../locales/en/blog.json';
 import frCore from '../locales/fr/core.json';
 import frStatus from '../locales/fr/status.json';
-import frTil from '../locales/fr/til.json';
+import frBlog from '../locales/fr/blog.json';
 
 export const LANGS = ['en', 'fr'];
 
 export const dictionaries = {
-  en: { ...enCore, status: enStatus, til: enTil },
-  fr: { ...frCore, status: frStatus, til: frTil },
+  en: { ...enCore, status: enStatus, blog: enBlog },
+  fr: { ...frCore, status: frStatus, blog: frBlog },
 };
 
 /**

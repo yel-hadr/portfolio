@@ -16,5 +16,6 @@
   "commits": "Commits récents",
   "commit": "Commit",
   "in": "dans le dépôt",
-  "newTab": "(s’ouvre dans un nouvel onglet)"
+  "newTab": "(s’ouvre dans un nouvel onglet)",
+  "fullPage": "Page d’état complète"
 }
