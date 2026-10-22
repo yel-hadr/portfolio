@@ -161,6 +161,13 @@ const SystemStatus = () => {
           {status === 'ready' && commits.length > 0 && <Commits commits={commits} />}
         </>
       )}
+      {/* The /status/ page: uptime, latency and pipeline history from the scheduled monitor */}
+      <a
+        href={`${import.meta.env.BASE_URL}status/`}
+        className='mt-3 inline-flex min-h-6 items-center rounded-md text-sm font-medium text-primary-400 underline-offset-4 hover:underline'
+      >
+        {t('status.fullPage')}
+      </a>
     </section>
   );
 };
