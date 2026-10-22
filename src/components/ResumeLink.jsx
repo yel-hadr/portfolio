@@ -1,6 +1,7 @@
 import { styles } from '../styles';
 import { person } from '../constans';
 import { useI18n } from '../i18n/context';
+import { track } from '../utils/analytics';
 
 /**
  * "Download resume" button. The download attribute saves the PDF instead of opening it in the
@@ -14,6 +15,7 @@ const ResumeLink = ({ className = '' }) => {
       download='Youssef_Elhadraoui_Resume.pdf'
       type='application/pdf'
       aria-label={t('resume.aria')}
+      onClick={() => track('resume-download')}
       className={`${styles.buttonGhost} gap-2 ${className}`}
     >
       <svg

@@ -51,8 +51,8 @@
     "ls": {
       "description": "Lister les sections de la page"
     },
-    "til": {
-      "description": "J’ai appris : de courtes notes techniques"
+    "blog": {
+      "description": "Les articles du blog, avec leurs liens"
     },
     "lang": {
       "args": "en|fr",
@@ -167,13 +167,13 @@
     "tech": "Stack technique",
     "works": "Projets",
     "education": "Formation",
-    "til": "J’ai appris",
+    "blog": "Blog",
     "contact": "Contact"
   },
-  "til": {
-    "title": "J’ai appris",
-    "empty": "Pas encore de notes. Repassez bientôt.",
-    "more": "Pour les lire en entier : {cmd}."
+  "blog": {
+    "title": "Blog",
+    "empty": "Pas encore d’articles. Repassez bientôt.",
+    "more": "Tous les articles : {all} · Flux RSS : {rss}"
   },
   "lang": {
     "current": "Langue actuelle : {lang}.",

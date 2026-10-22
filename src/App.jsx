@@ -16,16 +16,18 @@ import {
   CanvasErrorBoundary,
   WebGLFallback,
   Footer,
-  Til,
+  Blog,
 } from './components';
 import { WebGLContext } from './components/canvas/WebGLContext';
 import { useWebGL } from './hooks/useWebGL';
 import I18nProvider from './i18n/I18nProvider';
 import { useI18n } from './i18n/context';
 import ThemeProvider from './theme/ThemeProvider';
+import { track } from './utils/analytics';
 
 // The terminal overlay loads on first open
-const Terminal = lazy(() => import('./components/terminal/Terminal'));
+const loadTerminal = () => import('./components/terminal/Terminal');
+const Terminal = lazy(loadTerminal);
 
 function App() {
   const { supported } = useWebGL();
@@ -62,10 +64,21 @@ const AppContent = ({ webgl, supported, onCanvasError }) => {
   const openTerminal = useCallback(() => {
     terminalOpener.current = document.activeElement;
     setTerminalOpen(true);
+    track('terminal-open');
   }, []);
   const closeTerminal = useCallback(() => {
     setTerminalOpen(false);
     requestAnimationFrame(() => terminalOpener.current?.focus?.());
+  }, []);
+
+  // Fetch the terminal chunk (~10 KB gzip) once the page is idle, so the first open is instant
+  // instead of waiting on the network. Skipped when the visitor asked to save data.
+  useEffect(() => {
+    if (navigator.connection?.saveData) return undefined;
+    const idle = window.requestIdleCallback ?? ((cb) => window.setTimeout(cb, 2500));
+    const cancel = window.cancelIdleCallback ?? window.clearTimeout;
+    const handle = idle(() => loadTerminal().catch(() => {}), { timeout: 5000 });
+    return () => cancel(handle);
   }, []);
 
   // Ctrl+` opens the terminal from anywhere
@@ -141,8 +154,8 @@ const AppContent = ({ webgl, supported, onCanvasError }) => {
             <Education />
           </ErrorBoundary>
 
-          <ErrorBoundary sectionName='til'>
-            <Til />
+          <ErrorBoundary sectionName='blog'>
+            <Blog />
           </ErrorBoundary>
 
           <ErrorBoundary sectionName='contact'>

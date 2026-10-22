@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>System status | Youssef El Hadraoui</title>
+    <meta
+      name="description"
+      content="System status of yel-hadr.github.io: uptime and latency checks, CI/CD pipeline health and 7 days of history."
+    />
+    <link rel="icon" type="image/svg+xml" href="/src/assets/logo.svg" />
+    <!-- Updated before the first paint by the body script and by ThemeProvider -->
+    <meta name="theme-color" content="#050816" />
+    <meta name="color-scheme" content="dark" />
+    <!-- Canonical, Open Graph, Twitter and analytics tags are added by build/seo.js -->
+  </head>
+  <body>
+    <script>
+      // Before the first paint, as on the portfolio: the saved theme (else dark) and language
+      // (else the browser's). In <body> because <head> is generated with the SEO tags.
+      (function () {
+        var root = document.documentElement;
+        var theme, lang;
+        try {
+          theme = localStorage.getItem('theme');
+          lang = localStorage.getItem('lang');
+        } catch (e) {}
+        if (theme !== 'light') theme = 'dark';
+        if (lang !== 'en' && lang !== 'fr') {
+          lang = /^fr\b/i.test(navigator.language || '') ? 'fr' : 'en';
+        }
+        root.dataset.theme = theme;
+        root.lang = lang;
+        document.querySelector('meta[name="theme-color"]').content =
+          theme === 'light' ? '#f6f5fb' : '#050816';
+        document.querySelector('meta[name="color-scheme"]').content = theme;
+      })();
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/status/main.jsx"></script>
+  </body>
+</html>

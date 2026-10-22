@@ -51,8 +51,8 @@
     "ls": {
       "description": "List the sections you can jump to"
     },
-    "til": {
-      "description": "Today I learned: short technical notes"
+    "blog": {
+      "description": "Blog posts, with links to read them"
     },
     "lang": {
       "args": "en|fr",
@@ -167,13 +167,13 @@
     "tech": "Tech stack",
     "works": "Projects",
     "education": "Education",
-    "til": "Today I learned",
+    "blog": "Blog",
     "contact": "Contact"
   },
-  "til": {
-    "title": "Today I learned",
-    "empty": "No notes yet. Check back soon.",
-    "more": "Read them in full: {cmd}."
+  "blog": {
+    "title": "Blog",
+    "empty": "No posts yet. Check back soon.",
+    "more": "All posts: {all} · RSS feed: {rss}"
   },
   "lang": {
     "current": "Current language: {lang}.",

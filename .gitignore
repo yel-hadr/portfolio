@@ -1,10 +1,11 @@
-```
 # Dependencies
 node_modules/
 
 # Build artifacts
 dist/
-build/
+# Status monitor output (scripts/status/check.mjs)
+out/
+# build/ holds the Vite plugins (blog, SEO): source, not output
 target/
 
 # Python
@@ -62,4 +63,3 @@ htmlcov/
 *.Z
 *.lz
 *.lzo
-```
