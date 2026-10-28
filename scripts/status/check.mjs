@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Status monitor (Node 20+, no dependencies). GitHub Pages only serves static files, so the
-// checks run in GitHub Actions (.github/workflows/status.yml, scheduled several times a day) and publish two
-// static JSON files next to the site:
+// checks run in GitHub Actions (.github/workflows/status.yml, about every 30 minutes) and publish
+// two static JSON files next to the site:
 //   <out>/status.json          the summary endpoint (https://yel-hadr.github.io/status.json)
 //   <out>/status/history.json  7 days of samples, read back on the next run to compute uptime
 //

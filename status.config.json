@@ -1,5 +1,5 @@
 {
-  "$comment": "What the Status monitor (scripts/status/check.mjs, run by .github/workflows/status.yml several times a day) checks. Results are published to https://yel-hadr.github.io/status.json and shown on https://yel-hadr.github.io/status/.",
+  "$comment": "What the Status monitor (scripts/status/check.mjs, run by .github/workflows/status.yml about every 30 minutes) checks. Results are published to https://yel-hadr.github.io/status.json and shown on https://yel-hadr.github.io/status/.",
   "site": "https://yel-hadr.github.io",
   "intervalMinutes": 30,
   "retentionDays": 7,
