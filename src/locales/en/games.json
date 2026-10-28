@@ -1,0 +1,65 @@
+{
+  "menu": {
+    "title": "Play a game",
+    "description": "Two short games about keeping servers up. Best scores are saved in this browser only.",
+    "close": "Close games",
+    "best": "Best score: {score}",
+    "noBest": "Not played yet",
+    "snake": {
+      "name": "Packet Snake",
+      "description": "Steer a data packet to each payload, around firewalls and DDoS attacks."
+    },
+    "typing": {
+      "name": "Terminal challenge",
+      "description": "The server is crashing. Type the fix commands before the timer runs out. Opens the terminal."
+    },
+    "loading": "Loading the game…"
+  },
+  "snake": {
+    "title": "Packet Snake",
+    "back": "Back to games",
+    "score": "Score",
+    "best": "Best",
+    "pause": "Pause",
+    "resume": "Resume",
+    "start": "Start",
+    "again": "Play again",
+    "intro": "Route the packet to each payload. Avoid the edges, firewalls, DDoS attacks and your own trail.",
+    "keys": "Steer with the arrow keys or WASD. Space or P pauses and resumes. Escape closes the games. On a touch screen, swipe on the board or use the buttons.",
+    "paused": "Paused",
+    "autoPaused": "Paused while the page was in the background.",
+    "over": "Packet dropped",
+    "overScore": "Score {score}. Best {best}.",
+    "newBest": "New best score.",
+    "board": "Game board, {size} by {size} cells",
+    "legend": {
+      "label": "What's on the board",
+      "packet": "Your packet",
+      "payload": "Payload",
+      "firewall": "Firewall",
+      "ddos": "DDoS attack"
+    },
+    "controls": "Direction",
+    "up": "Up",
+    "down": "Down",
+    "left": "Left",
+    "right": "Right",
+    "sr": {
+      "started": "Game started. Score 0.",
+      "score": "Score {score}.",
+      "firewall": "Score {score}. A firewall went up.",
+      "ddos": "Score {score}. A DDoS attack appeared.",
+      "paused": "Paused. Score {score}.",
+      "resumed": "Resumed.",
+      "over": "Game over. {reason} Final score {score}. Best {best}.",
+      "reason": {
+        "wall": "The packet left the network.",
+        "self": "The packet crossed its own trail.",
+        "firewall": "The packet hit a firewall.",
+        "ddos": "The packet ran into a DDoS attack."
+      }
+    },
+    "steady": "Slower, steady speed",
+    "steadyHint": "The packet moves slower and no longer speeds up as you score."
+  }
+}

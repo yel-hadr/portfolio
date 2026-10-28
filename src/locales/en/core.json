@@ -132,7 +132,8 @@
     "github": "GitHub",
     "newTab": " (opens in a new tab)",
     "backToTop": "Back to top",
-    "rights": "© {year} {name}"
+    "rights": "© {year} {name}",
+    "games": "Play games"
   },
   "webgl": {
     "title": "3D scenes are turned off",

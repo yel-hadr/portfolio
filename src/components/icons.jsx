@@ -46,6 +46,25 @@ export const MoonIcon = (props) => (
   </Svg>
 );
 
+export const ChevronUpIcon = (props) => (
+  <Svg {...stroke} strokeWidth={2} {...props}>
+    <path d='M6 15l6-6 6 6' />
+  </Svg>
+);
+
+export const PauseIcon = (props) => (
+  <Svg viewBox='0 0 24 24' fill='currentColor' {...props}>
+    <rect x='6' y='5' width='4' height='14' rx='1' />
+    <rect x='14' y='5' width='4' height='14' rx='1' />
+  </Svg>
+);
+
+export const PlayIcon = (props) => (
+  <Svg viewBox='0 0 24 24' fill='currentColor' {...props}>
+    <path d='M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z' />
+  </Svg>
+);
+
 export const TerminalIcon = (props) => (
   <Svg {...stroke} {...props}>
     <rect x='2.5' y='4' width='19' height='16' rx='2.5' />

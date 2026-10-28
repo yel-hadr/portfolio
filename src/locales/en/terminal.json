@@ -77,6 +77,9 @@
     },
     "exit": {
       "description": "Close the terminal (or Esc)"
+    },
+    "game": {
+      "description": "Play the terminal challenge: type commands to save a crashing server"
     }
   },
   "help": {
@@ -202,5 +205,37 @@
   "helpHint": "Type {cmd} to list the commands.",
   "completions": "Possible completions:",
   "interrupted": "^C",
-  "name": "Terminal"
+  "name": "Terminal",
+  "game": {
+    "alert": "Server is crashing!",
+    "intro": "Type each command exactly as shown to bring it back. You have {seconds} seconds, and every fixed command adds {bonus} more. The clock starts on your first key.",
+    "quitHint": "Ctrl+C stops the challenge.",
+    "target": "Command to type",
+    "inputLabel": "Type the command shown above",
+    "waiting": "Waiting for your first key",
+    "time": "{seconds} s left",
+    "fixed": "Fixed: {score}",
+    "bonus": "+{bonus} s",
+    "typo": "Fix the crossed-out characters.",
+    "timeUp": "Time’s up. The server went down.",
+    "stopped": "Challenge stopped.",
+    "result": "Commands fixed: {score}. Best: {best}.",
+    "newBest": "New best score.",
+    "again": "Type {cmd} to play again.",
+    "sr": {
+      "start": "Challenge ready, {seconds} seconds. Type: {cmd}",
+      "next": "Fixed, plus {bonus} seconds. Next: {cmd}",
+      "low": "{seconds} seconds left.",
+      "typo": "Typo at character {position}.",
+      "left": "Correct so far, {count} characters to go."
+    },
+    "stop": "Stop",
+    "symbols": {
+      "~": "tilde",
+      "-": "dash",
+      "/": "slash",
+      ".": "dot",
+      "_": "underscore"
+    }
+  }
 }

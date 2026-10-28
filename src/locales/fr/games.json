@@ -1,0 +1,65 @@
+{
+  "menu": {
+    "title": "Jouer à un jeu",
+    "description": "Deux petits jeux sur l’art de garder des serveurs en ligne. Les meilleurs scores restent dans ce navigateur.",
+    "close": "Fermer les jeux",
+    "best": "Meilleur score : {score}",
+    "noBest": "Pas encore joué",
+    "snake": {
+      "name": "Packet Snake",
+      "description": "Guidez un paquet de données vers chaque charge utile, en évitant pare-feu et attaques DDoS."
+    },
+    "typing": {
+      "name": "Défi terminal",
+      "description": "Le serveur plante. Tapez les commandes de secours avant la fin du chrono. Ouvre le terminal."
+    },
+    "loading": "Chargement du jeu…"
+  },
+  "snake": {
+    "title": "Packet Snake",
+    "back": "Retour aux jeux",
+    "score": "Score",
+    "best": "Record",
+    "pause": "Pause",
+    "resume": "Reprendre",
+    "start": "Commencer",
+    "again": "Rejouer",
+    "intro": "Acheminez le paquet vers chaque charge utile. Évitez les bords, les pare-feu, les attaques DDoS et votre propre trace.",
+    "keys": "Dirigez avec les flèches ou ZQSD (WASD en QWERTY). Espace ou P met en pause et reprend. Échap ferme les jeux. Sur écran tactile, balayez le plateau ou utilisez les boutons.",
+    "paused": "En pause",
+    "autoPaused": "Mis en pause pendant que la page était en arrière-plan.",
+    "over": "Paquet perdu",
+    "overScore": "Score {score}. Record {best}.",
+    "newBest": "Nouveau record.",
+    "board": "Plateau de jeu, {size} cases sur {size}",
+    "legend": {
+      "label": "Sur le plateau",
+      "packet": "Votre paquet",
+      "payload": "Charge utile",
+      "firewall": "Pare-feu",
+      "ddos": "Attaque DDoS"
+    },
+    "controls": "Direction",
+    "up": "Haut",
+    "down": "Bas",
+    "left": "Gauche",
+    "right": "Droite",
+    "sr": {
+      "started": "Partie commencée. Score 0.",
+      "score": "Score {score}.",
+      "firewall": "Score {score}. Un pare-feu est apparu.",
+      "ddos": "Score {score}. Une attaque DDoS est apparue.",
+      "paused": "En pause. Score {score}.",
+      "resumed": "Reprise.",
+      "over": "Partie terminée. {reason} Score final {score}. Record {best}.",
+      "reason": {
+        "wall": "Le paquet est sorti du réseau.",
+        "self": "Le paquet a croisé sa propre trace.",
+        "firewall": "Le paquet a heurté un pare-feu.",
+        "ddos": "Le paquet est tombé sur une attaque DDoS."
+      }
+    },
+    "steady": "Vitesse lente et constante",
+    "steadyHint": "Le paquet avance plus lentement et n’accélère plus quand le score monte."
+  }
+}

@@ -132,7 +132,8 @@
     "github": "GitHub",
     "newTab": " (s’ouvre dans un nouvel onglet)",
     "backToTop": "Retour en haut",
-    "rights": "© {year} {name}"
+    "rights": "© {year} {name}",
+    "games": "Jouer à un jeu"
   },
   "webgl": {
     "title": "Les scènes 3D sont désactivées",
