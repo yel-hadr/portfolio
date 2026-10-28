@@ -22,6 +22,12 @@ const styles = {
   buttonGhost:
     'inline-flex items-center rounded-xl border border-line-strong bg-glass px-7 py-3 font-semibold text-foreground backdrop-blur-md transition-colors hover:border-foreground-muted',
   body: 'text-foreground-muted text-base leading-relaxed',
+  // Focus ring of a 3D view (its wrapper has `group`): a layer above the canvas, since an inset
+  // ring on the wrapper is painted under an opaque canvas
+  viewFocusRing:
+    'pointer-events-none absolute inset-0 z-50 group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:-outline-offset-2 group-focus-visible:outline-primary',
+  // HUD controls over a 3D scene: a two-tone ring that stays visible on any scene color
+  hudFocus: 'focus-visible:outline-foreground focus-visible:ring-4 focus-visible:ring-background',
 };
 
 export { styles };

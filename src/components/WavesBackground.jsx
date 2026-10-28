@@ -97,9 +97,12 @@ const STOPS = [
   [1, '--c-tertiary', 0.3],
 ];
 
-const WavesBackground = () => {
+const WavesBackground = ({ paused = false }) => {
   const canvasRef = useRef(null);
   const reduced = usePrefersReducedMotion();
+  // One still frame under reduced motion, and while a live demo covers the page (no animation
+  // or pointer work behind its dialog)
+  const still = reduced || paused;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -252,7 +255,7 @@ const WavesBackground = () => {
     const onResize = () => {
       setSize();
       setLines();
-      if (reduced) drawStill();
+      if (still) drawStill();
     };
     const onMouseMove = (e) => updateMouse(e.clientX, e.clientY);
     // The page cross-fades to the other language; the lines swell and settle with it
@@ -267,14 +270,14 @@ const WavesBackground = () => {
     // Theme switch (data-theme on <html>): recolor the lines; the still frame redraws at once
     const themeObserver = new MutationObserver(() => {
       applyStroke();
-      if (reduced) drawStill();
+      if (still) drawStill();
     });
     themeObserver.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme'],
     });
 
-    if (reduced) {
+    if (still) {
       drawStill();
     } else {
       frameId = requestAnimationFrame(tick);
@@ -291,7 +294,7 @@ const WavesBackground = () => {
       window.removeEventListener('site:langchange', onLangChange);
       if (frameId !== null) cancelAnimationFrame(frameId);
     };
-  }, [reduced]);
+  }, [still]);
 
   return (
     <div aria-hidden='true' className='pointer-events-none fixed inset-0 overflow-hidden'>

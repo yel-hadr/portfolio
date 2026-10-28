@@ -1,0 +1,96 @@
+{
+  "close": "Fermer la démo",
+  "source": "Code source",
+  "sourceAria": "Voir le code source de {name} sur GitHub (s’ouvre dans un nouvel onglet)",
+  "noWebgl": "Cette démo a besoin de WebGL 2, que ce navigateur ou cet appareil ne propose pas.",
+  "cub3d": {
+    "name": "cub3D",
+    "title": "cub3D, dans le navigateur",
+    "description": "cub3D, projet 42 (1337) en binôme, en C avec MLX42, dessine un labyrinthe par raycasting. Voici sa carte maps/map.cub, reconstruite avec three.js : une texture par face de mur (NO, SO, WE, EA), le sol et le plafond des lignes F et C, une porte et une minicarte.",
+    "appLabel": "Labyrinthe cub3D",
+    "canvasLabel": "Vue à la première personne du labyrinthe map.cub : murs texturés, sol orange, plafond rouge",
+    "mouseLook": "Regarder avec la souris",
+    "welcome": {
+      "title": "Bienvenue dans cub3D",
+      "body": "Un projet 42 inspiré de Wolfenstein 3D, qui lance un rayon par colonne d’écran. La salle droit devant a des murs qui parlent de moi.",
+      "keys": [
+        "Z S (W S en QWERTY) ou ↑ ↓ : marcher",
+        "Q D (A D en QWERTY) : pas de côté",
+        "← → ou la souris : tourner",
+        "Espace : ouvrir la porte devant vous",
+        "Échap : libérer la souris, Échap à nouveau pour fermer"
+      ],
+      "keysTouch": [
+        "Glissez la vue pour tourner",
+        "▲ ▼ marcher, ◀ ▶ pas de côté, ↺ ↻ tourner",
+        "Porte : ouvrir la porte devant vous"
+      ],
+      "start": "Commencer",
+      "startLook": "Commencer avec la souris"
+    },
+    "panels": {
+      "welcome": "Bienvenue",
+      "welcomeBody": "La carte de cub3D, parcourue dans votre navigateur. Les autres murs parlent de moi.",
+      "about": "À propos",
+      "skills": "Compétences",
+      "projects": "Projets"
+    },
+    "directions": {
+      "north": "au nord",
+      "south": "au sud",
+      "east": "à l’est",
+      "west": "à l’ouest"
+    },
+    "sr": {
+      "facing": "Face {direction}.",
+      "doorOpened": "Porte ouverte.",
+      "doorClosed": "Porte fermée.",
+      "noDoor": "Pas de porte juste devant."
+    },
+    "touch": {
+      "label": "Marcher et tourner",
+      "forward": "Avancer",
+      "back": "Reculer",
+      "left": "Pas à gauche",
+      "right": "Pas à droite",
+      "turnLeft": "Tourner à gauche",
+      "turnRight": "Tourner à droite",
+      "door": "Porte"
+    },
+    "panelsHeading": "Lire les murs"
+  },
+  "fdf": {
+    "name": "FdF",
+    "title": "FdF, dans le navigateur",
+    "description": "FdF, projet 42 en C avec MiniLibX, dessine une carte de hauteurs en fil de fer : ici sa carte test_maps/42.fdf. L’original trace des lignes blanches en vue isométrique (grille tournée de 45°, hauteur divisée par deux), déplace, zoome, tourne et change la hauteur ; cette version ajoute les couleurs d’altitude et la perspective.",
+    "viewLabel": "Fil de fer FdF",
+    "canvasLabel": "Fil de fer de 42.fdf, {width} points sur {height}, en relief en forme de 42, projection {projection}",
+    "help": "Glisser : déplacer · clic droit ou deux doigts : tourner · molette ou + − : zoom · flèches : déplacer · R, Maj+R : tourner · P : projection",
+    "zScale": "Échelle de hauteur (z)",
+    "projection": "Projection",
+    "projections": {
+      "isometric": "isométrique",
+      "perspective": "perspective"
+    },
+    "colors": "Couleurs",
+    "palettes": {
+      "altitude": "Selon l’altitude",
+      "original": "Une couleur (comme l’original)"
+    },
+    "zoomIn": "Zoomer",
+    "zoomOut": "Dézoomer",
+    "rotate": "Tourner de 15°",
+    "reset": "Réinitialiser la vue",
+    "move": "Déplacer le modèle",
+    "pan": {
+      "left": "Vers la gauche",
+      "up": "Vers le haut",
+      "down": "Vers le bas",
+      "right": "Vers la droite"
+    },
+    "rotateBack": "Tourner de −15°"
+  },
+  "loading": "Lancement de la démo…",
+  "failed": "Cette démo n’a pas pu démarrer sur cet appareil.",
+  "sourceHint": "Le lien Code source en haut de cette fenêtre montre le projet."
+}
