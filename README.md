@@ -74,9 +74,13 @@ All of these are off until configured, and the site works without them.
 | What | Where (GitHub repo settings) | Value |
 |---|---|---|
 | Umami analytics | Variables: `VITE_UMAMI_WEBSITE_ID` (and `VITE_UMAMI_SCRIPT_URL` if self-hosted) | The Website ID from Umami Cloud (free tier) for the domain `yel-hadr.github.io` |
-| Grafana dashboard on /status/ | Variable: `VITE_GRAFANA_DASHBOARD_URL` | The https URL of a publicly shared dashboard that allows embedding |
+| Grafana dashboard on /status/ | Variable: `VITE_GRAFANA_DASHBOARD_URL` | Import `grafana/portfolio-status.dashboard.json` (Dashboards → Import, pick the Grafana Cloud Prometheus data source), share it publicly, then set this variable to its https URL |
 | Monitor metrics in Grafana Cloud | Secrets: `GRAFANA_INFLUX_URL`, `GRAFANA_INFLUX_USER`, `GRAFANA_INFLUX_TOKEN` | The Influx write endpoint, the metrics instance ID and a token with metrics:write |
 | Your own servers on /status/ | `status.config.json` → `servers` | `{ "name", "url", "method", "expectStatus", "timeoutMs" }`, public URLs only |
+
+After adding the `GRAFANA_INFLUX_*` secrets, run Actions → "Status monitor" → Run workflow with "Backfill Grafana" ticked, so the dashboard starts with the last 7 days.
+
+The schedule asks for a run every 30 minutes, but GitHub runs scheduled workflows best-effort: in practice every 2–7 hours.
 
 The status monitor (Actions → "Status monitor") needs no setup: it uses `GITHUB_TOKEN` and the existing deploy key. Run it manually once after merging to publish the first data.
 

@@ -1,6 +1,8 @@
 name: Status monitor
 
-# Every 30 minutes: check the services and pipelines listed in status.config.json and publish the
+# Scheduled every 30 minutes, but GitHub runs schedules best-effort: in practice every 2-7 hours
+# (median 4.5 h over the first week). Checks the services and pipelines listed in
+# status.config.json and publishes the
 # results next to the site, as https://yel-hadr.github.io/status.json (summary) and
 # /status/history.json (7 days of samples), read by the /status/ page.
 #
@@ -12,6 +14,11 @@ on:
     # Off the top of the hour, when GitHub's scheduler is busiest and delays runs the most
     - cron: '7,37 * * * *'
   workflow_dispatch:
+    inputs:
+      grafana_backfill:
+        description: 'Backfill Grafana: also push the published 7-day history (needs the GRAFANA_INFLUX_* secrets)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -23,7 +30,7 @@ jobs:
   # while a site deploy was waiting there, it would cancel that deploy and the latest commit would
   # not go live until the next push. This first job has no concurrency group: it looks for a
   # deploy.yml run of a push to main that has not finished yet and, if there is one, the publish
-  # job below is skipped. One missed 30-minute sample is harmless; a missed deploy is not.
+  # job below is skipped. One missed sample is harmless; a missed deploy is not.
   # The window between this check and the publish job queueing is a few seconds.
   gate:
     name: wait-for-no-deploy
@@ -82,6 +89,16 @@ jobs:
           # Reads the workflow runs of the pipelines (public repos) and the published history
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Optional Grafana Cloud push (Influx line protocol); unset = skipped
+          GRAFANA_INFLUX_URL: ${{ secrets.GRAFANA_INFLUX_URL }}
+          GRAFANA_INFLUX_USER: ${{ secrets.GRAFANA_INFLUX_USER }}
+          GRAFANA_INFLUX_TOKEN: ${{ secrets.GRAFANA_INFLUX_TOKEN }}
+
+      - name: Backfill Grafana with the 7-day history
+        # Manual runs only (the "Backfill Grafana" box). Replays this run's history file so a new
+        # Grafana dashboard starts with a week of data; re-running overwrites the same points.
+        if: github.event_name == 'workflow_dispatch' && inputs.grafana_backfill
+        run: node scripts/status/grafana-backfill.mjs --history out/status/history.json --summary out/status.json
+        env:
           GRAFANA_INFLUX_URL: ${{ secrets.GRAFANA_INFLUX_URL }}
           GRAFANA_INFLUX_USER: ${{ secrets.GRAFANA_INFLUX_USER }}
           GRAFANA_INFLUX_TOKEN: ${{ secrets.GRAFANA_INFLUX_TOKEN }}

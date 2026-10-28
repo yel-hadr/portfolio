@@ -2,8 +2,9 @@
 
 export const HOUR = 3600 * 1000;
 export const DAY = 24 * HOUR;
-// Older summaries get a warning: the monitor runs every 30 minutes
-export const STALE_MS = 2 * HOUR;
+// Older summaries get a warning. The schedule asks for every 30 minutes, but GitHub runs
+// scheduled workflows best-effort: measured gaps were 2-7 h (median 4.5 h) over the first week.
+export const STALE_MS = 8 * HOUR;
 
 const UNITS = [
   ['day', DAY / 1000],
