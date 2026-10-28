@@ -188,6 +188,54 @@ export const influxLines = (summary, timeMs) => {
   return lines.join('\n');
 };
 
+/**
+ * Influx lines for past samples from status/history.json (HTTP monitors only: the history
+ * keeps no pipeline data). `kinds` maps monitor id -> kind, so the backfilled points carry the
+ * same labels as the live pushes and land in the same series.
+ */
+export const historyInfluxLines = (samples, kinds) =>
+  samples
+    .flatMap((sample) => {
+      const ns = `${BigInt(Date.parse(sample.t)) * 1000000n}`;
+      return Object.entries(sample.m ?? {}).map(([id, m]) => {
+        const fields = [`up=${m.ok ? 1 : 0}i`, `status_code=${m.code ?? 0}i`];
+        if (Number.isFinite(m.ms)) fields.push(`latency_ms=${m.ms}i`);
+        return `status_http,monitor=${tag(id)},kind=${tag(kinds[id] ?? 'http')} ${fields.join(',')} ${ns}`;
+      });
+    })
+    .join('\n');
+
+/**
+ * POST Influx line protocol to Grafana Cloud (or any Influx-compatible write endpoint).
+ * `url` may be the full write URL or just the host. Returns 'off' when not configured, 'ok' or
+ * 'failed'; never throws and never echoes the URL or the credentials.
+ */
+export const writeInflux = async ({ url, user, token, userAgent }, body, warn = console.warn) => {
+  if (!url || !user || !token) return 'off';
+  try {
+    const endpoint = new URL(url);
+    if (endpoint.pathname === '/' || endpoint.pathname === '') {
+      endpoint.pathname = '/api/v1/push/influx/write';
+    }
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        ...(userAgent ? { 'User-Agent': userAgent } : {}),
+        Authorization: `Basic ${Buffer.from(`${user}:${token}`).toString('base64')}`,
+      },
+      body,
+      signal: AbortSignal.timeout(15000),
+    });
+    await res.body?.cancel().catch(() => {});
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return 'ok';
+  } catch (error) {
+    warn(`Grafana push failed: ${error instanceof Error ? error.message : String(error)}`);
+    return 'failed';
+  }
+};
+
 /** The public fields of a GitHub Actions run (null in, null out). */
 export const runInfo = (run) => {
   if (!run) return null;

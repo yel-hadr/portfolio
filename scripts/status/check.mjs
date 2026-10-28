@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Status monitor (Node 20+, no dependencies). GitHub Pages only serves static files, so the
-// checks run in GitHub Actions (.github/workflows/status.yml, every 30 minutes) and publish two
+// checks run in GitHub Actions (.github/workflows/status.yml, scheduled several times a day) and publish two
 // static JSON files next to the site:
 //   <out>/status.json          the summary endpoint (https://yel-hadr.github.io/status.json)
 //   <out>/status/history.json  7 days of samples, read back on the next run to compute uptime
@@ -20,6 +20,7 @@ import {
   SCHEMA_VERSION,
   WINDOWS,
   influxLines,
+  writeInflux,
   latencyStats,
   mergeHistory,
   monitorState,
@@ -199,35 +200,17 @@ const loadHistory = async () => {
   return { samples: null, source: 'unavailable' };
 };
 
-const pushToGrafana = async (summary, timeMs) => {
-  const { GRAFANA_INFLUX_URL: url, GRAFANA_INFLUX_USER: user } = process.env;
-  const secret = process.env.GRAFANA_INFLUX_TOKEN;
-  if (!url || !user || !secret) return 'off';
-  try {
-    // Accept the full write URL or just the host of the Grafana Cloud Influx endpoint
-    const endpoint = new URL(url);
-    if (endpoint.pathname === '/' || endpoint.pathname === '') {
-      endpoint.pathname = '/api/v1/push/influx/write';
-    }
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'User-Agent': USER_AGENT,
-        Authorization: `Basic ${Buffer.from(`${user}:${secret}`).toString('base64')}`,
-      },
-      body: influxLines(summary, timeMs),
-      signal: AbortSignal.timeout(15000),
-    });
-    await res.body?.cancel().catch(() => {});
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return 'ok';
-  } catch (error) {
-    // Optional extra: never fails the run (and never echoes the URL or the credentials)
-    console.warn(`Grafana Cloud push failed: ${describeError(error)}`);
-    return 'failed';
-  }
-};
+// Optional extra: never fails the run (writeInflux catches everything)
+const pushToGrafana = (summary, timeMs) =>
+  writeInflux(
+    {
+      url: process.env.GRAFANA_INFLUX_URL,
+      user: process.env.GRAFANA_INFLUX_USER,
+      token: process.env.GRAFANA_INFLUX_TOKEN,
+      userAgent: USER_AGENT,
+    },
+    influxLines(summary, timeMs)
+  );
 
 const stepSummary = async (summary) => {
   if (!process.env.GITHUB_STEP_SUMMARY) return;
