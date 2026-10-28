@@ -1,8 +1,8 @@
 // The terminal's commands. Each one gets ({ args, rest }, ctx) and returns the output to print
-// (or null). ctx: { t, lang, setLang, theme, setTheme, history, close, reduced }.
+// (or null). ctx: { t, lang, setLang, theme, setTheme, history, close, reduced, startGame }.
 import { blogPath, blogPosts, feedPath } from 'virtual:blog-posts';
 
-import { education, experiences, person, projects } from '../../constans';
+import { education, experiences, person, projects, typingChallenge } from '../../constans';
 import { dictionaries } from '../../i18n/dictionaries';
 import { closest, completeWord, normalize } from './helpers';
 import { Block, Bullets, Cmd, ErrorLine, ExtLink, Heading, Link, Muted, Rich } from './output';
@@ -540,6 +540,20 @@ export const COMMANDS = [
         </p>
       </Block>
     ),
+  },
+  {
+    name: 'game',
+    aliases: ['/game', 'jeu', 'play', 'jouer'],
+    run: (_, { t, startGame }) => {
+      startGame();
+      return (
+        <Block>
+          <ErrorLine>{t('terminal.game.alert')}</ErrorLine>
+          <p>{t('terminal.game.intro', typingChallenge)}</p>
+          <Muted>{t('terminal.game.quitHint')}</Muted>
+        </Block>
+      );
+    },
   },
   {
     name: 'exit',

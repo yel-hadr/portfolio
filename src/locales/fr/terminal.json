@@ -77,6 +77,9 @@
     },
     "exit": {
       "description": "Fermer le terminal (ou Échap)"
+    },
+    "game": {
+      "description": "Jouer au défi terminal : tapez des commandes pour sauver un serveur qui plante"
     }
   },
   "help": {
@@ -202,5 +205,37 @@
   "helpHint": "Tapez {cmd} pour lister les commandes.",
   "completions": "Complétions possibles :",
   "interrupted": "^C",
-  "name": "Terminal"
+  "name": "Terminal",
+  "game": {
+    "alert": "Le serveur plante !",
+    "intro": "Tapez chaque commande exactement comme affichée pour le relancer. Vous avez {seconds} secondes, et chaque commande réussie en ajoute {bonus}. Le chrono démarre à la première touche.",
+    "quitHint": "Ctrl+C arrête le défi.",
+    "target": "Commande à taper",
+    "inputLabel": "Tapez la commande affichée au-dessus",
+    "waiting": "En attente de votre première touche",
+    "time": "{seconds} s restantes",
+    "fixed": "Réparées : {score}",
+    "bonus": "+{bonus} s",
+    "typo": "Corrigez les caractères barrés.",
+    "timeUp": "Temps écoulé. Le serveur est tombé.",
+    "stopped": "Défi arrêté.",
+    "result": "Commandes réparées : {score}. Record : {best}.",
+    "newBest": "Nouveau record.",
+    "again": "Tapez {cmd} pour rejouer.",
+    "sr": {
+      "start": "Défi prêt, {seconds} secondes. Tapez : {cmd}",
+      "next": "Réparé, plus {bonus} secondes. Suivante : {cmd}",
+      "low": "Plus que {seconds} secondes.",
+      "typo": "Faute au caractère {position}.",
+      "left": "Correct pour l’instant, encore {count} caractères."
+    },
+    "stop": "Arrêter",
+    "symbols": {
+      "~": "tilde",
+      "-": "tiret",
+      "/": "barre oblique",
+      ".": "point",
+      "_": "tiret bas"
+    }
+  }
 }

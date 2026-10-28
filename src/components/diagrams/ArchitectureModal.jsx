@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useId, useRef } from 'react';
+import { useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 
+import { useModalDialog } from '../../hooks/useModalDialog';
 import { useI18n } from '../../i18n/context';
 import { registerNamespace } from '../../i18n/dictionaries';
 import en from '../../locales/en/diagrams.json';
@@ -17,92 +18,28 @@ const DIAGRAMS = {
   iot: { ns: 'diagrams.iot', Diagram: IotDiagram },
 };
 
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
-
 /**
- * Architecture diagram dialog, opened from a project card in Works. It renders into
- * document.body (an ancestor transform or backdrop-filter would otherwise trap `fixed`), makes
- * the rest of the page inert, locks page scroll, traps Tab and closes on Escape, the close
- * button or a backdrop click. The caller restores focus in onClose.
+ * Architecture diagram dialog, opened from a project card in Works. useModalDialog makes the
+ * rest of the page inert, locks page scroll, traps Tab and closes on Escape, the close button or
+ * a backdrop click. The caller restores focus in onClose.
  */
 const ArchitectureModal = ({ diagram, onClose }) => {
   const { t } = useI18n();
   const titleId = useId();
   const descId = useId();
-  const overlayRef = useRef(null);
-  const panelRef = useRef(null);
-  const pressedOnBackdrop = useRef(false);
-  // Undoes the scroll lock and inert; run before onClose so the opener can take focus again
-  const release = useRef(() => {});
+  const { overlayRef, panelRef, close, onKeyDown, backdrop } = useModalDialog(onClose);
 
   const { ns, Diagram } = DIAGRAMS[diagram] ?? DIAGRAMS.cloud1;
 
   useEffect(() => {
-    const root = document.documentElement;
-    const { body } = document;
-    const prevOverflow = root.style.overflow;
-    const prevPadding = body.style.paddingRight;
-    const scrollbar = window.innerWidth - root.clientWidth;
-    root.style.overflow = 'hidden';
-    if (scrollbar > 0) body.style.paddingRight = `${scrollbar}px`;
-
-    const madeInert = [...body.children].filter(
-      (el) => el !== overlayRef.current && !el.inert && el.tagName !== 'SCRIPT'
-    );
-    madeInert.forEach((el) => (el.inert = true));
-
-    let done = false;
-    release.current = () => {
-      if (done) return;
-      done = true;
-      root.style.overflow = prevOverflow;
-      body.style.paddingRight = prevPadding;
-      madeInert.forEach((el) => (el.inert = false));
-    };
     panelRef.current?.focus();
-    return () => release.current();
-  }, []);
-
-  const close = useCallback(() => {
-    release.current();
-    onClose();
-  }, [onClose]);
-
-  const onKeyDown = (e) => {
-    // Keys typed in the dialog never reach page-level shortcuts
-    e.stopPropagation();
-    if (e.key === 'Escape') {
-      close();
-      return;
-    }
-    if (e.key !== 'Tab') return;
-    const panel = panelRef.current;
-    const items = [...panel.querySelectorAll(FOCUSABLE)].filter(
-      (el) => el.getClientRects().length > 0
-    );
-    if (!items.length) return;
-    const first = items[0];
-    const last = items[items.length - 1];
-    const current = document.activeElement;
-    if (e.shiftKey && (current === first || current === panel)) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && current === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  };
+  }, [panelRef]);
 
   return createPortal(
     <div
       ref={overlayRef}
       className='fixed inset-0 z-[60] flex justify-center bg-background/75 backdrop-blur-sm sm:[@media(min-height:30rem)]:items-center sm:[@media(min-height:30rem)]:p-6'
-      // Close only when the press both starts and ends on the backdrop (not a text-selection drag)
-      onMouseDown={(e) => (pressedOnBackdrop.current = e.target === e.currentTarget)}
-      onClick={(e) => {
-        if (pressedOnBackdrop.current && e.target === e.currentTarget) close();
-      }}
+      {...backdrop}
     >
       <div
         ref={panelRef}

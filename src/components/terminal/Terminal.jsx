@@ -7,6 +7,7 @@ import { registerNamespace } from '../../i18n/dictionaries';
 import en from '../../locales/en/terminal.json';
 import fr from '../../locales/fr/terminal.json';
 import { useTheme } from '../../theme/context';
+import TerminalTyping from '../Games/TerminalTyping';
 import { CloseIcon } from '../icons';
 import { complete, findCommand, suggestCommand } from './commands';
 import { Block, Cmd, ErrorLine, Muted, Prompt, PromptLine, Rich, Welcome } from './output';
@@ -18,7 +19,7 @@ registerNamespace('terminal', { en, fr });
 // Older output is dropped past this many entries, so a long session stays light
 const MAX_ENTRIES = 300;
 // One-tap commands, mostly for phones where typing is slow
-const QUICK_COMMANDS = ['help', 'whoami', 'projects', 'skills', 'resume'];
+const QUICK_COMMANDS = ['help', 'whoami', 'projects', 'skills', 'resume', 'game'];
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled])';
 
 // Kept for the whole visit, so ↑ still recalls earlier commands after the terminal reopens
@@ -50,8 +51,9 @@ const useVisibleViewport = () => {
 /**
  * Terminal overlay: a modal dialog where visitors type commands (help, projects, resume...) to
  * explore the portfolio. App renders it only while open; `onClose` closes it and restores focus.
+ * `initialCommand` runs once on open (the games menu opens it on `game`).
  */
-const Terminal = ({ onClose }) => {
+const Terminal = ({ onClose, initialCommand = null }) => {
   const { lang, setLang, t } = useI18n();
   const { theme, setTheme } = useTheme();
   const reduced = usePrefersReducedMotion();
@@ -60,6 +62,8 @@ const Terminal = ({ onClose }) => {
   const [entries, setEntries] = useState(() => [entry(<Welcome t={t} />)]);
   const [value, setValue] = useState('');
   const [history, setHistory] = useState(savedHistory);
+  // The terminal challenge replaces the prompt line while it runs
+  const [playing, setPlaying] = useState(false);
   // Position while browsing history with ↑/↓ (null: editing a new line) and the line in progress
   const browse = useRef({ index: null, draft: '' });
   // The first entry of the latest command: the log scrolls so it stays in view
@@ -68,14 +72,16 @@ const Terminal = ({ onClose }) => {
   const dialogRef = useRef(null);
   const logRef = useRef(null);
   const inputRef = useRef(null);
+  const gameInputRef = useRef(null);
   const pressedBackdrop = useRef(false);
   const titleId = useId();
   const descriptionId = useId();
   const inputId = useId();
 
+  // The prompt takes focus on open and again when the challenge ends
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (!playing) inputRef.current?.focus();
+  }, [playing]);
 
   // The page behind must not scroll; the stable gutter avoids a layout shift
   useEffect(() => {
@@ -147,12 +153,54 @@ const Terminal = ({ onClose }) => {
       clear();
       return;
     }
-    const output = command.run(
-      { args, rest },
-      { t, lang, setLang, theme, setTheme, history: savedHistory, close: onClose, reduced }
-    );
-    print(echo, output);
+    print(echo, command.run({ args, rest }, context()));
   };
+
+  // What every command gets as its second argument
+  const context = () => ({
+    t,
+    lang,
+    setLang,
+    theme,
+    setTheme,
+    history: savedHistory,
+    close: onClose,
+    reduced,
+    startGame: () => setPlaying(true),
+  });
+
+  // The opening command runs once (StrictMode runs effects twice in development), without an
+  // echo or a history entry: the visitor did not type it
+  const ranInitial = useRef(false);
+  useEffect(() => {
+    if (ranInitial.current) return;
+    ranInitial.current = true;
+    const command = initialCommand && findCommand(initialCommand);
+    if (command) print(command.run({ args: [], rest: '' }, context()));
+    // Only on open
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const endGame = useCallback(
+    ({ reason, score, best, newBest }) => {
+      setPlaying(false);
+      print(
+        <Block>
+          {reason === 'timeUp' ? (
+            <ErrorLine>{t('terminal.game.timeUp')}</ErrorLine>
+          ) : (
+            <Muted>{t('terminal.game.stopped')}</Muted>
+          )}
+          <p>{t('terminal.game.result', { score, best })}</p>
+          {newBest && <p className='text-success'>{t('terminal.game.newBest')}</p>}
+          <Muted>
+            <Rich text={t('terminal.game.again')} values={{ cmd: <Cmd>game</Cmd> }} />
+          </Muted>
+        </Block>
+      );
+    },
+    [print, t]
+  );
 
   const recall = (step) => {
     if (history.length === 0) return;
@@ -261,11 +309,12 @@ const Terminal = ({ onClose }) => {
     }
   };
 
-  // A click on the log (not a link, not a text selection) puts the caret back in the prompt
+  // A click on the log (not a link, not a text selection) puts the caret back in the prompt, or
+  // in the challenge's input while it runs
   const onLogClick = (e) => {
     if (e.target.closest('a, button')) return;
     if (window.getSelection()?.toString()) return;
-    inputRef.current?.focus({ preventScroll: true });
+    (playing ? gameInputRef : inputRef).current?.focus({ preventScroll: true });
   };
 
   const runQuick = (name) => {
@@ -350,48 +399,52 @@ const Terminal = ({ onClose }) => {
           ))}
         </div>
 
-        <div className='border-t border-line px-3 pb-3 pt-2'>
-          <div
-            role='group'
-            aria-label={t('terminal.suggestions')}
-            className='mb-2 flex flex-wrap gap-1'
-          >
-            {QUICK_COMMANDS.map((name) => (
-              <button
-                key={name}
-                type='button'
-                onClick={() => runQuick(name)}
-                className='rounded-lg border border-line-strong px-2 py-1 text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground'
-              >
-                {name}
-              </button>
-            ))}
+        {playing ? (
+          <TerminalTyping t={t} onEnd={endGame} inputRef={gameInputRef} />
+        ) : (
+          <div className='border-t border-line px-3 pb-3 pt-2'>
+            <div
+              role='group'
+              aria-label={t('terminal.suggestions')}
+              className='mb-2 flex flex-wrap gap-1'
+            >
+              {QUICK_COMMANDS.map((name) => (
+                <button
+                  key={name}
+                  type='button'
+                  onClick={() => runQuick(name)}
+                  className='rounded-lg border border-line-strong px-2 py-1 text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground'
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+            <div className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-base outline-2 -outline-offset-2 outline-primary focus-within:outline md:text-sm'>
+              <Prompt t={t} />
+              <label htmlFor={inputId} className='sr-only'>
+                {t('terminal.inputLabel')}
+              </label>
+              <input
+                ref={inputRef}
+                id={inputId}
+                type='text'
+                value={value}
+                onChange={(e) => {
+                  setValue(e.target.value);
+                  browse.current.index = null;
+                }}
+                onKeyDown={onInputKeyDown}
+                aria-describedby={descriptionId}
+                autoComplete='off'
+                autoCapitalize='none'
+                autoCorrect='off'
+                spellCheck={false}
+                enterKeyHint='send'
+                className='min-w-0 flex-1 bg-transparent text-foreground caret-primary outline-none focus-visible:outline-none'
+              />
+            </div>
           </div>
-          <div className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-base outline-2 -outline-offset-2 outline-primary focus-within:outline md:text-sm'>
-            <Prompt t={t} />
-            <label htmlFor={inputId} className='sr-only'>
-              {t('terminal.inputLabel')}
-            </label>
-            <input
-              ref={inputRef}
-              id={inputId}
-              type='text'
-              value={value}
-              onChange={(e) => {
-                setValue(e.target.value);
-                browse.current.index = null;
-              }}
-              onKeyDown={onInputKeyDown}
-              aria-describedby={descriptionId}
-              autoComplete='off'
-              autoCapitalize='none'
-              autoCorrect='off'
-              spellCheck={false}
-              enterKeyHint='send'
-              className='min-w-0 flex-1 bg-transparent text-foreground caret-primary outline-none focus-visible:outline-none'
-            />
-          </div>
-        </div>
+        )}
       </motion.div>
     </motion.div>
   );

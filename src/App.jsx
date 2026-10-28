@@ -28,6 +28,8 @@ import { track } from './utils/analytics';
 // The terminal overlay loads on first open
 const loadTerminal = () => import('./components/terminal/Terminal');
 const Terminal = lazy(loadTerminal);
+// The games dialog (Packet Snake is a further chunk inside it) loads on first open
+const GameMenu = lazy(() => import('./components/Games/GameMenu'));
 
 function App() {
   const { supported } = useWebGL();
@@ -58,11 +60,35 @@ function App() {
 const AppContent = ({ webgl, supported, onCanvasError }) => {
   const { t } = useI18n();
   const [terminalOpen, setTerminalOpen] = useState(false);
+  // A command the terminal runs as it opens (the games menu starts the challenge this way)
+  const [terminalCommand, setTerminalCommand] = useState(null);
   // Focus returns here when the terminal closes
   const terminalOpener = useRef(null);
+  const [gamesOpen, setGamesOpen] = useState(false);
+  const gamesOpener = useRef(null);
 
   const openTerminal = useCallback(() => {
     terminalOpener.current = document.activeElement;
+    setTerminalCommand(null);
+    setTerminalOpen(true);
+    track('terminal-open');
+  }, []);
+
+  const openGames = useCallback(() => {
+    gamesOpener.current = document.activeElement;
+    setGamesOpen(true);
+    track('games-open');
+  }, []);
+  const closeGames = useCallback(() => {
+    setGamesOpen(false);
+    requestAnimationFrame(() => gamesOpener.current?.focus?.());
+  }, []);
+  // From the games menu: the terminal replaces it, and closing the terminal returns focus to the
+  // footer button that opened the menu
+  const playTerminalChallenge = useCallback(() => {
+    setGamesOpen(false);
+    terminalOpener.current = gamesOpener.current;
+    setTerminalCommand('game');
     setTerminalOpen(true);
     track('terminal-open');
   }, []);
@@ -163,12 +189,18 @@ const AppContent = ({ webgl, supported, onCanvasError }) => {
           </ErrorBoundary>
         </main>
 
-        <Footer />
+        <Footer onOpenGames={openGames} />
       </div>
 
       {terminalOpen && (
         <Suspense fallback={null}>
-          <Terminal onClose={closeTerminal} />
+          <Terminal onClose={closeTerminal} initialCommand={terminalCommand} />
+        </Suspense>
+      )}
+
+      {gamesOpen && (
+        <Suspense fallback={null}>
+          <GameMenu onClose={closeGames} onPlayTerminal={playTerminalChallenge} />
         </Suspense>
       )}
     </div>

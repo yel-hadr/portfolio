@@ -222,5 +222,35 @@ const education = [
   { id: 'school1337', school: '1337 Coding School' },
 ];
 
-export { services, technologies, experiences, projects, education };
+// Terminal challenge (`game` in the terminal): the commands to type, by difficulty. Plain text
+// only, rendered as text nodes; edit freely.
+const typingCommands = {
+  easy: ['ls', 'cd ~', 'pwd', 'whoami', 'clear'],
+  medium: ['sudo systemctl restart nginx', 'docker ps', 'kubectl get pods'],
+  hard: [
+    'terraform apply -auto-approve',
+    'kubectl rollout restart deployment/app',
+    'docker-compose up -d --build',
+  ],
+};
+
+// Its clock: seconds at the start, seconds added per fixed command
+const typingChallenge = { seconds: 30, bonus: 5 };
+
+// localStorage keys of the mini-games' best scores
+const gameStorage = {
+  snake: 'packet_snake_high_score',
+  typing: 'typing_high_score',
+};
+
+export {
+  services,
+  technologies,
+  experiences,
+  projects,
+  education,
+  typingCommands,
+  typingChallenge,
+  gameStorage,
+};
 export { posts } from './posts.js';

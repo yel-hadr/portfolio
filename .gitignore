@@ -63,3 +63,7 @@ htmlcov/
 *.Z
 *.lz
 *.lzo
+
+# Local tool state: Playwright MCP screenshots/logs, Superdesign canvas context
+.playwright-mcp/
+.superdesign/

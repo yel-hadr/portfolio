@@ -5,7 +5,7 @@ import SystemStatus from './SystemStatus';
 
 const LINK = 'font-medium text-foreground-muted hover:text-foreground transition-colors';
 
-const Footer = () => {
+const Footer = ({ onOpenGames }) => {
   const { t } = useI18n();
   // The Blog section is reachable from the footer and the terminal, not the main nav
   const links = [...navLinks, { id: 'blog' }];
@@ -41,6 +41,11 @@ const Footer = () => {
               {t('footer.github')}
               <span className='sr-only'>{t('footer.newTab')}</span>
             </a>
+          </li>
+          <li>
+            <button type='button' onClick={onOpenGames} className={LINK}>
+              {t('footer.games')}
+            </button>
           </li>
           <li>
             <a href='#top' className={LINK}>
