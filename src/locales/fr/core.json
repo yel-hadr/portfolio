@@ -70,7 +70,7 @@
   },
   "works": {
     "title": "Projets.",
-    "lead": "Projets d’infrastructure, de réseau et de Kubernetes, avec un lien vers le code source lorsqu’il est public.",
+    "lead": "Des projets d’infrastructure, de réseau et de Kubernetes, plus deux projets graphiques de 42 à lancer ici, avec un lien vers le code source quand il est public.",
     "technologies": "Technologies",
     "viewSource": "Voir le code",
     "viewSourceSr": " du projet {name} sur GitHub (s’ouvre dans un nouvel onglet)",
@@ -92,8 +92,21 @@
       "portfolio": {
         "name": "Portfolio 3D interactif",
         "description": "Ce site : React avec des scènes React Three Fiber partageant un seul canvas WebGL, un fond animé de vagues et des design tokens Tailwind."
+      },
+      "cub3d": {
+        "name": "cub3D",
+        "description": "Un labyrinthe à la première personne dessiné par raycasting, en C avec MLX42 (projet 42 en binôme) : murs texturés par face, portes, minicarte et regard à la souris."
+      },
+      "fdf": {
+        "name": "FdF",
+        "description": "Une carte de hauteurs dessinée en fil de fer en projection isométrique, en C avec MiniLibX (projet 42), avec des touches pour déplacer, zoomer, tourner et changer la hauteur."
       }
-    }
+    },
+    "runDemo": "Lancer la démo",
+    "runDemoAria": "Lancer la démo : {name}",
+    "viewOnGithub": "Voir sur GitHub",
+    "viewOnGithubAria": "Voir sur GitHub : code source de {name} (s’ouvre dans un nouvel onglet)",
+    "demoFailed": "La démo n’a pas pu se charger."
   },
   "education": {
     "title": "Formation.",

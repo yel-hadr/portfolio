@@ -1,0 +1,96 @@
+{
+  "close": "Close demo",
+  "source": "Source code",
+  "sourceAria": "View {name} source code on GitHub (opens in a new tab)",
+  "noWebgl": "This demo needs WebGL 2, which this browser or device does not provide.",
+  "cub3d": {
+    "name": "cub3D",
+    "title": "cub3D, in the browser",
+    "description": "cub3D, a 42 (1337) pair project in C with MLX42, draws a maze by raycasting. This is its own maps/map.cub, rebuilt with three.js: a texture per wall side (NO, SO, WE, EA), floor and ceiling colors from F and C, a door and a minimap.",
+    "appLabel": "cub3D maze",
+    "canvasLabel": "First-person view of the map.cub maze: textured walls, orange floor, red ceiling",
+    "mouseLook": "Look with the mouse",
+    "welcome": {
+      "title": "Welcome to cub3D",
+      "body": "A 42 project inspired by Wolfenstein 3D, which casts one ray per screen column. The room straight ahead has walls about me.",
+      "keys": [
+        "W S or ↑ ↓: walk",
+        "A D: step sideways",
+        "← → or the mouse: turn",
+        "Space: open the door ahead",
+        "Esc: free the mouse, Esc again to close"
+      ],
+      "keysTouch": [
+        "Drag the view to turn",
+        "▲ ▼ walk, ◀ ▶ sidestep, ↺ ↻ turn",
+        "Door: open the door ahead"
+      ],
+      "start": "Start",
+      "startLook": "Start with mouse look"
+    },
+    "panels": {
+      "welcome": "Welcome",
+      "welcomeBody": "The cub3D map file, walked in your browser. The other walls are about me.",
+      "about": "About",
+      "skills": "Skills",
+      "projects": "Projects"
+    },
+    "directions": {
+      "north": "north",
+      "south": "south",
+      "east": "east",
+      "west": "west"
+    },
+    "sr": {
+      "facing": "Facing {direction}.",
+      "doorOpened": "Door opened.",
+      "doorClosed": "Door closed.",
+      "noDoor": "No door right ahead."
+    },
+    "touch": {
+      "label": "Walk and turn",
+      "forward": "Walk forward",
+      "back": "Walk back",
+      "left": "Step left",
+      "right": "Step right",
+      "turnLeft": "Turn left",
+      "turnRight": "Turn right",
+      "door": "Door"
+    },
+    "panelsHeading": "Read the walls"
+  },
+  "fdf": {
+    "name": "FdF",
+    "title": "FdF, in the browser",
+    "description": "FdF, a 42 project in C with MiniLibX, draws a heightmap as a wireframe: here its test_maps/42.fdf. The original draws white lines in an isometric view (grid turned 45°, height halved) and moves, zooms, rotates and changes the height; this version adds altitude colors and perspective.",
+    "viewLabel": "FdF wireframe",
+    "canvasLabel": "42.fdf wireframe, {width} by {height} points, raised in the shape of 42, {projection} projection",
+    "help": "Drag: move · right-drag or two fingers: turn · wheel or + −: zoom · arrows: move · R, Shift+R: rotate · P: projection",
+    "zScale": "Height (z) scale",
+    "projection": "Projection",
+    "projections": {
+      "isometric": "isometric",
+      "perspective": "perspective"
+    },
+    "colors": "Colors",
+    "palettes": {
+      "altitude": "By altitude",
+      "original": "One color (as the original)"
+    },
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "rotate": "Rotate 15°",
+    "reset": "Reset view",
+    "move": "Move the model",
+    "pan": {
+      "left": "Move left",
+      "up": "Move up",
+      "down": "Move down",
+      "right": "Move right"
+    },
+    "rotateBack": "Rotate back 15°"
+  },
+  "loading": "Starting the demo…",
+  "failed": "This demo could not start on this device.",
+  "sourceHint": "The Source code link at the top of this dialog shows the project."
+}

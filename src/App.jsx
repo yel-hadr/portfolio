@@ -18,6 +18,7 @@ import {
   Footer,
   Blog,
 } from './components';
+import { PageCanvasContext } from './components/canvas/PageCanvasContext';
 import { WebGLContext } from './components/canvas/WebGLContext';
 import { useWebGL } from './hooks/useWebGL';
 import I18nProvider from './i18n/I18nProvider';
@@ -37,6 +38,8 @@ function App() {
   // same as no WebGL so every SceneView shows its static fallback and the notice appears.
   const [canvasFailed, setCanvasFailed] = useState(false);
   const webgl = supported && !canvasFailed;
+  // A live demo's own Canvas is open: the page Canvas steps aside (see PageCanvasContext)
+  const [pageCanvasPaused, setPageCanvasPaused] = useState(false);
 
   // reducedMotion="user": framer-motion drops transform animations (keeps opacity)
   // when the OS asks for reduced motion.
@@ -45,11 +48,14 @@ function App() {
       <I18nProvider>
         <MotionConfig reducedMotion='user'>
           <WebGLContext.Provider value={webgl}>
-            <AppContent
-              webgl={webgl}
-              supported={supported}
-              onCanvasError={() => setCanvasFailed(true)}
-            />
+            <PageCanvasContext.Provider value={setPageCanvasPaused}>
+              <AppContent
+                webgl={webgl}
+                showCanvas={webgl && !pageCanvasPaused}
+                supported={supported}
+                onCanvasError={() => setCanvasFailed(true)}
+              />
+            </PageCanvasContext.Provider>
           </WebGLContext.Provider>
         </MotionConfig>
       </I18nProvider>
@@ -57,7 +63,7 @@ function App() {
   );
 }
 
-const AppContent = ({ webgl, supported, onCanvasError }) => {
+const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
   const { t } = useI18n();
   const [terminalOpen, setTerminalOpen] = useState(false);
   // A command the terminal runs as it opens (the games menu starts the challenge this way)
@@ -134,12 +140,12 @@ const AppContent = ({ webgl, supported, onCanvasError }) => {
       </a>
 
       {/* Interactive waves (2D canvas, fixed behind everything; not a WebGL context) */}
-      <WavesBackground />
+      <WavesBackground paused={!showCanvas && webgl} />
 
       {/* The 3D layer (one Canvas, lazily loaded). Without WebGL2 it is skipped and every
         SceneView renders its static fallback. If the renderer or its chunk fails, the
         boundary drops only the 3D layer. */}
-      {webgl && (
+      {showCanvas && (
         <CanvasErrorBoundary sectionType='canvas' onError={onCanvasError}>
           <Suspense fallback={null}>
             <Scene3D />

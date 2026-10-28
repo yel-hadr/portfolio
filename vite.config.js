@@ -25,8 +25,20 @@ export default defineConfig({
           // Vite's lazy-import helper is used by the entry; left unassigned, Rollup hoists it
           // into vendor-r3f and every lazy import() then drags three.js into the first paint.
           if (id.includes('vite/preload-helper')) return 'vendor-react';
+          // Tiny modules only the demo scenes share: in the demos chunk, not chunks of their own
+          if (/src\/(components\/canvas\/ReleaseContext|utils\/themeColors)/.test(id))
+            return 'vendor-r3f-demos';
           if (!id.includes('node_modules')) return undefined;
           if (/node_modules\/three\//.test(id)) return 'vendor-three';
+          // drei/three-stdlib parts only the live demos use (cub3D, FdF): their own chunk, so the
+          // page's 3D layer (vendor-r3f) does not grow for visitors who never open a demo. Not
+          // PerspectiveCamera: the page's ViewCamera uses it too
+          if (
+            /node_modules\/(@react-three\/drei\/(core\/(OrbitControls|PointerLockControls)|web\/Html)|three-stdlib\/controls\/(OrbitControls|PointerLockControls|EventDispatcher))\.js/.test(
+              id
+            )
+          )
+            return 'vendor-r3f-demos';
           if (
             /node_modules\/(@react-three|three-stdlib|three-mesh-bvh|maath|tunnel-rat|zustand|its-fine|suspend-react|react-reconciler)/.test(
               id

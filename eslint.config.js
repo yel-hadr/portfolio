@@ -28,6 +28,10 @@ const R3F_PROPS = [
   'frustumCulled',
   'renderOrder',
   'intensity',
+  'geometry',
+  'material',
+  'visible',
+  'vertexColors',
   'groundColor',
   'angle',
   'penumbra',
@@ -83,7 +87,13 @@ export default [
     },
   },
   {
-    files: ['src/App.jsx', 'src/components/canvas/**/*.{js,jsx}'],
+    files: [
+      'src/App.jsx',
+      'src/components/canvas/**/*.{js,jsx}',
+      // The live demos (own Canvas inside their dialog)
+      'src/components/Cub3D/**/*.{js,jsx}',
+      'src/components/Fdf/**/*.{js,jsx}',
+    ],
     rules: {
       'react/no-unknown-property': ['error', { ignore: R3F_PROPS }],
     },

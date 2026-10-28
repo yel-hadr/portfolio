@@ -214,6 +214,27 @@ const projects = [
     ],
     source_code_link: 'https://github.com/yel-hadr/portfolio',
   },
+  // 42 graphics projects with a live web demo (`demo`: the dialog Works opens)
+  {
+    id: 'cub3d',
+    tags: [
+      { name: 'C', color: 'blue-text-gradient' },
+      { name: 'MLX42', color: 'green-text-gradient' },
+      { name: 'Raycasting', color: 'orange-text-gradient' },
+    ],
+    source_code_link: 'https://github.com/yel-hadr/cub3D_42',
+    demo: 'cub3d',
+  },
+  {
+    id: 'fdf',
+    tags: [
+      { name: 'C', color: 'blue-text-gradient' },
+      { name: 'MiniLibX', color: 'green-text-gradient' },
+      { name: 'Isometric projection', color: 'orange-text-gradient' },
+    ],
+    source_code_link: 'https://github.com/yel-hadr/my_fdf_42',
+    demo: 'fdf',
+  },
 ];
 
 // Degree, date and points: education.items.<id>

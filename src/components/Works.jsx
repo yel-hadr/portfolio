@@ -7,10 +7,16 @@ import { projects } from '../constans';
 import { reveal } from '../utils/motion';
 import SectionHeader from './SectionHeader';
 import { useI18n } from '../i18n/context';
+import CanvasErrorBoundary from './CanvasErrorBoundary';
 import { GithubIcon } from './icons';
 
 // The diagram modal (SVG diagrams + text) loads only when a visitor opens one
 const ArchitectureModal = lazy(() => import('./diagrams/ArchitectureModal'));
+// The live demos (each with its own 3D scene) load only when a visitor runs one
+const DEMOS = {
+  cub3d: lazy(() => import('./Cub3D/Cub3DModal')),
+  fdf: lazy(() => import('./Fdf/FdfModal')),
+};
 
 // Tag colors in src/constans keep their legacy class names; map them to theme tokens with AA
 // contrast on surface-raised in both themes.
@@ -21,7 +27,16 @@ const TAG_COLORS = {
   'orange-text-gradient': 'text-primary-400',
 };
 
-const ProjectCard = ({ id, tags, image, source_code_link, diagram, onOpenDiagram }) => {
+const ProjectCard = ({
+  id,
+  tags,
+  image,
+  source_code_link,
+  diagram,
+  demo,
+  onOpenDiagram,
+  onRunDemo,
+}) => {
   const { t } = useI18n();
   const name = t(`works.items.${id}.name`);
 
@@ -44,13 +59,39 @@ const ProjectCard = ({ id, tags, image, source_code_link, diagram, onOpenDiagram
         {tags.map((tag) => (
           <li
             key={tag.name}
+            // Technology names are English, also on the French page
+            lang='en'
             className={`rounded-full border border-line bg-surface-raised px-3 py-1 text-sm font-medium ${TAG_COLORS[tag.color] ?? 'text-foreground-muted'}`}
           >
             {tag.name}
           </li>
         ))}
       </ul>
-      {(diagram || source_code_link) && (
+      {demo && (
+        // A live demo: two buttons, the demo first
+        <div className='mt-auto flex flex-wrap items-center gap-3 pt-6'>
+          <button
+            type='button'
+            onClick={(e) => onRunDemo(demo, e.currentTarget)}
+            aria-haspopup='dialog'
+            aria-label={t('works.runDemoAria', { name })}
+            className={styles.buttonPrimary}
+          >
+            {t('works.runDemo')}
+          </button>
+          <a
+            href={source_code_link}
+            target='_blank'
+            rel='noopener noreferrer'
+            aria-label={t('works.viewOnGithubAria', { name })}
+            className={`${styles.buttonGhost} gap-2`}
+          >
+            <GithubIcon className='h-5 w-5' />
+            {t('works.viewOnGithub')}
+          </a>
+        </div>
+      )}
+      {!demo && (diagram || source_code_link) && (
         <div className='mt-auto flex flex-wrap items-center gap-x-6 gap-y-3 pt-6'>
           {diagram && (
             <button
@@ -100,6 +141,15 @@ const Works = () => {
   const { t } = useI18n();
   // { diagram, opener }: the button that opened the modal gets focus back when it closes
   const [open, setOpen] = useState(null);
+  // { demo, opener }, the same for a live demo
+  const [running, setRunning] = useState(null);
+  // Said when a demo's chunk fails to load and its dialog closes again
+  const [demoNotice, setDemoNotice] = useState('');
+  const Demo = running && DEMOS[running.demo];
+  const closeDemo = () => {
+    running.opener?.focus();
+    setRunning(null);
+  };
 
   return (
     <>
@@ -110,6 +160,7 @@ const Works = () => {
             key={project.id}
             {...project}
             onOpenDiagram={(diagram, opener) => setOpen({ diagram, opener })}
+            onRunDemo={(demo, opener) => setRunning({ demo, opener })}
           />
         ))}
       </ul>
@@ -124,6 +175,24 @@ const Works = () => {
           />
         </Suspense>
       )}
+      {Demo && (
+        // A demo chunk that fails to load closes it again (the card keeps its GitHub link)
+        <CanvasErrorBoundary
+          key={running.demo}
+          sectionType={`demo chunk ${running.demo}`}
+          onError={() => {
+            closeDemo();
+            setDemoNotice(t('works.demoFailed'));
+          }}
+        >
+          <Suspense fallback={null}>
+            <Demo onClose={closeDemo} />
+          </Suspense>
+        </CanvasErrorBoundary>
+      )}
+      <p role='status' className='sr-only'>
+        {demoNotice}
+      </p>
     </>
   );
 };

@@ -70,7 +70,7 @@
   },
   "works": {
     "title": "Projects.",
-    "lead": "Infrastructure, networking and Kubernetes projects, with a link to the source where it is public.",
+    "lead": "Infrastructure, networking and Kubernetes projects, plus two 42 graphics projects you can run here, with a link to the source where it is public.",
     "technologies": "Technologies",
     "viewSource": "View source",
     "viewSourceSr": " of {name} on GitHub (opens in a new tab)",
@@ -92,8 +92,21 @@
       "portfolio": {
         "name": "Interactive 3D Portfolio",
         "description": "This site: React with React Three Fiber scenes sharing one WebGL canvas, a canvas wave background and Tailwind design tokens."
+      },
+      "cub3d": {
+        "name": "cub3D",
+        "description": "A first-person maze drawn by raycasting, in C with MLX42 (42 pair project): textured walls per side, doors, a minimap and mouse look."
+      },
+      "fdf": {
+        "name": "FdF",
+        "description": "A heightmap drawn as a wireframe in isometric projection, in C with MiniLibX (42 project), with keys to move, zoom, rotate and change the height."
       }
-    }
+    },
+    "runDemo": "Run live demo",
+    "runDemoAria": "Run live demo: {name}",
+    "viewOnGithub": "View on GitHub",
+    "viewOnGithubAria": "View on GitHub: {name} source code (opens in a new tab)",
+    "demoFailed": "The demo could not load."
   },
   "education": {
     "title": "Education.",
