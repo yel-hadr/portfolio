@@ -1,10 +1,15 @@
 name: Status monitor
 
-# Scheduled every 30 minutes, but GitHub runs schedules best-effort: in practice every 2-7 hours
-# (median 4.5 h over the first week). Checks the services and pipelines listed in
-# status.config.json and publishes the
-# results next to the site, as https://yel-hadr.github.io/status.json (summary) and
+# Runs about every 30 minutes. Checks the services and pipelines listed in status.config.json and
+# publishes the results next to the site, as https://yel-hadr.github.io/status.json (summary) and
 # /status/history.json (7 days of samples), read by the /status/ page.
+#
+# The cadence is a self-dispatching chain, not the cron below: GitHub runs schedules best-effort
+# (measured every 2-7 h, median 4.5 h). Each run ends with the `next` job, which waits on the
+# status-cadence environment's 28-minute wait timer (not billed, no runner held) and then
+# dispatches the next run; workflow_dispatch is the one event GITHUB_TOKEN may trigger. The cron
+# stays as a backstop that restarts the chain if a link ever fails. To stop the chain, cancel the
+# waiting run or disable the workflow.
 #
 # GitHub Pages only serves static files, so the monitoring runs here. Only those two files are
 # pushed (keep_files), with the same deploy key as deploy.yml; the site itself is untouched.
@@ -17,6 +22,10 @@ on:
     inputs:
       grafana_backfill:
         description: 'Backfill Grafana: also push the published 7-day history (needs the GRAFANA_INFLUX_* secrets)'
+        type: boolean
+        default: false
+      chain_test:
+        description: 'Off main: test one link of the 30-minute chain (waits, then dispatches one run that stops)'
         type: boolean
         default: false
 
@@ -109,7 +118,9 @@ jobs:
 
       - name: Publish status.json and status/history.json
         # Same pinned action as deploy.yml (this job holds a write deploy key). keep_files leaves
-        # every other file of the branch as it is, so only the two JSON files change.
+        # every other file of the branch as it is, so only the two JSON files change. Only the
+        # workflow on main publishes: a manual run on another branch checks without going live.
+        if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         with:
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
@@ -118,3 +129,49 @@ jobs:
           publish_dir: ./out
           keep_files: true
           full_commit_message: 'status: ${{ steps.time.outputs.iso }}'
+
+  # The 30-minute cadence (see the top of this file). Runs whether the check published, skipped
+  # for a deploy or failed, so one bad check does not end the chain; a cancelled run does.
+  next:
+    name: schedule-next-run
+    needs: [gate, check]
+    if: ${{ !cancelled() && (github.ref == 'refs/heads/main' || inputs.chain_test) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    # Its 28-minute wait timer holds this job before it starts (Settings > Environments)
+    environment: status-cadence
+    permissions:
+      actions: write
+    steps:
+      - name: Dispatch the next run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.run_id }}
+          REF: ${{ github.ref_name }}
+        # Two guards keep this from looping or forking:
+        # - Without the wait timer this job would start a minute after the run, and each run would
+        #   dispatch the next straight away. So it only dispatches after 20 minutes.
+        # - The newest active run carries the chain: if a newer one exists (a cron or manual run
+        #   started meanwhile), this one stops, so two chains merge back into one.
+        # Any API error ends the chain quietly; the cron above restarts it.
+        run: |
+          if ! started=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq .run_started_at); then
+            echo "::warning::Could not read this run: not dispatching (the cron schedule restarts the chain)."
+            exit 0
+          fi
+          waited=$(( $(date +%s) - $(date -d "$started" +%s) ))
+          if [ "$waited" -lt 1200 ]; then
+            echo "::warning::Only ${waited}s since this run started: the status-cadence environment has no wait timer. Not dispatching, so this cannot loop."
+            exit 0
+          fi
+          if ! newer=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/status.yml/runs?per_page=30" \
+            --jq "[.workflow_runs[] | select(.status != \"completed\" and .id > $RUN_ID and .head_branch == \"$REF\")] | length"); then
+            echo "::warning::Could not list the status runs: not dispatching (the cron schedule restarts the chain)."
+            exit 0
+          fi
+          if [ "$newer" -gt 0 ]; then
+            echo "A newer status run is active and carries the chain: not dispatching."
+            exit 0
+          fi
+          gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/status.yml/dispatches" -f ref="$REF"
+          echo "Waited ${waited}s; dispatched the next status run on $REF."

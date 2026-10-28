@@ -80,9 +80,13 @@ All of these are off until configured, and the site works without them.
 
 After adding the `GRAFANA_INFLUX_*` secrets, run Actions → "Status monitor" → Run workflow with "Backfill Grafana" ticked, so the dashboard starts with the last 7 days.
 
-The schedule asks for a run every 30 minutes, but GitHub runs scheduled workflows best-effort: in practice every 2–7 hours.
+The status monitor (Actions → "Status monitor") uses `GITHUB_TOKEN` and the existing deploy key. Its 30-minute cadence needs one environment, because GitHub runs cron schedules best-effort (every 2–7 hours in practice): each run waits on that environment's timer, then dispatches the next. Create it once (Settings → Environments → New environment `status-cadence`, wait timer 28 minutes), or:
 
-The status monitor (Actions → "Status monitor") needs no setup: it uses `GITHUB_TOKEN` and the existing deploy key. Run it manually once after merging to publish the first data.
+```bash
+gh api -X PUT repos/yel-hadr/portfolio/environments/status-cadence -F wait_timer=28
+```
+
+Then run the workflow once on `main` to start the chain. The cron stays as a backstop that restarts it. To stop it, disable the workflow.
 
 ## Credits
 

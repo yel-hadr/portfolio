@@ -2,9 +2,10 @@
 
 export const HOUR = 3600 * 1000;
 export const DAY = 24 * HOUR;
-// Older summaries get a warning. The schedule asks for every 30 minutes, but GitHub runs
-// scheduled workflows best-effort: measured gaps were 2-7 h (median 4.5 h) over the first week.
-export const STALE_MS = 8 * HOUR;
+// Older summaries get a warning. The monitor runs about every 30 minutes (a self-dispatching
+// chain, see status.yml), so 2 h means several missed runs: the chain stopped and only the
+// best-effort cron backstop is left.
+export const STALE_MS = 2 * HOUR;
 
 const UNITS = [
   ['day', DAY / 1000],
