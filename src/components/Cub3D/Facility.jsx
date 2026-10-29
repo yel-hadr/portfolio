@@ -180,6 +180,63 @@ const paintDoor = (c) => (ctx, s) => {
   }
   ctx.restore();
 };
+// High contrast's textures: two flat tones each, no gradients or glow, with structure drawn in a
+// clearly darker or lighter line so surfaces read as panels, grating and doors without lighting
+const paintFlatWall = (base, seam) => (ctx, s) => {
+  ctx.fillStyle = rgb(base);
+  ctx.fillRect(0, 0, s, s);
+  ctx.fillStyle = rgb(seam);
+  // Two columns of three panels: seams, and a band near the foot
+  ctx.fillRect(0, 0, s, 4);
+  ctx.fillRect(0, 0, 4, s);
+  ctx.fillRect(s / 2 - 2, 0, 4, s);
+  ctx.fillRect(0, Math.round(s / 3) - 2, s, 4);
+  ctx.fillRect(0, Math.round((2 * s) / 3) - 2, s, 4);
+  ctx.fillRect(0, s - 14, s, 6);
+};
+const paintFlatFloor = (base, line) => (ctx, s) => {
+  ctx.fillStyle = rgb(base);
+  ctx.fillRect(0, 0, s, s);
+  ctx.fillStyle = rgb(line);
+  for (let i = 0; i < s; i += 16) {
+    ctx.fillRect(i, 0, 2, s);
+    ctx.fillRect(0, i, s, 2);
+  }
+};
+const paintFlatCeiling = (base, line) => (ctx, s) => {
+  ctx.fillStyle = rgb(base);
+  ctx.fillRect(0, 0, s, s);
+  ctx.fillStyle = rgb(line);
+  ctx.fillRect(0, 0, s, 2);
+  ctx.fillRect(0, 0, 2, s);
+};
+const paintFlatDoor = (base, dark, hazard) => (ctx, s) => {
+  ctx.fillStyle = rgb(base);
+  ctx.fillRect(0, 0, s, s);
+  // A frame and horizontal ribs
+  ctx.fillStyle = rgb(dark);
+  ctx.fillRect(0, 0, s, 6);
+  ctx.fillRect(0, 0, 6, s);
+  ctx.fillRect(s - 6, 0, 6, s);
+  for (let y = 24; y < s * 0.72; y += 24) ctx.fillRect(14, y, s - 28, 5);
+  // Hazard stripes along the bottom
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, s * 0.78, s, s * 0.22);
+  ctx.clip();
+  ctx.fillStyle = rgb(hazard);
+  ctx.fillRect(0, s * 0.78, s, s * 0.22);
+  ctx.fillStyle = rgb(dark);
+  for (let x = -s; x < s * 2; x += 24) {
+    ctx.beginPath();
+    ctx.moveTo(x, s);
+    ctx.lineTo(x + 12, s);
+    ctx.lineTo(x + 12 + s * 0.22, s * 0.78);
+    ctx.lineTo(x + s * 0.22, s * 0.78);
+    ctx.fill();
+  }
+  ctx.restore();
+};
 const paintDoorGlow = (ctx, s) => {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, s, s);
@@ -242,12 +299,47 @@ const baseboards = (isFloor, W, H) => {
   return out;
 };
 
-// A blast door's halves slide apart along the corridor's width: across x when the walls are at
-// x - 1 and x + 1, else across z
-const doorAxis = (cell, isFloor, W) => {
-  const x = cell % W;
-  const z = Math.floor(cell / W);
-  return !isFloor(x - 1, z) && !isFloor(x + 1, z) ? 'x' : 'z';
+// How each door cell's leaf moves. The map's doors are two cells side by side across a corridor:
+// one door, whose two leaves (one per cell) slide apart, each away from the door's middle into
+// the wall on its own side. The axis is the door's own (the line its cells make), not read from
+// a cell's neighbors, which would take the other leaf for a corridor. A lone door cell splits
+// into two halves sliding apart along the corridor's width.
+// Returns per cell { axis: 'x' | 'z', dir: -1 | 1 | 0 } (dir 0: a lone cell, halves split)
+const doorLeaves = (doorCells, isFloor, W) => {
+  const set = new Set(doorCells);
+  const leaves = {};
+  doorCells.forEach((cell) => {
+    if (leaves[cell]) return;
+    // The whole door: neighbouring door cells
+    const group = [];
+    const stack = [cell];
+    while (stack.length) {
+      const next = stack.pop();
+      if (!set.has(next) || group.includes(next)) continue;
+      group.push(next);
+      const x = next % W;
+      if (x > 0) stack.push(next - 1);
+      if (x < W - 1) stack.push(next + 1);
+      stack.push(next - W, next + W);
+    }
+    const xs = group.map((c) => c % W);
+    const zs = group.map((c) => Math.floor(c / W));
+    if (group.length === 1) {
+      const x = xs[0];
+      const z = zs[0];
+      leaves[cell] = { axis: !isFloor(x - 1, z) && !isFloor(x + 1, z) ? 'x' : 'z', dir: 0 };
+      return;
+    }
+    const axis = Math.max(...xs) > Math.min(...xs) ? 'x' : 'z';
+    const mid =
+      axis === 'x'
+        ? (Math.min(...xs) + Math.max(...xs)) / 2
+        : (Math.min(...zs) + Math.max(...zs)) / 2;
+    group.forEach((c, k) => {
+      leaves[c] = { axis, dir: Math.sign((axis === 'x' ? xs[k] : zs[k]) - mid) || 1 };
+    });
+  });
+  return leaves;
 };
 
 // The flashlight's visible beam: a cone, brightest at the lens, fading with distance and toward
@@ -658,16 +750,18 @@ const Facility = ({
     let rack;
     let crate;
     if (flat) {
-      // High contrast: light walls between a near-black floor and ceiling (8.5:1 and 4.4:1), each
-      // wall side its own shade so corners stay visible without light, and the rooms' accent
-      // lines along their feet (the baseboards, flat here) tracing every corridor
+      // High contrast: light paneled walls between a near-black grated floor and ceiling (8.5:1
+      // and 4.4:1), each wall side its own shade so corners stay visible without light, and the
+      // rooms' accent lines along their feet (the baseboards, flat here) tracing every corridor.
+      // Two flat tones per texture, no lighting or glow
       const plain = (channels) => new MeshBasicMaterial({ color: toColor(channels) });
-      const side = plain(c.muted);
-      const end = plain(t['line-strong']);
+      const mapped = (map) => new MeshBasicMaterial({ map });
+      const side = mapped(tex(128, paintFlatWall(c.muted, t['line-strong'])));
+      const end = mapped(tex(128, paintFlatWall(t['line-strong'], t.surface)));
       wallMaterials = [end, end, hidden, hidden, side, side];
-      floor = plain(c.dark);
-      ceiling = plain(t.surface);
-      door = plain(t.danger);
+      floor = mapped(tex(64, paintFlatFloor(c.dark, t['surface-raised']), [W + 2, H + 2]));
+      ceiling = mapped(tex(64, paintFlatCeiling(t.surface, t['surface-raised']), [W + 2, H + 2]));
+      door = mapped(tex(128, paintFlatDoor(t.danger, c.dark, t.primary)));
       rack = plain(t.info);
       crate = plain(t.primary);
     } else {
@@ -944,16 +1038,13 @@ const Facility = ({
     invalidate();
   }, [shell, boards, res, flat, invalidate]);
 
-  // Blast doors: two halves per door, sliding into the walls on either side; dust when one opens
+  // Blast doors: two leaves per door, sliding into the walls on either side; dust when one opens
   const doorState = useRef({});
   // High contrast rebuilds the materials, so the door mesh too, with blank instances: a new mesh
   // starts from no state, so every door is placed again
   const doorFor = useRef(null);
   const dustLive = useRef([]);
-  const axes = useMemo(
-    () => doorCells.map((cell) => doorAxis(cell, isFloor, W)),
-    [doorCells, isFloor, W]
-  );
+  const leaves = useMemo(() => doorLeaves(doorCells, isFloor, W), [doorCells, isFloor, W]);
   const spawnDust = (x, z) => {
     if (reduced || flat) return;
     const n = 36;
@@ -1014,11 +1105,14 @@ const Facility = ({
         doorState.current[cell] = open;
         const cx = (cell % W) + 0.5;
         const cz = Math.floor(cell / W) + 0.5;
-        const alongX = axes[i] === 'x';
+        const { axis, dir } = leaves[cell];
+        const alongX = axis === 'x';
         // An eased slide, a little slower at the start, like a heavy door
-        const slide = open * open * (3 - 2 * open) * 0.5;
+        const eased = open * open * (3 - 2 * open);
+        // Each cell is drawn as two panels: a leaf of a two-cell door moves whole, a full cell
+        // into its wall; a lone cell's two halves part, half a cell each
         [-1, 1].forEach((side, h) => {
-          const offset = side * (0.25 + slide);
+          const offset = dir ? side * 0.25 + dir * eased : side * (0.25 + eased * 0.5);
           dummy.position.set(cx + (alongX ? offset : 0), 0.5, cz + (alongX ? 0 : offset));
           dummy.rotation.set(0, alongX ? 0 : Math.PI / 2, 0);
           dummy.scale.set(0.5, 1, DOOR_DEPTH);
