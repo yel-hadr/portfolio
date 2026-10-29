@@ -288,7 +288,10 @@ const GameMode = ({ onClose }) => {
   return createPortal(
     <div
       ref={overlayRef}
-      className={`fixed inset-0 z-[60] bg-background ${
+      // A dark island in either theme: the game (its HUD, menus and 3D world) looks the same on
+      // the light page; only the page's Enter Game Mode button follows the light theme
+      data-game-mode=''
+      className={`scheme-dark fixed inset-0 z-[60] bg-background text-foreground ${
         leaving ? 'motion-safe:animate-game-out' : 'motion-safe:animate-game-in'
       }`}
     >

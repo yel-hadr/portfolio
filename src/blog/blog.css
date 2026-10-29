@@ -69,7 +69,7 @@
   outline: none;
 }
 .stretched-link:focus-visible::after {
-  outline: 2px solid theme('colors.primary.DEFAULT');
+  outline: 2px solid rgb(var(--c-focus));
   outline-offset: 3px;
 }
 
@@ -174,7 +174,7 @@
   @apply mt-6;
 }
 .code-head {
-  @apply flex flex-wrap items-center gap-x-3 gap-y-2 rounded-t-xl border border-b-0 border-line bg-surface-raised py-2 pl-4 pr-2;
+  @apply flex flex-wrap items-center gap-x-3 gap-y-2 rounded-t-xl border border-b-0 border-line bg-surface-raised py-2 pl-4 pr-2 light:border-line-strong/40;
 }
 .code-lang {
   @apply mr-auto font-mono text-xs font-semibold uppercase tracking-wider text-foreground-muted;
@@ -189,7 +189,7 @@
   @apply ml-auto inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3 py-1 text-sm font-semibold text-foreground transition-colors hover:border-foreground-muted;
 }
 .code-block pre {
-  @apply overflow-x-auto rounded-b-xl border border-line bg-surface p-4 font-mono text-sm leading-relaxed text-foreground;
+  @apply overflow-x-auto rounded-b-xl border border-line bg-surface p-4 font-mono text-sm leading-relaxed text-foreground light:border-line-strong/40;
 }
 .code-block pre code {
   @apply rounded-none bg-transparent p-0;

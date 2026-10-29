@@ -5,8 +5,11 @@
 @layer base {
   /* Theme tokens (see tailwind.config.js): "R G B" channels for colors that take an opacity
      modifier, full colors for the translucent ones. The dark theme is the default; index.html
-     sets data-theme before the first paint, and ThemeProvider keeps it in sync. */
-  :root {
+     sets data-theme before the first paint, and ThemeProvider keeps it in sync.
+     .scheme-dark is a dark island in either theme (the terminal's screen): it takes this whole
+     block on its own element, so every token inside it has its dark value */
+  :root,
+  .scheme-dark {
     color-scheme: dark;
     --c-background: 5 8 22;
     --c-surface: 14 11 34;
@@ -33,8 +36,25 @@
     --color-glass: rgb(14 11 34 / 0.62);
     --color-glass-strong: rgb(23 19 56 / 0.78);
     --color-line: rgb(255 255 255 / 0.1);
-    /* Waves: line opacity multiplier (see WavesBackground) */
+    /* The timeline's line and arrows: a hairline in dark, a little firmer on the light ground */
+    --color-rule: rgb(255 255 255 / 0.1);
+    /* Waves (WavesBackground): the stroke's three stops and its opacity multiplier */
+    --c-wave-1: 255 101 0;
+    --c-wave-2: 167 139 250;
+    --c-wave-3: 59 130 246;
     --wave-alpha: 1;
+    /* The footer's band: the page itself in dark, a shade darker than the page in light */
+    --c-ground: 5 8 22;
+    /* Depth: dark mode separates by hairlines (cards cast nothing) and keeps its deep modal
+       shadows; light mode replaces them with soft, warm, layered shadows (shadow-card/raised/modal) */
+    --shadow-card: 0 0 #0000;
+    --shadow-raised: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-modal: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+    /* The hero portrait's orange glow: dark only (light mode has no glows) */
+    --glow: 1;
+    /* The keyboard focus ring: the brand orange on dark (6.8:1); on light a deeper burnt orange
+       that holds >= 3.5:1 even where the frosted navbar is over a dark photo or an orange button */
+    --c-focus: 255 101 0;
 
     /* Full colors for places that only take inline styles (the timeline library) */
     --color-background: rgb(var(--c-background));
@@ -45,33 +65,48 @@
     --color-tertiary: rgb(var(--c-tertiary));
   }
 
-  /* Light theme: frosted white glass, ink text, a deeper orange that still carries dark text,
-     and paler waves. */
+  /* Light theme: its own language, not the dark one inverted. A warm off-white ground, cream
+     glass that lifts off it with soft warm shadows instead of glowing hairlines, near-black ink,
+     warm stone greys, a deeper orange that carries dark text, a rich indigo accent, and pastel
+     waves. Ratios on the background (and >= on every surface, glass and the footer band): ink
+     16.0, muted 7.1, orange text 5.7, indigo 5.9; dark text on orange 4.9 (on hover 4.5);
+     line-strong 3.2+ and the focus ring 3.0+ as UI boundaries */
   :root[data-theme='light'] {
     color-scheme: light;
-    --c-background: 246 245 251;
-    --c-surface: 255 255 255;
-    --c-surface-raised: 236 233 247;
-    --c-foreground: 20 17 43;
-    --c-foreground-muted: 79 74 110;
-    --c-primary: 226 90 0;
-    --c-primary-400: 166 66 0;
-    --c-primary-hover: 234 94 0;
-    --c-on-primary: 20 17 43;
-    --c-secondary: 124 58 237;
+    --c-background: 250 247 242;
+    --c-surface: 255 253 250;
+    --c-surface-raised: 243 238 231;
+    --c-foreground: 26 26 46;
+    --c-foreground-muted: 87 83 78;
+    --c-primary: 232 93 4;
+    --c-primary-400: 168 67 0;
+    --c-primary-hover: 224 88 4;
+    --c-on-primary: 26 26 46;
+    --c-secondary: 79 70 229;
     --c-tertiary: 37 99 235;
     --c-success: 4 120 87;
     --c-danger: 190 24 93;
     --c-info: 3 105 161;
-    --c-line-strong: 128 124 160;
+    --c-line-strong: 140 131 122;
     /* Indigo, teal, burnt crimson: deep inks that hold >= 4.5:1 on the light glass */
     --c-fdf-low: 76 29 149;
     --c-fdf-mid: 14 114 104;
     --c-fdf-high: 167 42 14;
-    --color-glass: rgb(255 255 255 / 0.66);
-    --color-glass-strong: rgb(255 255 255 / 0.85);
-    --color-line: rgb(20 17 43 / 0.12);
-    --wave-alpha: 0.55;
+    --color-glass: rgb(255 253 250 / 0.72);
+    --color-glass-strong: rgb(255 253 250 / 0.9);
+    --color-line: rgb(26 26 46 / 0.1);
+    --color-rule: rgb(140 131 122 / 0.45);
+    /* Pastel waves: peach, lavender, sky */
+    --c-wave-1: 251 146 60;
+    --c-wave-2: 167 139 250;
+    --c-wave-3: 96 165 250;
+    --wave-alpha: 0.65;
+    --c-ground: 244 239 232;
+    --shadow-card: 0 1px 2px rgb(64 42 20 / 0.04), 0 4px 24px rgb(64 42 20 / 0.06);
+    --shadow-raised: 0 2px 4px rgb(64 42 20 / 0.05), 0 12px 32px -4px rgb(64 42 20 / 0.1);
+    --shadow-modal: 0 8px 16px rgb(64 42 20 / 0.06), 0 32px 64px -12px rgb(64 42 20 / 0.2);
+    --glow: 0;
+    --c-focus: 168 67 0;
   }
 
   /* Language switch: the page content fades out, the text swaps, then fades back in
@@ -96,7 +131,8 @@
       background-color 0.35s ease,
       border-color 0.35s ease,
       color 0.35s ease,
-      fill 0.35s ease !important;
+      fill 0.35s ease,
+      box-shadow 0.35s ease !important;
   }
 
   /* scroll-padding-top keeps anchor targets and keyboard-focused elements clear of the
@@ -115,9 +151,10 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 
-  /* One visible focus style for every keyboard-focusable element (6.8:1 on background). */
+  /* One visible focus style for every keyboard-focusable element (the focus token: 6.8:1 on the
+     dark background, 5.7:1 on the light one). */
   :focus-visible {
-    outline: 2px solid theme('colors.primary.DEFAULT');
+    outline: 2px solid rgb(var(--c-focus));
     outline-offset: 3px;
   }
 
@@ -140,6 +177,6 @@
 @layer components {
   /* Glass card: translucent surface + blur over the waves background, hairline border. */
   .card-glass {
-    @apply rounded-3xl border border-line bg-glass backdrop-blur-md;
+    @apply rounded-3xl border border-line bg-glass shadow-card backdrop-blur-md;
   }
 }

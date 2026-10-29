@@ -232,7 +232,7 @@ const THEME_SCRIPT = `<script>
     if (theme !== 'light') theme = 'dark';
     root.dataset.theme = theme;
     document.querySelector('meta[name="theme-color"]').content =
-      theme === 'light' ? '#f6f5fb' : '#050816';
+      theme === 'light' ? '#faf7f2' : '#050816';
     document.querySelector('meta[name="color-scheme"]').content = theme;
   })();
 </script>`;

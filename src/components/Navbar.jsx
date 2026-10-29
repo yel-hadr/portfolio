@@ -172,7 +172,8 @@ const Navbar = ({ onOpenTerminal }) => {
   return (
     <nav
       aria-label={t('nav.main')}
-      className='w-full fixed top-0 z-50 border-b border-line bg-background/80 backdrop-blur-md'
+      // Frosted glass over the page; in light a soft shadow under it as well as the hairline
+      className='w-full fixed top-0 z-50 border-b border-line bg-background/80 shadow-card backdrop-blur-md light:bg-background/90'
     >
       <div className={`${styles.container} flex items-center justify-between gap-4 py-3.5`}>
         <a
@@ -218,7 +219,7 @@ const Navbar = ({ onOpenTerminal }) => {
               </button>
               <div
                 id='mobile-menu'
-                className={`${open ? 'flex' : 'hidden'} absolute right-0 top-14 z-50 min-w-[12rem] flex-col gap-5 rounded-xl border border-line bg-surface/95 p-6 backdrop-blur-md`}
+                className={`${open ? 'flex' : 'hidden'} absolute right-0 top-14 z-50 min-w-[12rem] flex-col gap-5 rounded-xl border border-line bg-surface/95 p-6 backdrop-blur-md light:shadow-raised`}
               >
                 {renderLinks('list-none flex flex-col gap-4 items-start')}
                 <div className='border-t border-line pt-4'>

@@ -87,14 +87,14 @@ const CONFIG = {
 const MAX_DPR = 1.5;
 const FRAME_MS = 1000 / 30;
 
-// Brand gradient across the viewport: primary (orange) bottom-left, secondary (violet), tertiary
-// (blue) top-right. Colors come from the theme tokens in src/index.css ("R G B" channels), and
-// --wave-alpha scales them per theme (1 on dark, paler pastel lines on light). Low alpha so text
-// on top keeps its contrast (see the overlays below).
+// Brand gradient across the viewport: orange bottom-left, violet, blue top-right. Colors come from
+// the --c-wave-* tokens in src/index.css ("R G B" channels): the brand colors on dark, pastel peach,
+// lavender and sky on light, scaled by --wave-alpha. Low alpha so text on top keeps its contrast
+// (see the overlays below).
 const STOPS = [
-  [0, '--c-primary', 0.55],
-  [0.45, '--c-secondary', 0.34],
-  [1, '--c-tertiary', 0.3],
+  [0, '--c-wave-1', 0.55],
+  [0.45, '--c-wave-2', 0.34],
+  [1, '--c-wave-3', 0.3],
 ];
 
 const WavesBackground = ({ paused = false }) => {

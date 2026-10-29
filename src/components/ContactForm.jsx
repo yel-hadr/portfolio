@@ -4,7 +4,7 @@ import { useI18n } from '../i18n/context';
 
 const FIELD =
   'w-full rounded-xl border border-line-strong bg-surface-raised px-5 py-4 font-medium text-foreground ' +
-  'placeholder:text-foreground-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ' +
+  'placeholder:text-foreground-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ' +
   'focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 const EMPTY_FORM = { name: '', email: '', message: '' };
@@ -136,7 +136,7 @@ const ContactForm = () => {
           <button
             type='submit'
             aria-disabled={loading || undefined}
-            className='rounded-xl border-2 border-transparent bg-primary px-8 py-3 font-bold text-on-primary transition-colors hover:bg-primary-hover aria-disabled:cursor-wait focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+            className='rounded-xl border-2 border-transparent bg-primary px-8 py-3 font-bold text-on-primary transition-colors hover:bg-primary-hover aria-disabled:cursor-wait focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background'
           >
             {loading ? t('contact.sending') : t('contact.send')}
           </button>
