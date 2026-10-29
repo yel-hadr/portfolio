@@ -1440,14 +1440,15 @@ const Cub3DWorld = ({
   // Events from the GameInfo portal bubble here through React: only the view's own count. In
   // Game Mode the mouse's main button is the trigger, once the mouse is captured (a press before
   // that captures it)
+  // A press on one of the view's own controls (a button, a link, a nested dialog) is not a shot
+  // or a turn. Only what sits inside the view counts: Game Mode and the demo are dialogs too
+  const onControl = (e) => {
+    const control = e.target.closest('button, a, summary, details, [role=dialog]');
+    return !!control && e.currentTarget.contains(control);
+  };
   const onPointerDown = (e) => {
     pointerType.current = e.pointerType;
-    if (
-      talk ||
-      !e.currentTarget.contains(e.target) ||
-      e.target.closest('button, a, summary, details, [role=dialog]')
-    )
-      return;
+    if (talk || !e.currentTarget.contains(e.target) || onControl(e)) return;
     if (e.pointerType !== 'mouse') {
       drag.current = e.clientX;
       return;
@@ -1492,7 +1493,7 @@ const Cub3DWorld = ({
       !started ||
       pointerType.current === 'mouse' ||
       !e.currentTarget.contains(e.target) ||
-      e.target.closest('button, a, summary, details, [role=dialog]')
+      onControl(e)
     )
       return;
     fire(true);
