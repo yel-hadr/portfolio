@@ -9,6 +9,8 @@ export const createSfx = () => {
 
   // A short tone sliding from one pitch to another while it fades out
   const tone = (type, from, to, length, volume) => {
+    // A context made outside a click (back from a demo) starts suspended
+    if (ctx.state === 'suspended') ctx.resume();
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();

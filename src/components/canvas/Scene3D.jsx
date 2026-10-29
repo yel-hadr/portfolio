@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { View } from '@react-three/drei';
 
 import LoadingProgress from '../LoadingProgress';
+import ReleaseContext from './ReleaseContext';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 
 const AMBIENT_FPS = 30;
@@ -134,6 +135,8 @@ const Scene3D = () => {
           <ScrollSync layer={layer} />
           <View.Port />
           <FrameDriver reduced={reduced} />
+          {/* A demo or Game Mode makes its own context right after this one goes */}
+          <ReleaseContext />
         </Canvas>
       </div>
     </>

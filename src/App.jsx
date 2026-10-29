@@ -40,8 +40,13 @@ function App() {
   // same as no WebGL so every SceneView shows its static fallback and the notice appears.
   const [canvasFailed, setCanvasFailed] = useState(false);
   const webgl = supported && !canvasFailed;
-  // A live demo's own Canvas is open: the page Canvas steps aside (see PageCanvasContext)
-  const [pageCanvasPaused, setPageCanvasPaused] = useState(false);
+  // A live demo's own Canvas is open: the page Canvas steps aside (see PageCanvasContext). A
+  // count, because a demo can open from inside Game Mode, and closing it must not resume the page
+  const [pageCanvasPauses, setPageCanvasPauses] = useState(0);
+  const pausePageCanvas = useCallback(
+    (paused) => setPageCanvasPauses((n) => n + (paused ? 1 : -1)),
+    []
+  );
 
   // reducedMotion="user": framer-motion drops transform animations (keeps opacity)
   // when the OS asks for reduced motion.
@@ -50,10 +55,10 @@ function App() {
       <I18nProvider>
         <MotionConfig reducedMotion='user'>
           <WebGLContext.Provider value={webgl}>
-            <PageCanvasContext.Provider value={setPageCanvasPaused}>
+            <PageCanvasContext.Provider value={pausePageCanvas}>
               <AppContent
                 webgl={webgl}
-                showCanvas={webgl && !pageCanvasPaused}
+                showCanvas={webgl && pageCanvasPauses === 0}
                 supported={supported}
                 onCanvasError={() => setCanvasFailed(true)}
               />
@@ -224,9 +229,12 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
       )}
 
       {gameModeOpen && (
-        <Suspense fallback={null}>
-          <GameMode onClose={exitGameMode} />
-        </Suspense>
+        // A Game Mode chunk that fails to load closes it instead of blanking the page
+        <CanvasErrorBoundary sectionType='game mode' onError={exitGameMode}>
+          <Suspense fallback={null}>
+            <GameMode onClose={exitGameMode} />
+          </Suspense>
+        </CanvasErrorBoundary>
       )}
     </div>
   );

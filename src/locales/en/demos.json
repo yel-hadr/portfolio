@@ -95,24 +95,26 @@
   "sourceHint": "The Source code link at the top of this dialog shows the project.",
   "game": {
     "title": "Game Mode",
-    "description": "The portfolio as a first-person maze, built on cub3D. Aim at a wall and open it to read about me.",
+    "description": "The portfolio as a first-person command center, built on cub3D: four rooms, threats to neutralize, and terminals that open the live demos.",
     "exit": "Exit Game Mode",
-    "desktopOnly": "Game Mode is optimized for desktop. Use standard view on mobile.",
+    "desktopOnly": "FPS Game Mode is optimized for desktop. Use standard scroll view on mobile.",
     "back": "Back to the portfolio",
     "playAnyway": "Play anyway",
-    "briefing": "Four walls in the room ahead hold this portfolio. Aim the crosshair at one and open it.",
+    "briefing": "A DevOps command center in four rooms: About, Skills, Projects and Contact. Neutralize the threats, open the terminals and read the walls.",
     "keys": [
       "W S or ↑ ↓: walk, A D: step sideways",
       "Mouse (click the view) or ← →: turn",
-      "Click or E: open the wall in the crosshair",
-      "Space: open the door ahead · M: sound on or off",
+      "Click or F: shoot · E: open what is in the crosshair",
+      "1 2 3 or Q: switch weapon · M: sound on or off",
       "Esc: free the mouse, Esc again to leave"
     ],
     "status": {
       "system": "System: online",
       "objective": "Objective: explore the portfolio",
       "complete": "Objective complete",
-      "walls": "Walls read {count}/{total}"
+      "walls": "Walls read {count}/{total}",
+      "room": "Room: {name}",
+      "threats": "Threats {count}/{total}"
     },
     "aim": "{name}: click or press E to open",
     "allRead": "Objective complete: every wall read.",
@@ -121,6 +123,45 @@
     "off": "off",
     "backToGame": "Back to the game",
     "use": "Use",
-    "escKey": "Esc"
+    "escKey": "Esc",
+    "rooms": {
+      "about": "About",
+      "skills": "Skills",
+      "projects": "Projects",
+      "contact": "Contact"
+    },
+    "roomEntered": "{name} room.",
+    "panels": {
+      "cub3d": "Terminal: cub3D",
+      "fdf": "Terminal: FdF",
+      "contact": "Secure comms",
+      "cub3dBody": "Runs the live cub3D demo.",
+      "fdfBody": "Runs the live FdF demo.",
+      "contactBody": "Opens a channel: the contact form."
+    },
+    "weapons": ["Kubernetes Kar98k", "Terraform Tactical", "The DevOps Defender"],
+    "weapon": "Weapon: {name}",
+    "enemies": {
+      "ddos": "DDoS Bot",
+      "sql": "SQL Injection"
+    },
+    "aimEnemy": "{name}: click or press F to shoot",
+    "facts": {
+      "ddos": {
+        "title": "Threat Neutralized!",
+        "body": "Fun Fact: I mitigate DDoS using Traefik rate limiting and Fail2Ban."
+      },
+      "sql": {
+        "title": "Injection Blocked!",
+        "body": "Fun Fact: I use parameterized queries and PgBouncer for secure DB pooling."
+      }
+    },
+    "accessGranted": "Access granted",
+    "textMode": "Text-only mode",
+    "textIntro": "The command center's rooms as plain text, without the 3D view.",
+    "intel": "Threat intel",
+    "runDemo": "Run the {name} demo",
+    "openContact": "Open the contact form",
+    "closeDialog": "Close"
   }
 }
