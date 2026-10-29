@@ -105,13 +105,47 @@
   "sourceHint": "The Source code link at the top of this dialog shows the project.",
   "game": {
     "title": "Game Mode",
-    "description": "The portfolio as a first-person command center, built on cub3D: four rooms, threats to neutralize, and terminals that open the live demos.",
-    "canvasLabel": "First-person view of the map.cub facility: four dark server rooms joined by blast doors",
+    "description": "The portfolio as a first-person mission, built on cub3D: six rooms, one for each section of the profile, threats to neutralize between them, and terminals that open the live demos.",
+    "canvasLabel": "First-person view of the command center: six dark rooms, one for each section of the portfolio, joined by blast doors",
     "exit": "Exit Game Mode",
     "desktopOnly": "FPS Game Mode is optimized for desktop. Use standard scroll view on mobile.",
     "back": "Back to the portfolio",
     "playAnyway": "Play anyway",
-    "briefing": "A DevOps command center in four rooms: About, Skills, Projects and Contact. Neutralize the threats, open the terminals and read the walls.",
+    "briefing": "A DevOps command center in six rooms: About, Skills, Projects, Experience, Education and Contact. Read each room's terminal; neutralize the threats on the way.",
+    "objective": "Your mission: six rooms, one section of my profile in each: About, Skills, Projects, Experience, Education and Contact. Walk up to each room's wall terminal and press E to read it. The lit path on the floor shows the way to the next one.",
+    "prompt": "Press E",
+    "aimPanel": "{name} terminal: press E to open",
+    "dossier": "Dossier · section {number} of {total}",
+    "liveDemo": "Live demo",
+    "sections": {
+      "about": "About",
+      "skills": "Skills",
+      "projects": "Projects",
+      "experience": "Experience",
+      "education": "Education",
+      "contact": "Contact"
+    },
+    "mission": {
+      "label": "Mission",
+      "progress": "Mission: {count} / {total} sections",
+      "next": "next",
+      "nextSr": "next section",
+      "discovered": "discovered",
+      "notYet": "not yet found",
+      "found": "Section discovered: {name}, {count} of {total}.",
+      "title": "Mission complete",
+      "body": "You found all six sections: who I am, what I can do, what I have built, where I have worked, where I learned, and how to reach me. Thanks for playing.",
+      "time": "Time",
+      "threats": "Threats neutralized",
+      "contact": "Contact me",
+      "resume": "Download resume",
+      "github": "View on GitHub",
+      "keepExploring": "Keep exploring"
+    },
+    "links": {
+      "github": "GitHub",
+      "linkedin": "LinkedIn"
+    },
     "keys": [
       "W A S D (Z Q S D on AZERTY): move · ← →: turn",
       "Mouse: look around (click the view to capture it)",
@@ -122,13 +156,11 @@
     ],
     "status": {
       "system": "System: online",
-      "objective": "Objective: explore the portfolio",
-      "complete": "Objective complete",
-      "walls": "Walls read {count}/{total}",
       "room": "Room: {name}",
-      "threats": "Threats {count}/{total}"
+      "threats": "Threats {count}/{total}",
+      "sections": "Sections {count}/{total}",
+      "walls": "Walls read {count}/{total}"
     },
-    "aim": "{name}: click or press E to open",
     "allRead": "Objective complete: every wall read.",
     "sound": "Sound",
     "on": "on",
@@ -140,6 +172,8 @@
       "about": "About",
       "skills": "Skills",
       "projects": "Projects",
+      "experience": "Experience",
+      "education": "Education",
       "contact": "Contact"
     },
     "roomEntered": "{name} room.",
@@ -199,24 +233,29 @@
     "npcs": {
       "sysadmin": {
         "name": "Senior SysAdmin",
-        "line": "Hey! Did you know I use Argo CD for all my GitOps pipelines? Keeps the cluster state perfectly synced."
+        "line": "Hey! Did you know I use Argo CD for all my GitOps pipelines? Keeps the cluster state perfectly synced.",
+        "hint": "Read the About terminal on the north wall, then head east through the blast door: the Skills hall is next."
       },
       "architect": {
         "name": "Cloud Architect",
-        "line": "Psst: read up on Cloud-1. Terraform provisions the AWS infrastructure, then Ansible configures the host."
+        "line": "Psst: read up on Cloud-1. Terraform provisions the AWS infrastructure, then Ansible configures the host.",
+        "hint": "Done with the projects? The Experience gallery is up north, through the door in this room's north wall."
       },
       "network": {
         "name": "Network Engineer",
-        "line": "Over in BADASS, VXLAN overlays carry the traffic and BGP EVPN runs the control plane, routed with FRRouting."
+        "line": "Over in BADASS, VXLAN overlays carry the traffic and BGP EVPN runs the control plane, routed with FRRouting.",
+        "hint": "One room left, through the west door: Contact, where you can reach Youssef."
       }
     },
     "aimNpc": "{name}: press E to talk",
     "dialogueClose": "E or Esc to close",
     "doorTo": {
       "about": "About room",
-      "skills": "Skills room",
-      "projects": "Projects terminal",
-      "contact": "Comms room"
+      "skills": "Skills hall",
+      "projects": "Projects vault",
+      "experience": "Experience gallery",
+      "education": "Education room",
+      "contact": "Contact room"
     },
     "doorLabel": "Enter: {place}",
     "doorNear": "Door to the {place}. Press E to open.",
@@ -224,7 +263,8 @@
       "you": "You",
       "threats": "Threats",
       "crew": "Crew",
-      "doors": "Doors"
+      "doors": "Doors",
+      "objective": "Next section"
     }
   }
 }

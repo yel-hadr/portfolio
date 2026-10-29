@@ -30,6 +30,8 @@ import {
   RepeatWrapping,
   SRGBColorSpace,
   ShaderMaterial,
+  Shape,
+  ShapeGeometry,
   SpriteMaterial,
   TubeGeometry,
   Vector2,
@@ -78,6 +80,7 @@ const TOKENS = [
   'success',
   'danger',
   'secondary',
+  'tertiary',
 ];
 
 const luminance = (channels) => channels.split(' ').reduce((a, v) => a + Number(v), 0);
@@ -273,6 +276,8 @@ const BEAM_SHADER = {
 };
 
 const dummy = new Object3D();
+// Scratch color for per-instance colors (no allocation per frame)
+const tint = toColor('0 0 0');
 const NO_OFFSET = new Vector2(0, 0);
 // The flashlight sits just ahead of the eye (the player can stand 0.2 from a wall, so it never
 // ends up inside the wall faced)
@@ -317,6 +322,237 @@ const PostFx = memo(function PostFx({ aberration }) {
   );
 });
 
+// The wall terminals: one mounted display per panel, a shallow bezel proud of the wall with a thin
+// glowing edge in the wall side's accent (orange on north and south faces, blue on east and west,
+// as the walls' own lines) and a screen painted from the theme: which section it holds, its title,
+// and "Press E" (or a tick once read). The one in the crosshair, in reach, brightens (and pulses
+// gently unless motion is reduced)
+const BEZEL = [0.94, 0.64, 0.05];
+const SCREEN = [0.82, 0.52];
+const SCREEN_PX = [512, 324];
+const paintScreen = (canvas, panel, read, c, accent, flat) => {
+  const ctx = canvas.getContext('2d');
+  const [w, h] = SCREEN_PX;
+  ctx.fillStyle = rgb(c.dark);
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = rgb(accent, 0.9);
+  ctx.lineWidth = 6;
+  ctx.strokeRect(10, 10, w - 20, h - 20);
+  ctx.font = 'bold 24px ui-monospace, Menlo, Consolas, monospace';
+  // Its state, top right (the HUD's own Press E prompt shows below the crosshair, lower down):
+  // the E key until read, then a tick; the section label before it is squeezed to fit beside it
+  const state = read ? `✓ ${panel.done.toUpperCase()}` : '[E]';
+  const stateWidth = ctx.measureText(state).width;
+  ctx.textAlign = 'right';
+  ctx.fillStyle = rgb(read ? c.success : accent);
+  ctx.fillText(state, w - 36, 60);
+  ctx.textAlign = 'left';
+  ctx.fillStyle = rgb(c.light, 0.85);
+  ctx.fillText(panel.kicker.toUpperCase(), 36, 60, w - 72 - stateWidth - 20);
+  ctx.fillStyle = rgb(c.light);
+  ctx.font = '800 66px Poppins, ui-sans-serif, sans-serif';
+  ctx.fillText(panel.title, 36, 150, w - 72);
+  // A row of status lights along the bottom, in the accent
+  ctx.fillStyle = rgb(accent, 0.55);
+  for (let x = 36; x < w - 36; x += 26) ctx.fillRect(x, h - 58, 14, 6);
+  if (!flat) {
+    // Scanlines
+    ctx.fillStyle = rgb(c.dark, 0.22);
+    for (let y = 0; y < h; y += 4) ctx.fillRect(0, y, w, 2);
+  }
+};
+
+const Terminals = memo(function Terminals({ panels, discovered, targetRef, res, flat, reduced }) {
+  const invalidate = useThree((s) => s.invalidate);
+  const shared = useMemo(
+    () => ({
+      bezel: new BoxGeometry(...BEZEL),
+      screen: new PlaneGeometry(...SCREEN),
+      edge: new PlaneGeometry(BEZEL[0] + 0.035, BEZEL[1] + 0.035),
+      // The walls' own dark paneling, a little lighter, so the bezel reads as part of the wall
+      body: flat
+        ? new MeshBasicMaterial({ color: toColor(res.c.muted, 0.55) })
+        : new MeshLambertMaterial({
+            color: toColor(res.c.dark).lerp(toColor(res.c.muted), 0.08),
+          }),
+    }),
+    [res, flat]
+  );
+  const items = useMemo(
+    () =>
+      panels.map((panel) => {
+        // Facing east or west (yaw ±PI/2): the wall's east-west accent; else the north-south one
+        const channels = Math.abs(Math.sin(panel.yaw)) > 0.5 ? res.c.info : res.c.primary;
+        const canvas = document.createElement('canvas');
+        [canvas.width, canvas.height] = SCREEN_PX;
+        const texture = new CanvasTexture(canvas);
+        texture.colorSpace = SRGBColorSpace;
+        texture.anisotropy = 4;
+        const accent = toColor(channels);
+        return {
+          id: panel.id,
+          canvas,
+          texture,
+          channels,
+          accent,
+          screen: new MeshBasicMaterial({ map: texture, toneMapped: false }),
+          edge: new MeshBasicMaterial({
+            color: accent.clone().multiplyScalar(flat ? 1 : 0.9),
+            toneMapped: false,
+          }),
+        };
+      }),
+    [panels, res, flat]
+  );
+  useEffect(
+    () => () => {
+      items.forEach(({ texture, screen, edge }) => {
+        texture.dispose();
+        screen.dispose();
+        edge.dispose();
+      });
+    },
+    [items]
+  );
+  useEffect(
+    () => () => {
+      [shared.bezel, shared.screen, shared.edge].forEach((g) => g.dispose());
+      shared.body.dispose();
+    },
+    [shared]
+  );
+  // Painted when made, and again when its section is read (a tick instead of the E key): only the
+  // screens that changed, each upload being a whole canvas
+  const lit = useRef(null);
+  useEffect(() => {
+    let changed = false;
+    items.forEach((item, i) => {
+      const read = discovered.includes(item.id);
+      if (item.read === read) return;
+      item.read = read;
+      paintScreen(item.canvas, panels[i], read, res.c, item.channels, flat);
+      item.texture.needsUpdate = true;
+      changed = true;
+    });
+    // New screens (high contrast switched) start unlit: the aimed one is lit again next frame
+    lit.current = undefined;
+    if (changed) invalidate();
+  }, [items, panels, discovered, res, flat, invalidate]);
+
+  const time = useRef(0);
+  useFrame((state, delta) => {
+    const id = targetRef.current;
+    // Pulsing only while the game runs every frame: paused (a dossier, Access granted) it holds
+    const pulse = id && !reduced && !flat && state.frameloop === 'always';
+    if (id === lit.current && !pulse) return;
+    lit.current = id;
+    time.current += Math.min(delta, 0.1);
+    const glow = pulse ? 1.25 + 0.2 * Math.sin(time.current * 4) : 1.35;
+    items.forEach((item) => {
+      const on = item.id === id;
+      item.screen.color.setScalar(on ? glow : 1);
+      item.edge.color.copy(item.accent).multiplyScalar(flat ? 1 : on ? glow + 0.6 : 0.9);
+    });
+  });
+
+  return panels.map((panel, i) => (
+    <group key={panel.id} position={panel.position} rotation={[0, panel.yaw, 0]}>
+      {/* The glowing edge, just off the wall behind the bezel */}
+      <mesh geometry={shared.edge} material={items[i].edge} position={[0, 0, -0.016]} />
+      <mesh geometry={shared.bezel} material={shared.body} position={[0, 0, 0.005]} />
+      <mesh geometry={shared.screen} material={items[i].screen} position={[0, 0, 0.032]} />
+    </group>
+  ));
+});
+
+// The lit path on the floor to the next section's terminal: chevrons on the next cells of the way
+// (Cub3DWorld finds it), in that room's accent, with a slow glow running along them unless motion
+// is reduced (flat in high contrast)
+const GUIDE_MAX = 16;
+const chevronShape = () => {
+  const shape = new Shape();
+  shape.moveTo(-0.2, -0.22);
+  shape.lineTo(0.06, 0);
+  shape.lineTo(-0.2, 0.22);
+  shape.lineTo(-0.08, 0.22);
+  shape.lineTo(0.18, 0);
+  shape.lineTo(-0.08, -0.22);
+  shape.closePath();
+  const geometry = new ShapeGeometry(shape);
+  // Flat on the floor, pointing along +x
+  geometry.rotateX(-Math.PI / 2);
+  return geometry;
+};
+const Guide = memo(function Guide({ guideRef, W, res, flat, reduced }) {
+  const mesh = useRef(null);
+  const seen = useRef(-1);
+  const base = useRef(null);
+  const time = useRef(0);
+  const parts = useMemo(
+    () => ({
+      geometry: chevronShape(),
+      material: new MeshBasicMaterial({
+        toneMapped: false,
+        transparent: !flat,
+        opacity: flat ? 1 : 0.85,
+        depthWrite: false,
+      }),
+    }),
+    [flat]
+  );
+  useEffect(
+    () => () => {
+      parts.geometry.dispose();
+      parts.material.dispose();
+    },
+    [parts]
+  );
+  useLayoutEffect(() => {
+    // Instance colors exist from the start (setColorAt makes the attribute)
+    for (let i = 0; i < GUIDE_MAX; i += 1) mesh.current?.setColorAt(i, res.background);
+    seen.current = -1;
+  }, [parts, res]);
+  useFrame((state, delta) => {
+    const m = mesh.current;
+    const guide = guideRef.current;
+    if (!m) return;
+    if (guide.version !== seen.current) {
+      seen.current = guide.version;
+      base.current = guide.section ? res.accent(guide.section, 1) : null;
+      m.count = guide.cells.length;
+      guide.cells.forEach(([x, z, prev], i) => {
+        const dx = x - (prev % W);
+        const dz = z - Math.floor(prev / W);
+        dummy.position.set(x + 0.5, 0.012, z + 0.5);
+        dummy.rotation.set(0, Math.atan2(-dz, dx), 0);
+        dummy.scale.setScalar(1);
+        dummy.updateMatrix();
+        m.setMatrixAt(i, dummy.matrix);
+        m.setColorAt(i, tint.copy(base.current).multiplyScalar(flat ? 1 : 1.8));
+      });
+      m.instanceMatrix.needsUpdate = true;
+      if (m.instanceColor) m.instanceColor.needsUpdate = true;
+      state.invalidate();
+    }
+    if (reduced || flat || !m.count || !base.current) return;
+    // A glow running along the path, away from the player
+    time.current += Math.min(delta, 0.1);
+    for (let i = 0; i < m.count; i += 1) {
+      const k = Math.max(0, Math.sin(time.current * 2.6 - i * 0.55));
+      m.setColorAt(i, tint.copy(base.current).multiplyScalar(1.1 + 1.8 * k));
+    }
+    m.instanceColor.needsUpdate = true;
+  });
+  return (
+    <instancedMesh
+      ref={mesh}
+      args={[parts.geometry, parts.material, GUIDE_MAX]}
+      frustumCulled={false}
+      renderOrder={2}
+    />
+  );
+});
+
 /**
  * @param shell       the wall cells to draw ({ x, z })
  * @param isFloor     (x, z) => whether a cell is floor
@@ -337,6 +573,10 @@ const Facility = ({
   motion,
   postFx,
   hologramLabel,
+  panels,
+  discovered,
+  targetRef,
+  guideRef,
 }) => {
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
@@ -844,6 +1084,17 @@ const Facility = ({
 
   return (
     <>
+      {panels && (
+        <Terminals
+          panels={panels}
+          discovered={discovered}
+          targetRef={targetRef}
+          res={res}
+          flat={flat}
+          reduced={reduced}
+        />
+      )}
+      {guideRef && <Guide guideRef={guideRef} W={W} res={res} flat={flat} reduced={reduced} />}
       <instancedMesh
         ref={walls}
         args={[res.box, res.wallMaterials, shell.length]}

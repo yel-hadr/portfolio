@@ -105,8 +105,8 @@ export const ContrastToggle = ({ t, contrast, onContrast, className }) => (
 export const GameHud = ({
   t,
   aim,
-  read,
-  total,
+  prompt,
+  sections,
   kills,
   threats,
   room,
@@ -168,13 +168,33 @@ export const GameHud = ({
         </>
       )}
     </div>
-    {aim && (
-      <p
-        className={`pointer-events-none absolute left-1/2 top-[calc(50%+1.75rem)] z-30 -translate-x-1/2 whitespace-nowrap rounded-lg ${GLASS} px-3 py-1 text-sm font-semibold text-foreground`}
+    {prompt ? (
+      // A wall terminal in reach: the Press E prompt, on an opaque fill (it sits over the scene).
+      // Announced through the view's own status region; this is the picture of it
+      <div
+        key={prompt}
+        aria-hidden='true'
+        className={`pointer-events-none absolute left-1/2 top-[calc(50%+1.75rem)] z-30 flex -translate-x-1/2 items-center gap-3 whitespace-nowrap rounded-xl ${SOLID} border-primary-400 px-3 py-2 text-foreground motion-safe:animate-prompt-in`}
       >
-        {aim}
-      </p>
+        <kbd className='inline-flex h-8 w-8 items-center justify-center rounded-md border-2 border-foreground font-mono text-base font-black'>
+          E
+        </kbd>
+        <span className='flex flex-col leading-tight'>
+          <span className='text-base font-bold'>{t('demos.game.prompt')}</span>
+          <span className='text-sm'>{prompt}</span>
+        </span>
+      </div>
+    ) : (
+      aim && (
+        <p
+          className={`pointer-events-none absolute left-1/2 top-[calc(50%+1.75rem)] z-30 -translate-x-1/2 whitespace-nowrap rounded-lg ${GLASS} px-3 py-1 text-sm font-semibold text-foreground`}
+        >
+          {aim}
+        </p>
+      )
     )}
+
+    <MissionTracker t={t} sections={sections} />
 
     {/* The weapon in hand, its energy, and integrity: bottom right, above the status bar */}
     <div
@@ -231,11 +251,15 @@ export const GameHud = ({
         |
       </span>
       <span className='hidden sm:inline'>
-        {t('demos.game.status.walls', { count: read, total })}
+        {t('demos.game.status.sections', {
+          count: sections.filter(({ found }) => found).length,
+          total: sections.length,
+        })}
       </span>
     </p>
 
-    <div className='absolute right-3 top-3 z-50 flex flex-col items-end gap-2 lg:flex-row lg:items-center'>
+    {/* A column below xl (a zoomed or narrow window), so it never reaches the mission tracker */}
+    <div className='absolute right-3 top-3 z-50 flex flex-col items-end gap-2 xl:flex-row xl:items-center'>
       <button type='button' onClick={onTextMode} className={HUD_BUTTON}>
         {t('demos.game.textMode')}
       </button>
@@ -277,10 +301,146 @@ export const GameHud = ({
 );
 
 /**
+ * The mission: the profile's six sections in the story's order, ticked off as their terminals
+ * are read, with the next one marked. A visual list; each discovery is announced by the view, and
+ * the whole list is in the text-only mode too
+ */
+const MissionTracker = ({ t, sections }) => {
+  const found = sections.filter((section) => section.found).length;
+  const next = sections.find((section) => !section.found)?.id;
+  return (
+    <section
+      aria-label={t('demos.game.mission.label')}
+      className={`pointer-events-none absolute left-3 top-3 z-30 rounded-xl ${SOLID} px-3 py-2 text-foreground`}
+    >
+      <p className='font-mono text-xs font-bold uppercase tracking-wider'>
+        {t('demos.game.mission.progress', { count: found, total: sections.length })}
+      </p>
+      <ol className='mt-1 space-y-0.5 text-sm'>
+        {sections.map(({ id, title, found: done }) => (
+          <li
+            key={id}
+            className={`flex items-center gap-2 ${id === next ? 'font-bold' : ''} ${done ? '' : 'text-foreground'}`}
+          >
+            <svg
+              aria-hidden='true'
+              viewBox='0 0 16 16'
+              className={`h-4 w-4 shrink-0 ${done ? 'text-success' : 'text-foreground'}`}
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+            >
+              {done ? (
+                <path d='M3 8.5l3 3 7-7' strokeLinecap='round' strokeLinejoin='round' />
+              ) : (
+                <circle cx='8' cy='8' r='5.5' />
+              )}
+            </svg>
+            {title}
+            {id === next && (
+              <span aria-hidden='true' className='font-mono text-xs text-primary-400'>
+                {t('demos.game.mission.next')}
+              </span>
+            )}
+            <span className='sr-only'>
+              {done
+                ? t('demos.game.mission.discovered')
+                : id === next
+                  ? t('demos.game.mission.nextSr')
+                  : t('demos.game.mission.notYet')}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+};
+
+/**
+ * Every section read: the mission's end, a dialog over the paused game with the time it took,
+ * the threats neutralized, and the ways to get in touch
+ */
+export const MissionComplete = ({
+  t,
+  time,
+  kills,
+  threats,
+  resume,
+  github,
+  onContact,
+  onClose,
+}) => {
+  const titleId = useId();
+  const { overlayRef, panelRef, close, onKeyDown, backdrop } = useModalDialog(onClose);
+  const heading = useRef(null);
+
+  useEffect(() => {
+    heading.current?.focus();
+  }, []);
+
+  return createPortal(
+    <div ref={overlayRef} className='fixed inset-0 z-[70] flex bg-background/70 p-4' {...backdrop}>
+      <div
+        ref={panelRef}
+        role='dialog'
+        aria-modal='true'
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
+        className='m-auto max-h-full w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-success bg-background p-6 text-center text-foreground shadow-2xl outline-none motion-safe:animate-crt-in'
+      >
+        <h2
+          ref={heading}
+          id={titleId}
+          tabIndex={-1}
+          className='font-mono text-3xl font-black uppercase tracking-widest text-success outline-none'
+        >
+          {t('demos.game.mission.title')}
+        </h2>
+        <p className='mt-4 leading-relaxed'>{t('demos.game.mission.body')}</p>
+        <dl className='mx-auto mt-4 grid max-w-xs grid-cols-2 gap-x-4 gap-y-1 text-left font-mono text-sm'>
+          <dt>{t('demos.game.mission.time')}</dt>
+          <dd className='text-right tabular-nums'>{time}</dd>
+          <dt>{t('demos.game.mission.threats')}</dt>
+          <dd className='text-right tabular-nums'>
+            {kills} / {threats}
+          </dd>
+        </dl>
+        <div className='mt-6 flex flex-col gap-3'>
+          <button
+            type='button'
+            onClick={onContact}
+            className={`${styles.buttonPrimary} justify-center`}
+          >
+            {t('demos.game.mission.contact')}
+          </button>
+          <a href={resume} download className={`${styles.buttonGhost} justify-center`}>
+            {t('demos.game.mission.resume')}
+          </a>
+          <a
+            href={github}
+            target='_blank'
+            rel='noopener noreferrer'
+            className={`${styles.buttonGhost} justify-center`}
+          >
+            {t('demos.game.mission.github')}
+            <span className='sr-only'>{t('footer.newTab')}</span>
+          </a>
+          <button type='button' onClick={close} className={`${styles.buttonGhost} justify-center`}>
+            {t('demos.game.mission.keepExploring')}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+/**
  * A wall's content, opened from the crosshair: a dialog over the game with a CRT switch-on.
  * useModalDialog makes the game inert behind it and closes it on Escape before the game sees it.
  */
-export const GameInfo = ({ t, title, detail = {}, onClose, closeLabel, children }) => {
+export const GameInfo = ({ t, title, kicker, detail = {}, onClose, closeLabel, children }) => {
   const titleId = useId();
   const { overlayRef, panelRef, close, onKeyDown, backdrop } = useModalDialog(onClose);
 
@@ -299,6 +459,12 @@ export const GameInfo = ({ t, title, detail = {}, onClose, closeLabel, children 
         onKeyDown={onKeyDown}
         className='m-auto max-h-full w-full max-w-2xl overflow-y-auto rounded-2xl border-2 border-primary bg-background p-6 text-foreground shadow-2xl outline-none motion-safe:animate-crt-in'
       >
+        {/* Game Mode's dossier: which section of the profile this is */}
+        {kicker && (
+          <p className='mb-1 border-b border-line pb-2 font-mono text-xs font-bold uppercase tracking-widest text-foreground'>
+            {kicker}
+          </p>
+        )}
         <h2 id={titleId} className='font-mono text-2xl font-black uppercase text-primary-400'>
           {title}
         </h2>
@@ -336,6 +502,44 @@ export const GameInfo = ({ t, title, detail = {}, onClose, closeLabel, children 
                     {t('demos.source')}
                   </a>
                 )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {/* Experience and education: a title, where, when, and what was done */}
+        {detail.entries && (
+          <ol className='mt-4 space-y-4 border-l-2 border-line-strong pl-4'>
+            {detail.entries.map(({ title: heading, place, date, points }) => (
+              <li key={`${heading}-${place}`}>
+                <h3 className='font-bold text-foreground'>{heading}</h3>
+                <p className='text-sm font-semibold text-foreground'>
+                  {place}
+                  {date && <span className='font-normal text-foreground-muted'> · {date}</span>}
+                </p>
+                {points.length > 0 && (
+                  <ul className='mt-1 list-disc space-y-1 pl-5 text-sm leading-relaxed text-foreground'>
+                    {points.map((point) => (
+                      <li key={point}>{point}</li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
+        {detail.links && (
+          <ul className='mt-4 flex flex-wrap gap-3'>
+            {detail.links.map(({ href, label }) => (
+              <li key={href}>
+                <a
+                  href={href}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className={`${styles.buttonGhost} inline-flex`}
+                >
+                  {label}
+                  <span className='sr-only'>{t('footer.newTab')}</span>
+                </a>
               </li>
             ))}
           </ul>
@@ -468,6 +672,7 @@ export const MainMenu = ({
               {t('demos.game.storyTitle')}
             </h3>
             <p className='mt-4 leading-relaxed text-foreground'>{t('demos.game.story')}</p>
+            <p className='mt-3 leading-relaxed text-foreground'>{t('demos.game.objective')}</p>
             <div className='mt-6 space-y-3'>
               {lockable && (
                 <button
