@@ -378,9 +378,10 @@ const Entities = ({
               toneMapped: false,
               roughness: 0.3,
             }),
+        // The shell stays a wireframe in high contrast too: filled, it hid the threat's shape
         shell: new MeshBasicMaterial({
           color: flat ? base : base.clone().multiplyScalar(1.3),
-          wireframe: !flat,
+          wireframe: true,
           toneMapped: false,
           transparent: !flat,
           opacity: flat ? 1 : 0.75,
