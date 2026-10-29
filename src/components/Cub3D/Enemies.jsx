@@ -8,6 +8,7 @@ import {
   BufferGeometry,
   CanvasTexture,
   CapsuleGeometry,
+  DodecahedronGeometry,
   IcosahedronGeometry,
   InstancedMesh,
   MathUtils,
@@ -26,7 +27,8 @@ import {
 } from 'three';
 
 import { readTheme, rgb } from '../../utils/themeColors';
-import { ICON_Y, iconSpot } from './rooms';
+import { frozen } from './freeze';
+import { ICON_Y, THREAT_TYPES, iconSpot } from './rooms';
 import { toColor } from './toColor';
 
 // Game Mode's layer inside the Canvas: the threats (low-poly "glitch" entities drifting toward
@@ -37,7 +39,6 @@ import { toColor } from './toColor';
 // re-renders this tree.
 
 const SIGHT = 8; // cells: threats this close, and in line of sight, come for the player
-const SPEED = 0.6; // cells per second
 const STOP = 1.2; // cells: they hover this far away
 const REACH = STOP + 0.35; // cells: this close, a threat wears down the player's integrity
 const BODY = 0.2; // collision radius, as the player's
@@ -46,8 +47,21 @@ const SHATTER_LIFE = 0.8;
 const TRAIL = 14; // points per threat's trail
 const TRAIL_LIFE = 0.9; // seconds a trail point takes to fade
 const LIGHTS = 2; // threats lighting their surroundings at once (the nearest ones)
-// Each threat type's theme color: DDoS in danger red, injection in toxic green
-const THREAT_COLORS = { ddos: 'danger', sql: 'success' };
+// Each threat type's theme color: DDoS in danger red, injection in toxic green, a memory leak in
+// violet, a zero-day in the foreground's white (rooms.js)
+const THREAT_COLORS = Object.fromEntries(
+  Object.entries(THREAT_TYPES).map(([type, { color }]) => [type, color])
+);
+// A Memory Leak slows the player within SLOW_RANGE cells, down to SLOWEST of the walking speed
+// at SLOW_FULL cells or closer
+const SLOW_RANGE = 2.5;
+const SLOW_FULL = 1.2;
+const SLOWEST = 0.45;
+// A Zero-Day shows only in the flashlight's beam: the spot's angle and range (Facility.jsx), its
+// penumbra fading it in. The test is geometric, so it holds in high contrast (no lights) too
+const BEAM_ANGLE = 0.46;
+const BEAM_FULL = BEAM_ANGLE * (1 - 0.55);
+const BEAM_RANGE = 9;
 // The effects' colors: the rifle's blue trail, the pistol's green blocks, the blaster's orange
 const FX_COLORS = { trail: 'info', blocks: 'success', radial: 'primary' };
 
@@ -121,7 +135,7 @@ const dummy = new Object3D();
  * a threat into glowing voxels (one InstancedMesh, freed after SHATTER_LIFE). The particle
  * shader is compiled up front on a hidden copy, so the first shot does not stall
  */
-const Effects = ({ reduced, fxRef }) => {
+const Effects = ({ reduced, fxRef, hitStop }) => {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
@@ -221,7 +235,7 @@ const Effects = ({ reduced, fxRef }) => {
   }, [fxRef, reduced, scene, gl, camera]);
 
   useFrame((state, delta) => {
-    const dt = Math.min(delta, 0.1);
+    const dt = frozen(hitStop) ? 0 : Math.min(delta, 0.1);
     const effects = live.current;
     if (effects.length) {
       // In place: freed once FX_LIFE is up
@@ -291,6 +305,18 @@ const SHAPES = {
     shell: new TorusGeometry(0.23, 0.01, 6, 28),
     bit: new TetrahedronGeometry(0.05, 0),
   },
+  // A swollen blob that drips
+  memleak: {
+    core: new SphereGeometry(0.16, 14, 10),
+    shell: new IcosahedronGeometry(0.24, 2),
+    bit: new SphereGeometry(0.035, 8, 6),
+  },
+  // A sharp, faceted shard
+  zeroday: {
+    core: new DodecahedronGeometry(0.13, 0),
+    shell: new OctahedronGeometry(0.27, 0),
+    bit: new TetrahedronGeometry(0.04, 0),
+  },
   crew: {
     body: new CapsuleGeometry(0.085, 0.2, 4, 10),
     head: new SphereGeometry(0.07, 12, 8),
@@ -306,7 +332,19 @@ const BITS = 4;
  * integrity down with it). `flat` (high contrast) draws them in flat bright colors, with no
  * trails, glitches or light
  */
-const Entities = ({ enemies, npcs, labels, solid, reduced, paused, flat, pressure }) => {
+const Entities = ({
+  enemies,
+  npcs,
+  labels,
+  solid,
+  reduced,
+  noFlash,
+  paused,
+  flat,
+  pressure,
+  slow,
+  hitStop,
+}) => {
   const time = useRef(0);
   const lights = useRef([]);
   const nodes = useRef({});
@@ -326,6 +364,8 @@ const Entities = ({ enemies, npcs, labels, solid, reduced, paused, flat, pressur
     };
     Object.entries(THREAT_COLORS).forEach(([type, color]) => {
       const base = toColor(colors[color]);
+      // A Zero-Day fades in and out with the beam: every part of it takes an opacity
+      const fades = !!THREAT_TYPES[type].stealth;
       made.types[type] = {
         base,
         core: flat
@@ -349,7 +389,16 @@ const Entities = ({ enemies, npcs, labels, solid, reduced, paused, flat, pressur
           toneMapped: false,
         }),
         label: label(color, labels[type]),
+        fades,
       };
+      if (fades) {
+        ['core', 'shell', 'bit', 'label'].forEach((part) => {
+          const m = made.types[type][part];
+          m.transparent = true;
+          m.userData.opacity = m.opacity;
+          m.opacity = 0;
+        });
+      }
     });
     npcs.current.forEach(({ id, color }) => {
       const base = toColor(colors[color]);
@@ -392,7 +441,7 @@ const Entities = ({ enemies, npcs, labels, solid, reduced, paused, flat, pressur
     () => () => {
       res.textures.forEach((texture) => texture.dispose());
       [...Object.values(res.types), ...Object.values(res.crew)].forEach((set) =>
-        Object.values(set).forEach((m) => m.dispose?.())
+        Object.values(set).forEach((m) => m?.dispose?.())
       );
       res.trailGeometry.dispose();
       res.trailMaterial.dispose();
@@ -418,32 +467,64 @@ const Entities = ({ enemies, npcs, labels, solid, reduced, paused, flat, pressur
   const drops = useRef({});
   const nearest = useMemo(() => [], []);
   useFrame((state, delta) => {
-    const dt = Math.min(delta, 0.1);
+    // A kill's freeze frame holds everything (the beam's reveal still follows the view)
+    const dt = frozen(hitStop) ? 0 : Math.min(delta, 0.1);
     const { x: px, z: pz } = state.camera.position;
+    const yaw = state.camera.rotation.y;
     // Its own clock: R3F's restarts at 0 whenever the frame loop mode changes
     time.current += dt;
     const t = time.current;
     let close = 0;
+    let slowest = 1;
     nearest.length = 0;
     enemies.current.forEach((enemy, i) => {
       const node = nodes.current[enemy.id];
       if (!node || !enemy.alive) return;
+      const kind = THREAT_TYPES[enemy.type];
       const d = Math.hypot(px - enemy.x, pz - enemy.z);
-      if (
-        !paused.current &&
-        !reduced &&
-        d < SIGHT &&
-        d > STOP &&
-        inSight(enemy.x, enemy.z, px, pz)
-      ) {
-        const step = (SPEED * dt) / d;
+      // Line of sight, worked out once and only when something below needs it
+      let sight;
+      const seen = () => (sight ??= inSight(enemy.x, enemy.z, px, pz));
+      if (!paused.current && !reduced && d < SIGHT && d > STOP && seen()) {
+        const step = (kind.speed * dt) / d;
         const nx = enemy.x + (px - enemy.x) * step;
         const nz = enemy.z + (pz - enemy.z) * step;
         if (free(nx, enemy.z)) enemy.x = nx;
         if (free(enemy.x, nz)) enemy.z = nz;
       }
-      if (d < REACH && inSight(enemy.x, enemy.z, px, pz)) close += 1;
-      if (d < 6) nearest.push([d, enemy]);
+      if (kind.harm && d < REACH && seen()) close += 1;
+      // A Memory Leak drags the player's steps, the more the closer
+      if (kind.slows && d < SLOW_RANGE && seen()) {
+        const k = MathUtils.clamp((d - SLOW_FULL) / (SLOW_RANGE - SLOW_FULL), 0, 1);
+        slowest = Math.min(slowest, SLOWEST + (1 - SLOWEST) * k);
+      }
+      // A Zero-Day: lit only while the beam (the view's center, within its angle and range) is on
+      // it, eased in and out over the penumbra (at once with reduced motion). Its material set is
+      // its own type's: rooms.js has one Zero-Day
+      if (kind.stealth) {
+        const bearing = Math.atan2(-(enemy.x - px), -(enemy.z - pz));
+        const off = Math.abs(
+          MathUtils.euclideanModulo(bearing - yaw + Math.PI, 2 * Math.PI) - Math.PI
+        );
+        const beam =
+          d < BEAM_RANGE && off < BEAM_ANGLE && seen()
+            ? 1 - MathUtils.smoothstep(off, BEAM_FULL, BEAM_ANGLE)
+            : 0;
+        const was = enemy.lit ?? 0;
+        enemy.lit = reduced ? beam : MathUtils.damp(was, beam, 12, Math.min(delta, 0.1));
+        if (enemy.lit < 0.01) enemy.lit = 0;
+        if (enemy.lit > 0.5) enemy.seen = true;
+        // Written when it changes, or to a set just made (high contrast toggled)
+        const set = res.types[enemy.type];
+        if (set.lit !== enemy.lit) {
+          set.lit = enemy.lit;
+          ['core', 'shell', 'bit', 'label'].forEach((part) => {
+            set[part].opacity = set[part].userData.opacity * enemy.lit;
+          });
+        }
+        node.visible = enemy.lit > 0;
+      }
+      if (d < 6 && (!kind.stealth || enemy.lit > 0.5)) nearest.push([d, enemy]);
       // A slow float, a spin, and now and then a glitch (a jolt of the shell), unless reduced
       const y = reduced ? 0.5 : 0.5 + Math.sin(t * 2 + i) * 0.05;
       node.position.set(enemy.x, y, enemy.z);
@@ -455,9 +536,15 @@ const Entities = ({ enemies, npcs, labels, solid, reduced, paused, flat, pressur
         shell.scale.setScalar(glitch ? 1.18 : 1);
         shell.position.x = glitch ? Math.sin(t * 50) * 0.04 : 0;
         bits.rotation.y = t * 2.2 + i;
+        // A Memory Leak's bits drip down and form again
+        if (kind.slows) {
+          bits.children.forEach((bit, b) => {
+            bit.position.y = 0.05 - ((t * 0.5 + b / BITS) % 1) * 0.45;
+          });
+        }
       }
-      // The trail: a point dropped every few centimeters moved
-      if (!flat && !reduced) {
+      // The trail: a point dropped every few centimeters moved (none behind a Zero-Day)
+      if (!flat && !reduced && !kind.stealth) {
         const drop = (drops.current[enemy.id] ??= { x: enemy.x, z: enemy.z, slot: 0 });
         if (Math.hypot(enemy.x - drop.x, enemy.z - drop.z) > 0.05) {
           const k = i * TRAIL + drop.slot;
@@ -469,6 +556,7 @@ const Entities = ({ enemies, npcs, labels, solid, reduced, paused, flat, pressur
         }
       }
     });
+    slow.current = paused.current ? 1 : slowest;
     pressure.current = paused.current ? 0 : close;
 
     if (!flat) {
@@ -497,7 +585,7 @@ const Entities = ({ enemies, npcs, labels, solid, reduced, paused, flat, pressur
         const [, enemy] = pick;
         light.position.set(enemy.x, 0.5, enemy.z);
         light.color.copy(res.types[enemy.type].base);
-        light.intensity = reduced ? 1.4 : 1.4 + Math.sin(t * 9 + i) * 0.3;
+        light.intensity = reduced || noFlash ? 1.4 : 1.4 + Math.sin(t * 9 + i) * 0.3;
       });
     }
   }, -1);
@@ -516,7 +604,8 @@ const Entities = ({ enemies, npcs, labels, solid, reduced, paused, flat, pressur
               enemy.node = el;
             }}
             position={[enemy.x, 0.5, enemy.z]}
-            visible={enemy.alive}
+            // A Zero-Day shows once the beam finds it
+            visible={enemy.alive && (!THREAT_TYPES[enemy.type].stealth || enemy.lit > 0)}
           >
             <mesh geometry={shape.core} material={set.core} />
             <mesh geometry={shape.shell} material={set.shell} />
@@ -576,12 +665,12 @@ const Entities = ({ enemies, npcs, labels, solid, reduced, paused, flat, pressur
 };
 
 /** The Skills hall's tech icons, floating; they load on their own, after the world */
-const TechIcons = ({ icons, reduced }) => {
+const TechIcons = ({ icons, reduced, hitStop }) => {
   const textures = useTexture(icons);
   const refs = useRef([]);
   const time = useRef(0);
   useFrame((state, delta) => {
-    if (reduced) return;
+    if (reduced || frozen(hitStop)) return;
     time.current += Math.min(delta, 0.1);
     refs.current.forEach((sprite, i) => {
       if (sprite) sprite.position.y = ICON_Y + Math.sin(time.current * 1.5 + i) * 0.06;
@@ -609,11 +698,11 @@ const TechIcons = ({ icons, reduced }) => {
  * Cub3DWorld: a shot sets `recoil` and `shake` (each weapon its own amount). Then
  * `onTick(camera, dt)`: the aim, the radar, energy, integrity and automatic fire
  */
-const GameMotion = ({ crosshairRef, motion, reduced, onTick }) => {
+const GameMotion = ({ crosshairRef, motion, reduced, noFlash, hitStop, onTick }) => {
   // Seeded from the camera on the first frame, so the start (or a return) is not a jolt
   const last = useRef(null);
   useFrame((state, delta) => {
-    const dt = Math.min(delta, 0.1);
+    const dt = frozen(hitStop) ? 0 : Math.min(delta, 0.1);
     const { camera } = state;
     const m = motion.current;
     const l = (last.current ??= {
@@ -660,8 +749,9 @@ const GameMotion = ({ crosshairRef, motion, reduced, onTick }) => {
         el.style.setProperty('--spread', `${spread}px`);
       }
     }
-    // The pitch is pinned to the horizon otherwise: a shake is a few frames of jitter
-    if (!reduced && m.shake > 0.01) {
+    // The pitch is pinned to the horizon otherwise: a shake is a few frames of jitter (none with
+    // reduced motion or Reduce flashing)
+    if (!reduced && !noFlash && m.shake > 0.01) {
       camera.rotation.x = (Math.random() - 0.5) * 0.03 * m.shake;
       camera.rotation.z = (Math.random() - 0.5) * 0.02 * m.shake;
     } else if (camera.rotation.x || camera.rotation.z) {
@@ -684,9 +774,12 @@ export const GameLayer = memo(function GameLayer({
   icons,
   solid,
   reduced,
+  noFlash,
   flat,
   paused,
   pressure,
+  slow,
+  hitStop,
   fxRef,
   crosshairRef,
   motion,
@@ -700,17 +793,27 @@ export const GameLayer = memo(function GameLayer({
         labels={labels}
         solid={solid}
         reduced={reduced}
+        noFlash={noFlash}
         paused={paused}
         flat={flat}
         pressure={pressure}
+        slow={slow}
+        hitStop={hitStop}
       />
-      <Effects reduced={reduced} fxRef={fxRef} />
+      <Effects reduced={reduced} fxRef={fxRef} hitStop={hitStop} />
       {icons && (
         <Suspense fallback={null}>
-          <TechIcons icons={icons} reduced={reduced} />
+          <TechIcons icons={icons} reduced={reduced} hitStop={hitStop} />
         </Suspense>
       )}
-      <GameMotion crosshairRef={crosshairRef} motion={motion} reduced={reduced} onTick={onTick} />
+      <GameMotion
+        crosshairRef={crosshairRef}
+        motion={motion}
+        reduced={reduced}
+        noFlash={noFlash}
+        hitStop={hitStop}
+        onTick={onTick}
+      />
     </>
   );
 });

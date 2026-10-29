@@ -171,7 +171,10 @@
       "contact": "Me contacter",
       "resume": "Télécharger le CV",
       "github": "Voir sur GitHub",
-      "keepExploring": "Continuer à explorer"
+      "keepExploring": "Continuer à explorer",
+      "accuracy": "Précision",
+      "bodyThreats": "Vous avez neutralisé toutes les menaces des installations, et les systèmes sont sécurisés. Merci d’avoir joué.",
+      "noShots": "aucun tir"
     },
     "links": {
       "github": "GitHub",
@@ -183,7 +186,8 @@
       "Clic ou F : tirer · 1 2 3 ou A (Q en QWERTY) : changer d’arme",
       "E : interagir avec les portes, les murs, les terminaux et l’équipe",
       "Espace : ouvrir la porte devant vous · M : son activé ou coupé",
-      "Échap : libérer la souris, Échap à nouveau pour quitter"
+      "Échap : pause",
+      "Fuite mémoire : vous ralentit · Zero-day : visible seulement dans le faisceau de votre lampe"
     ],
     "status": {
       "system": "Système : en ligne",
@@ -220,15 +224,45 @@
     "weapon": "Arme : {name}",
     "enemies": {
       "ddos": "Bot DDoS",
-      "sql": "Injection SQL"
+      "sql": "Injection SQL",
+      "memleak": "Fuite mémoire",
+      "zeroday": "Zero-day"
     },
     "aimEnemy": "{name} : cliquez ou appuyez sur F pour tirer",
     "facts": {
-      "ddos": {
+      "helm": {
+        "title": "Menace neutralisée !",
+        "body": "Le saviez-vous : j’utilise des charts Helm pour packager et déployer des applications Kubernetes complexes."
+      },
+      "tenants": {
+        "title": "Injection bloquée !",
+        "body": "Le saviez-vous : mes backends Django utilisent django-tenants pour isoler chaque client dans son propre schéma, en toute sécurité."
+      },
+      "argocd": {
+        "title": "DDoS atténué !",
+        "body": "Le saviez-vous : je pratique le GitOps avec Argo CD pour une gestion déclarative et auditable de l’état du cluster."
+      },
+      "ansible": {
+        "title": "Faille corrigée !",
+        "body": "Le saviez-vous : j’écris des playbooks Ansible modulaires pour automatiser un durcissement des serveurs sûr et reproductible."
+      },
+      "observability": {
+        "title": "Intrusion évitée !",
+        "body": "Le saviez-vous : ma stack d’observabilité (Grafana, Prometheus, Loki) détecte les anomalies de l’infrastructure en temps réel."
+      },
+      "terraform": {
+        "title": "Attaque repoussée !",
+        "body": "Le saviez-vous : j’utilise Terraform pour provisionner l’infrastructure AWS avec des politiques IAM strictes."
+      },
+      "falco": {
+        "title": "Virus mis en quarantaine !",
+        "body": "Le saviez-vous : je déploie Falco sur K3s pour surveiller la sécurité à l’exécution et détecter les menaces au niveau des appels système."
+      },
+      "traefik": {
         "title": "Menace neutralisée !",
         "body": "Le saviez-vous : j’atténue les DDoS avec la limitation de débit de Traefik et Fail2Ban."
       },
-      "sql": {
+      "pgbouncer": {
         "title": "Injection bloquée !",
         "body": "Le saviez-vous : j’utilise des requêtes paramétrées et PgBouncer pour un pool de connexions sécurisé."
       }
@@ -295,7 +329,35 @@
       "threats": "Menaces",
       "crew": "Équipe",
       "doors": "Portes",
-      "objective": "Section suivante"
-    }
+      "objective": "Section suivante",
+      "leak": "Fuite mémoire"
+    },
+    "weaponRoles": [
+      "Fusil : un tir, longue portée",
+      "Pistolet : tir rapide, courte portée",
+      "Blaster : touche toutes les menaces dans son cône"
+    ],
+    "pause": {
+      "title": "Pause",
+      "resume": "Reprendre",
+      "restart": "Recommencer",
+      "toMenu": "Quitter vers le menu principal"
+    },
+    "pauseButton": "Pause",
+    "failure": {
+      "title": "Défaillance système",
+      "body": "L’intégrité est tombée à zéro : les menaces sont passées. Redémarrez pour réapparaître dans la salle À propos avec toute votre intégrité ; votre progression est conservée.",
+      "reboot": "Redémarrer",
+      "rebooted": "Système redémarré : retour dans la salle À propos, intégrité restaurée."
+    },
+    "graphics": {
+      "label": "Graphismes",
+      "low": "Bas",
+      "medium": "Moyen",
+      "high": "Élevé"
+    },
+    "flashing": "Réduire les flashs",
+    "slowed": "Ralenti : fuite mémoire",
+    "slowedSay": "Une fuite mémoire vous ralentit. Éloignez-vous ou neutralisez-la."
   }
 }

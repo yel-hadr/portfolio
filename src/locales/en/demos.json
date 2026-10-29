@@ -171,7 +171,10 @@
       "contact": "Contact me",
       "resume": "Download resume",
       "github": "View on GitHub",
-      "keepExploring": "Keep exploring"
+      "keepExploring": "Keep exploring",
+      "accuracy": "Accuracy",
+      "bodyThreats": "You neutralized every threat in the facility, and the systems are secure. Thanks for playing.",
+      "noShots": "none fired"
     },
     "links": {
       "github": "GitHub",
@@ -183,7 +186,8 @@
       "Click or F: fire · 1 2 3 or Q: switch weapon",
       "E: interact with doors, walls, terminals and the crew",
       "Space: open the door ahead · M: sound on or off",
-      "Esc: free the mouse, Esc again to exit"
+      "Esc: pause",
+      "Memory Leak: slows you down · Zero-Day: only seen in your flashlight’s beam"
     ],
     "status": {
       "system": "System: online",
@@ -220,15 +224,45 @@
     "weapon": "Weapon: {name}",
     "enemies": {
       "ddos": "DDoS Bot",
-      "sql": "SQL Injection"
+      "sql": "SQL Injection",
+      "memleak": "Memory Leak",
+      "zeroday": "Zero-Day"
     },
     "aimEnemy": "{name}: click or press F to shoot",
     "facts": {
-      "ddos": {
+      "helm": {
+        "title": "Threat Neutralized!",
+        "body": "Fun Fact: I use Helm charts to package and deploy complex Kubernetes applications."
+      },
+      "tenants": {
+        "title": "Injection Blocked!",
+        "body": "Fun Fact: My Django backends use django-tenants for secure, schema-level multi-tenant isolation."
+      },
+      "argocd": {
+        "title": "DDoS Mitigated!",
+        "body": "Fun Fact: I implement GitOps with Argo CD for declarative, auditable cluster state management."
+      },
+      "ansible": {
+        "title": "Exploit Patched!",
+        "body": "Fun Fact: I write modular Ansible playbooks to automate secure, reproducible server hardening."
+      },
+      "observability": {
+        "title": "Breach Prevented!",
+        "body": "Fun Fact: My observability stack (Grafana, Prometheus, Loki) detects infrastructure anomalies in real-time."
+      },
+      "terraform": {
+        "title": "Attack Repelled!",
+        "body": "Fun Fact: I use Terraform to provision AWS infrastructure with strict IAM security policies."
+      },
+      "falco": {
+        "title": "Virus Quarantined!",
+        "body": "Fun Fact: I deploy Falco for runtime security monitoring and syscall threat detection in K3s."
+      },
+      "traefik": {
         "title": "Threat Neutralized!",
         "body": "Fun Fact: I mitigate DDoS using Traefik rate limiting and Fail2Ban."
       },
-      "sql": {
+      "pgbouncer": {
         "title": "Injection Blocked!",
         "body": "Fun Fact: I use parameterized queries and PgBouncer for secure DB pooling."
       }
@@ -295,7 +329,35 @@
       "threats": "Threats",
       "crew": "Crew",
       "doors": "Doors",
-      "objective": "Next section"
-    }
+      "objective": "Next section",
+      "leak": "Memory leak"
+    },
+    "weaponRoles": [
+      "Rifle: one shot, long range",
+      "Pistol: rapid fire, short range",
+      "Blaster: hits every threat in its cone"
+    ],
+    "pause": {
+      "title": "Paused",
+      "resume": "Resume",
+      "restart": "Restart",
+      "toMenu": "Exit to main menu"
+    },
+    "pauseButton": "Pause",
+    "failure": {
+      "title": "System failure",
+      "body": "Integrity reached zero: the threats got through. Reboot to respawn in the About room with full integrity; your progress is kept.",
+      "reboot": "Reboot",
+      "rebooted": "System rebooted: back in the About room, integrity restored."
+    },
+    "graphics": {
+      "label": "Graphics",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "flashing": "Reduce flashing",
+    "slowed": "Slowed: memory leak",
+    "slowedSay": "A memory leak is slowing you down. Move away from it or neutralize it."
   }
 }

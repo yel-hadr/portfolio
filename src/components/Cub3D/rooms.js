@@ -43,18 +43,30 @@ export const GAME_PANELS = [
   { id: 'contact', kind: 'section', position: [1.02, 0.55, 3.5], yaw: Math.PI / 2 },
 ];
 
+// The threat types: `color` is the theme token they glow in, `speed` (cells per second) how fast
+// they drift toward the player once in sight. `harm`: this close they wear integrity down. A
+// Memory Leak does no harm but `slows` the player near it; a Zero-Day is `stealth`: unseen (and
+// out of the crosshair) unless the flashlight's beam is on it
+export const THREAT_TYPES = {
+  ddos: { color: 'danger', speed: 0.6, harm: true },
+  sql: { color: 'success', speed: 0.6, harm: true },
+  memleak: { color: 'secondary', speed: 0.3, harm: false, slows: true },
+  zeroday: { color: 'foreground', speed: 0.6, harm: true, stealth: true },
+};
+
 // Threats between the rooms: behind each door and just inside the room after it. The spawn room
-// (About) and the rooms with crew (Projects, Education) have none
+// (About) and the rooms with crew (Projects, Education) have none. Each carries its own fact
+// (`fact`: demos.game.facts.<fact> in the locales), shown when it is neutralized
 export const ENEMIES = [
-  { id: 'e1', type: 'ddos', cell: [14, 13] },
-  { id: 'e2', type: 'sql', cell: [19, 13] },
-  { id: 'e3', type: 'ddos', cell: [24, 11] },
-  { id: 'e4', type: 'sql', cell: [30, 12] },
-  { id: 'e5', type: 'ddos', cell: [36, 7] },
-  { id: 'e6', type: 'sql', cell: [34, 4] },
-  { id: 'e7', type: 'ddos', cell: [41, 3] },
-  { id: 'e8', type: 'sql', cell: [26, 4] },
-  { id: 'e9', type: 'ddos', cell: [10, 3] },
+  { id: 'e1', type: 'ddos', cell: [14, 13], fact: 'helm' },
+  { id: 'e2', type: 'sql', cell: [19, 13], fact: 'tenants' },
+  { id: 'e3', type: 'ddos', cell: [24, 11], fact: 'argocd' },
+  { id: 'e4', type: 'sql', cell: [30, 12], fact: 'ansible' },
+  { id: 'e5', type: 'memleak', cell: [36, 7], fact: 'observability' },
+  { id: 'e6', type: 'sql', cell: [34, 4], fact: 'terraform' },
+  { id: 'e7', type: 'zeroday', cell: [41, 3], fact: 'falco' },
+  { id: 'e8', type: 'sql', cell: [26, 4], fact: 'pgbouncer' },
+  { id: 'e9', type: 'ddos', cell: [10, 3], fact: 'traefik' },
 ];
 
 // The friendly crew, in the safe rooms: they stand still, share a fact and point the way on
@@ -71,27 +83,30 @@ export const ICON_Y = 0.62;
 export const iconSpot = (i) => [17 + (i % 6) * 1.8, ICON_Y, i < 6 ? 11.4 : 13.6];
 
 // The weapons (their pixel art is in GameHud.jsx, their names in the locales), each with its own
-// shot: `cooldown` (s) between shots, `auto` fires while held, `cone` (radians) hits every
-// threat in it instead of the one in the crosshair; `energy` is what a shot costs (of 100, refilled
-// shortly after the last shot); `shake` and `kick` scale the screen shake and
-// the weapon's recoil; `fx` is the particle effect (Enemies.jsx), `sound` the sfx.js voice
+// shot: `cooldown` (s) between shots, `auto` fires while held, `range` (cells) how far a shot
+// reaches, `cone` (radians) hits every threat in it instead of the one in the crosshair; `energy`
+// is what a shot costs (of 100, refilled shortly after the last shot); `shake` and `kick` scale the
+// screen shake and the weapon's recoil; `fx` is the particle effect (Enemies.jsx), `sound` the
+// sfx.js voice. Every hit neutralizes: the weapons differ in reach and spread
 export const WEAPON_FX = [
-  // Kubernetes Kar98k: one heavy shot, a blue trail to the target
-  { cooldown: 0.9, energy: 30, shake: 1, kick: 1, fx: 'trail', sound: 'sniper' },
-  // Terraform Tactical: rapid fire, green infrastructure blocks where it lands
+  // Kubernetes Kar98k, the rifle: one heavy shot that reaches past a threat's sight, a blue trail
+  { cooldown: 0.9, range: 14, energy: 30, shake: 1, kick: 1, fx: 'trail', sound: 'sniper' },
+  // Terraform Tactical, the pistol: rapid fire at short range, green blocks where it lands
   {
     cooldown: 0.15,
     auto: true,
+    range: 6,
     energy: 7,
     shake: 0.2,
     kick: 0.35,
     fx: 'blocks',
     sound: 'provision',
   },
-  // The DevOps Defender: a wide blast, an orange radial burst
+  // The DevOps Defender, the blaster: a wide blast hitting every threat in its cone, an orange
+  // radial burst
   {
     cooldown: 0.6,
-    cone: 0.22,
+    cone: 0.3,
     range: 6,
     energy: 40,
     shake: 0.55,

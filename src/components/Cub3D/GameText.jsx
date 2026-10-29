@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { styles } from '../../styles';
 import ContactForm from '../ContactForm';
 import { GameInfo } from './GameHud';
-import { GAME_PANELS, NPCS, SECTIONS } from './rooms';
+import { ENEMIES, GAME_PANELS, NPCS, SECTIONS } from './rooms';
 
 const TERMINALS = GAME_PANELS.filter(({ kind }) => kind === 'terminal').map(({ id }) => id);
 
@@ -171,13 +171,14 @@ const GameText = ({ t, details, canPlay, returnTo, onRunDemo, onBack, onExit }) 
         <section className='mt-8 border-t border-line pt-6'>
           <h4 className='text-xl font-bold text-primary-400'>{t('demos.game.intel')}</h4>
           <dl className='mt-3 space-y-3'>
-            {['ddos', 'sql'].map((type) => (
-              <div key={type}>
+            {/* Each threat in the game, with the fact it gives when neutralized */}
+            {ENEMIES.map(({ id, type, fact }) => (
+              <div key={id}>
                 <dt className='font-bold'>
-                  {t(`demos.game.enemies.${type}`)}: {t(`demos.game.facts.${type}.title`)}
+                  {t(`demos.game.enemies.${type}`)}: {t(`demos.game.facts.${fact}.title`)}
                 </dt>
                 <dd className='text-sm leading-relaxed text-foreground-muted'>
-                  {t(`demos.game.facts.${type}.body`)}
+                  {t(`demos.game.facts.${fact}.body`)}
                 </dd>
               </div>
             ))}

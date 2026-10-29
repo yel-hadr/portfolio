@@ -24,6 +24,7 @@ const GLASS = 'border border-line bg-glass backdrop-blur-md';
 // Panels with colored text are opaque: on translucent glass over the dark facility (or a bright
 // high contrast wall) orange and green text fall under AA in one theme or the other
 const SOLID = 'border border-line bg-background';
+const MENU_BUTTON = 'w-full justify-center font-mono uppercase tracking-widest';
 const HUD_BUTTON = `inline-flex h-11 items-center gap-2 rounded-xl ${GLASS} px-3 text-sm font-semibold text-foreground hover:border-foreground-muted ${styles.hudFocus}`;
 
 /** A labeled bar the game loop fills (`barRef`); it turns red under 30% */
@@ -97,6 +98,90 @@ export const ContrastToggle = ({ t, contrast, onContrast, className }) => (
   </button>
 );
 
+/** Reduce flashing: no muzzle flash, screen shake, bloom, flicker or flashing pulses */
+export const FlashToggle = ({ t, noFlash, onFlash, className }) => (
+  <button type='button' aria-pressed={noFlash} onClick={onFlash} className={className}>
+    <svg
+      aria-hidden='true'
+      viewBox='0 0 24 24'
+      className='h-5 w-5'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='1.75'
+      strokeLinejoin='round'
+    >
+      <path d='M13 3L5 13.5h6L10 21l8-10.5h-6z' />
+      {noFlash && <path d='M4 4l16 16' strokeLinecap='round' />}
+    </svg>
+    {t('demos.game.flashing')}
+    <span aria-hidden='true'>{t(noFlash ? 'demos.game.on' : 'demos.game.off')}</span>
+  </button>
+);
+
+const GRAPHICS = ['low', 'medium', 'high'];
+
+/** The graphics tier: native radio buttons (arrow keys move and pick), drawn as a segmented bar */
+const GraphicsChoice = ({ t, graphics, onGraphics }) => {
+  const name = useId();
+  return (
+    <fieldset>
+      <legend className='text-sm font-semibold text-foreground'>
+        {t('demos.game.graphics.label')}
+      </legend>
+      <div className='mt-2 grid grid-cols-3 gap-1 rounded-xl border border-line-strong bg-background p-1'>
+        {GRAPHICS.map((tier) => (
+          <label key={tier} className='relative'>
+            <input
+              type='radio'
+              name={name}
+              value={tier}
+              checked={graphics === tier}
+              onChange={() => onGraphics(tier)}
+              className='peer sr-only'
+            />
+            {/* The picked tier: orange, and underlined so it does not rest on color alone */}
+            <span className='flex h-9 cursor-pointer items-center justify-center rounded-lg text-sm font-semibold text-foreground hover:bg-surface-raised peer-checked:bg-primary peer-checked:text-on-primary peer-checked:underline peer-checked:underline-offset-4 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary'>
+              {t(`demos.game.graphics.${tier}`)}
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+};
+
+/**
+ * Game Mode's settings, in the main menu and the pause menu: the graphics tier, Reduce flashing,
+ * high contrast and the master volume
+ */
+export const GameSettings = ({
+  t,
+  graphics,
+  onGraphics,
+  noFlash,
+  onFlash,
+  contrast,
+  onContrast,
+  volume,
+  onVolume,
+  headingLevel = 'h4',
+}) => {
+  const id = useId();
+  const toggle = `${styles.buttonGhost} w-full justify-center gap-2`;
+  const Heading = headingLevel;
+  return (
+    <section aria-labelledby={id} className='mt-5 space-y-3 border-t border-line pt-4'>
+      <Heading id={id} className='text-sm font-semibold text-foreground-muted'>
+        {t('demos.game.settings')}
+      </Heading>
+      <GraphicsChoice t={t} graphics={graphics} onGraphics={onGraphics} />
+      <FlashToggle t={t} noFlash={noFlash} onFlash={onFlash} className={toggle} />
+      <ContrastToggle t={t} contrast={contrast} onContrast={onContrast} className={toggle} />
+      <VolumeSlider t={t} volume={volume} onVolume={onVolume} />
+    </section>
+  );
+};
+
 /**
  * Crosshair, the weapon's name and energy, integrity, status bar (room, threats, walls), the
  * fact toast, the Access granted overlay, and the text-only, sound, volume, contrast and exit
@@ -118,13 +203,16 @@ export const GameHud = ({
   onTextMode,
   onExit,
   crosshairRef,
+  hitMarkerRef,
   energyBar,
   integrityBar,
   hitRef,
+  slowed,
   contrast,
   onContrast,
   volume,
   onVolume,
+  onPause,
 }) => (
   <>
     {/* A red edge, flashed by the game loop when a threat wears integrity down */}
@@ -139,8 +227,30 @@ export const GameHud = ({
       aria-hidden='true'
       data-moving='false'
       style={{ '--spread': '4px' }}
-      className={`pointer-events-none absolute left-1/2 top-1/2 z-30 h-0 w-0 ${aim ? 'text-primary' : 'text-foreground'}`}
+      // A hit turns it red for a moment (data-hit, set by the game loop)
+      className={`pointer-events-none absolute left-1/2 top-1/2 z-30 h-0 w-0 ${aim ? 'text-primary' : 'text-foreground'} data-[hit=true]:text-danger`}
     >
+      {/* The hit marker: four ticks round the center, flashed on a kill */}
+      <svg
+        ref={hitMarkerRef}
+        viewBox='0 0 32 32'
+        fill='none'
+        className='absolute -left-5 -top-5 h-10 w-10 text-danger opacity-0'
+      >
+        {[
+          ['stroke-background', 5],
+          ['', 2.5],
+        ].map(([outline, width]) => (
+          <path
+            key={width}
+            className={outline}
+            stroke='currentColor'
+            strokeWidth={width}
+            strokeLinecap='round'
+            d='M7 7l5 5M25 7l-5 5M7 25l5-5M25 25l-5-5'
+          />
+        ))}
+      </svg>
       {aim ? (
         <svg viewBox='0 0 32 32' fill='none' className='absolute -left-4 -top-4 h-8 w-8'>
           {[
@@ -203,6 +313,7 @@ export const GameHud = ({
       <p className='font-mono text-sm font-bold uppercase tracking-wider text-primary-400'>
         {t('demos.game.weapons')[weapon]}
       </p>
+      <p className='text-xs text-foreground'>{t('demos.game.weaponRoles')[weapon]}</p>
       <Meter label={t('demos.game.energy')} barRef={energyBar} tone='bg-info' />
       <Meter label={t('demos.game.integrity')} barRef={integrityBar} tone='bg-success' />
     </div>
@@ -225,6 +336,16 @@ export const GameHud = ({
         </p>
       )}
     </div>
+
+    {/* A Memory Leak close by: announced once by the view; this is the picture of it */}
+    {slowed && (
+      <p
+        aria-hidden='true'
+        className={`pointer-events-none absolute bottom-12 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-lg ${SOLID} border-secondary px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider text-foreground`}
+      >
+        {t('demos.game.slowed')}
+      </p>
+    )}
 
     {access && (
       // Announced through the view's status region; this is the picture of it
@@ -287,14 +408,17 @@ export const GameHud = ({
         className={`h-11 rounded-xl ${GLASS} px-3`}
       />
       <ContrastToggle t={t} contrast={contrast} onContrast={onContrast} className={HUD_BUTTON} />
-      <button type='button' onClick={onExit} className={HUD_BUTTON}>
-        {t('demos.game.exit')}
+      <button type='button' onClick={onPause} className={HUD_BUTTON}>
+        {t('demos.game.pauseButton')}
         <kbd
           aria-hidden='true'
           className='rounded border border-line-strong px-1.5 font-mono text-xs'
         >
           {t('demos.game.escKey')}
         </kbd>
+      </button>
+      <button type='button' onClick={onExit} className={HUD_BUTTON}>
+        {t('demos.game.exit')}
       </button>
     </div>
   </>
@@ -357,14 +481,16 @@ const MissionTracker = ({ t, sections }) => {
 };
 
 /**
- * Every section read: the mission's end, a dialog over the paused game with the time it took,
- * the threats neutralized, and the ways to get in touch
+ * Every section read, or every threat neutralized: the mission's end, a dialog over the paused
+ * game with the time it took, the threats neutralized, the accuracy, and the ways to get in touch
  */
 export const MissionComplete = ({
   t,
+  body,
   time,
   kills,
   threats,
+  accuracy,
   resume,
   github,
   onContact,
@@ -397,7 +523,7 @@ export const MissionComplete = ({
         >
           {t('demos.game.mission.title')}
         </h2>
-        <p className='mt-4 leading-relaxed'>{t('demos.game.mission.body')}</p>
+        <p className='mt-4 leading-relaxed'>{body}</p>
         <dl className='mx-auto mt-4 grid max-w-xs grid-cols-2 gap-x-4 gap-y-1 text-left font-mono text-sm'>
           <dt>{t('demos.game.mission.time')}</dt>
           <dd className='text-right tabular-nums'>{time}</dd>
@@ -405,6 +531,8 @@ export const MissionComplete = ({
           <dd className='text-right tabular-nums'>
             {kills} / {threats}
           </dd>
+          <dt>{t('demos.game.mission.accuracy')}</dt>
+          <dd className='text-right tabular-nums'>{accuracy}</dd>
         </dl>
         <div className='mt-6 flex flex-col gap-3'>
           <button
@@ -428,6 +556,139 @@ export const MissionComplete = ({
           </a>
           <button type='button' onClick={close} className={`${styles.buttonGhost} justify-center`}>
             {t('demos.game.mission.keepExploring')}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+/**
+ * Escape during play: a dialog over the frozen game. Resume (or Escape again), Restart (a fresh
+ * run), Exit to the main menu, and the settings
+ */
+export const PauseMenu = ({ t, onResume, onRestart, onMenu, settings }) => {
+  const titleId = useId();
+  const { overlayRef, panelRef, close, release, onKeyDown, backdrop } = useModalDialog(onResume);
+  const resume = useRef(null);
+
+  useEffect(() => {
+    resume.current?.focus();
+  }, []);
+  // Restart and the main menu remount the game: the page is let go first
+  const leave = (action) => () => {
+    release();
+    action();
+  };
+
+  return createPortal(
+    <div ref={overlayRef} className='fixed inset-0 z-[70] flex bg-background/70 p-4' {...backdrop}>
+      <div
+        ref={panelRef}
+        role='dialog'
+        aria-modal='true'
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
+        className='card-glass m-auto max-h-full w-full max-w-md overflow-y-auto p-6 shadow-2xl outline-none'
+      >
+        <h2
+          id={titleId}
+          className='font-mono text-3xl font-black uppercase tracking-widest text-foreground'
+        >
+          {t('demos.game.pause.title')}
+        </h2>
+        <div className='mt-5 space-y-3'>
+          <button
+            ref={resume}
+            type='button'
+            onClick={close}
+            className={`${styles.buttonPrimary} ${MENU_BUTTON}`}
+          >
+            {t('demos.game.pause.resume')}
+          </button>
+          <button
+            type='button'
+            onClick={leave(onRestart)}
+            className={`${styles.buttonGhost} ${MENU_BUTTON}`}
+          >
+            {t('demos.game.pause.restart')}
+          </button>
+          <button
+            type='button'
+            onClick={leave(onMenu)}
+            className={`${styles.buttonGhost} ${MENU_BUTTON}`}
+          >
+            {t('demos.game.pause.toMenu')}
+          </button>
+        </div>
+        <GameSettings t={t} {...settings} headingLevel='h3' />
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+/**
+ * Integrity at zero: an alert dialog over the stopped game. Reboot (or Escape) respawns in the
+ * first room with full integrity, the mission's progress kept; or back to the main menu
+ */
+export const SystemFailure = ({ t, onReboot, onMenu }) => {
+  const titleId = useId();
+  const bodyId = useId();
+  const { overlayRef, panelRef, close, release, onKeyDown } = useModalDialog(onReboot);
+  const reboot = useRef(null);
+
+  useEffect(() => {
+    reboot.current?.focus();
+  }, []);
+
+  return createPortal(
+    <div ref={overlayRef} className='fixed inset-0 z-[70] flex bg-background/80 p-4'>
+      <div
+        ref={panelRef}
+        role='alertdialog'
+        aria-modal='true'
+        aria-labelledby={titleId}
+        aria-describedby={bodyId}
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
+        className='m-auto max-h-full w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-danger bg-background p-6 text-center text-foreground shadow-2xl outline-none motion-safe:animate-crt-in'
+      >
+        <h2
+          id={titleId}
+          className='font-mono text-3xl font-black uppercase tracking-widest text-danger'
+        >
+          {t('demos.game.failure.title')}
+        </h2>
+        <p
+          aria-hidden='true'
+          className='mt-3 font-mono text-sm uppercase tracking-wider text-foreground'
+        >
+          {t('demos.game.integrity')}: 0%
+        </p>
+        <p id={bodyId} className='mt-4 leading-relaxed'>
+          {t('demos.game.failure.body')}
+        </p>
+        <div className='mt-6 flex flex-col gap-3'>
+          <button
+            ref={reboot}
+            type='button'
+            onClick={close}
+            className={`${styles.buttonPrimary} ${MENU_BUTTON}`}
+          >
+            {t('demos.game.failure.reboot')}
+          </button>
+          <button
+            type='button'
+            onClick={() => {
+              release();
+              onMenu();
+            }}
+            className={`${styles.buttonGhost} ${MENU_BUTTON}`}
+          >
+            {t('demos.game.pause.toMenu')}
           </button>
         </div>
       </div>
@@ -554,8 +815,6 @@ export const GameInfo = ({ t, title, kicker, detail = {}, onClose, closeLabel, c
   );
 };
 
-const MENU_BUTTON = 'w-full justify-center font-mono uppercase tracking-widest';
-
 /**
  * Game Mode's main menu, over the paused view: Play (the story, then start), Info / Controls and
  * Exit, with the text-only portfolio offered first for anyone who would rather skip the game.
@@ -572,21 +831,24 @@ export const MainMenu = ({
   onStartLook,
   onTextMode,
   onExit,
-  contrast,
-  onContrast,
-  volume,
-  onVolume,
+  settings,
+  focusOnMount = false,
 }) => {
   const panel = useRef(null);
   const previous = useRef(null);
-  const settingsId = useId();
   useEffect(() => {
     const from = previous.current;
     previous.current = screen;
-    // Not on the first render: the Game Mode dialog itself takes focus as it opens
-    if (from === null) return;
+    // Not on the first render (the Game Mode dialog itself takes focus as it opens), unless the
+    // menu is back from a run (Exit to main menu): then its heading, so it is read from the top
+    if (from === null) {
+      if (focusOnMount) panel.current?.querySelector('h3')?.focus();
+      return;
+    }
     const opener = screen === 'menu' && panel.current?.querySelector(`[data-screen=${from}]`);
     (opener || panel.current?.querySelector('h3'))?.focus();
+    // Per screen; focusOnMount is only read on the first one
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen]);
   const back = (
     <button
@@ -648,19 +910,8 @@ export const MainMenu = ({
                 </button>
               </li>
             </ul>
-            {/* Settings, before the game starts: high contrast and the master volume */}
-            <section aria-labelledby={settingsId} className='mt-5 border-t border-line pt-4'>
-              <h4 id={settingsId} className='text-sm font-semibold text-foreground-muted'>
-                {t('demos.game.settings')}
-              </h4>
-              <ContrastToggle
-                t={t}
-                contrast={contrast}
-                onContrast={onContrast}
-                className={`${styles.buttonGhost} mt-3 w-full justify-center gap-2`}
-              />
-              <VolumeSlider t={t} volume={volume} onVolume={onVolume} className='mt-3' />
-            </section>
+            {/* Settings, before the game starts */}
+            <GameSettings t={t} {...settings} />
           </>
         )}
         {screen === 'story' && (

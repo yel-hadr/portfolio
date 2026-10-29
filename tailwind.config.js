@@ -36,6 +36,7 @@ export default {
         success: token('success'), // form sent, operational status
         danger: token('danger'), // form errors, failed status
         info: token('info'), // tags
+        night: token('night'), // the dark background in both themes: FdF's file colors
         // Translucent fills over the waves (used with backdrop-blur, .card-glass) and hairlines
         // carry their own alpha, so they take no opacity modifier.
         glass: {

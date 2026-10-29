@@ -39,8 +39,9 @@ const Message = ({ id, role, children, actions }) => (
 
 /**
  * Game Mode: the cub3D world full screen as an FPS, with the HUD. It covers and inerts the page
- * (useModalDialog), and pauses the page's Canvas so there is still one WebGL context. Escape,
- * or the Exit button, fades back to the page; the caller restores focus. On phones it first
+ * (useModalDialog), and pauses the page's Canvas so there is still one WebGL context. Escape on
+ * the main menu, or the Exit button, fades back to the page (during play Escape pauses); the
+ * caller restores focus. On phones it first
  * says it is made for desktop, and lets the visitor play anyway.
  *
  * `view` is the game, the text-only mode, or a terminal's live demo. Leaving the game unmounts
@@ -64,6 +65,9 @@ const GameMode = ({ onClose }) => {
   const gateId = useId();
   const [view, setView] = useState('game');
   const saved = useRef(null);
+  // A fresh run (the pause menu's Restart, or back to the main menu) remounts the world: `key`
+  // counts the runs, `autostart` skips the main menu
+  const [run, setRun] = useState({ key: 0, autostart: false });
   // Where a demo returns to: the game or the text-only mode
   const from = useRef('game');
   // The last demo opened, so its button in the text-only mode takes focus back
@@ -155,6 +159,13 @@ const GameMode = ({ onClose }) => {
     saved.current = snapshot;
     lastDemo.current = null;
     setView('text');
+  };
+  const restart = (autostart) => {
+    saved.current = null;
+    setRun(({ key }) => ({ key: key + 1, autostart }));
+    // The old world's WebGL context goes first, as after a demo
+    setReturning(true);
+    requestAnimationFrame(() => panelRef.current?.focus());
   };
   const Demo = DEMOS[view];
 
@@ -254,6 +265,10 @@ const GameMode = ({ onClose }) => {
       >
         <Suspense fallback={loading}>
           <Cub3DWorld
+            key={run.key}
+            autostart={run.autostart}
+            rerun={run.key > 0}
+            onRestart={restart}
             t={t}
             technologies={TECH_NAMES}
             projects={projectNames}
