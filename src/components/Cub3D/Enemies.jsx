@@ -2,7 +2,6 @@ import { Suspense, memo, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import {
-  AdditiveBlending,
   BufferAttribute,
   BufferGeometry,
   CanvasTexture,
@@ -18,20 +17,21 @@ import { readTheme, rgb } from '../../utils/themeColors';
 import { ICON_Y, iconSpot } from './rooms';
 
 // Game Mode's layer inside the Canvas: the threats (one THREE.Sprite each, drifting toward the
-// player once in sight), their explosions, the Skills hall's floating tech icons, and the
-// per-frame weapon motion (bob, sway, recoil) and screen shake. The shared state lives in refs
-// owned by Cub3DWorld, so a kill or a shot never re-renders this tree.
+// player once in sight), the crew (NPC sprites), the weapons' particle effects, the Skills
+// hall's floating tech icons, and the per-frame weapon motion (bob, sway, recoil) and screen
+// shake. The shared state lives in refs owned by Cub3DWorld, so a shot never re-renders this tree.
 
 const SIGHT = 8; // cells: threats this close, and in line of sight, come for the player
 const SPEED = 0.6; // cells per second
 const STOP = 1.2; // cells: they hover this far away
 const BODY = 0.2; // collision radius, as the player's
-const BURST = 24; // particles per explosion
-const BURST_LIFE = 0.6; // seconds
+const FX_LIFE = 0.5; // seconds: every particle effect is freed after this
 // Each threat's theme color: DDoS in danger red, injection in violet
 const THREAT_COLORS = { ddos: 'danger', sql: 'secondary' };
+// The effects' colors: the rifle's blue trail, the pistol's green blocks, the blaster's orange
+const FX_COLORS = { trail: 'info', blocks: 'success', radial: 'primary' };
 
-// A pixel-art bug, 16x16 ('o' outline, 'X' body in the threat's color, 'e' eyes)
+// Pixel art, 16x16: 'o' outline, 'X' body in the sprite's color, 'e' eyes, 'h' head
 const BUG = [
   '....o......o....',
   '.....o....o.....',
@@ -50,17 +50,41 @@ const BUG = [
   '.o............o.',
   '................',
 ];
+const PERSON = [
+  '.....oooooo.....',
+  '....ohhhhhho....',
+  '....ohehhheo....',
+  '....ohhhhhho....',
+  '.....ohhhho.....',
+  '...ooXXXXXXoo...',
+  '..oXXXXXXXXXXo..',
+  '..oXoXXXXXXoXo..',
+  '..oXoXXXXXXoXo..',
+  '..oXoXXXXXXoXo..',
+  '...o.XXXXXX.o...',
+  '....oXXooXXo....',
+  '....oXXo.oXXo...',
+  '....oXXo.oXXo...',
+  '....ooo...ooo...',
+  '................',
+];
 
-// The sprite: the bug over its label, in theme colors
-const makeThreatTexture = (colors, color, label) => {
+// A sprite texture: the pixel art over its label, in theme colors
+const makeTexture = (art, colors, color, label) => {
   const canvas = document.createElement('canvas');
   canvas.width = 128;
   canvas.height = 160;
   const ctx = canvas.getContext('2d');
-  BUG.forEach((row, y) =>
+  const fills = {
+    o: colors.background,
+    X: colors[color],
+    e: colors.background,
+    h: colors.foreground,
+  };
+  art.forEach((row, y) =>
     [...row].forEach((c, x) => {
       if (c === '.') return;
-      ctx.fillStyle = rgb({ o: colors.background, X: colors[color], e: colors.foreground }[c]);
+      ctx.fillStyle = rgb(art === BUG && c === 'e' ? colors.foreground : fills[c]);
       ctx.fillRect(x * 8, y * 8, 8, 8);
     })
   );
@@ -82,66 +106,183 @@ const makeThreatTexture = (colors, color, label) => {
 // three's Color parses 'rgb(r,g,b)', not the 'R G B' channels the tokens hold
 const threeColor = (channels) => `rgb(${channels.split(' ').join(',')})`;
 
+// The particles of one effect: start positions and velocities (cells, cells per second)
+const PARTICLES = {
+  // A line of particles from the muzzle to the target, drifting apart
+  trail: (from, to) =>
+    Array.from({ length: 28 }, (_, i) => {
+      const f = i / 27;
+      return [
+        from[0] + (to[0] - from[0]) * f,
+        from[1] + (to[1] - from[1]) * f,
+        from[2] + (to[2] - from[2]) * f,
+        (Math.random() - 0.5) * 0.3,
+        (Math.random() - 0.5) * 0.3,
+        (Math.random() - 0.5) * 0.3,
+      ];
+    }),
+  // Square blocks thrown out and falling where the shot lands
+  blocks: (from, to) =>
+    Array.from({ length: 14 }, () => [
+      to[0],
+      to[1],
+      to[2],
+      (Math.random() - 0.5) * 1.6,
+      Math.random() * 1.6,
+      (Math.random() - 0.5) * 1.6,
+    ]),
+  // A ring flying out flat from the impact
+  radial: (from, to) =>
+    Array.from({ length: 32 }, (_, i) => {
+      const a = (i / 32) * Math.PI * 2;
+      return [
+        to[0],
+        to[1],
+        to[2],
+        Math.cos(a) * 2.2,
+        (Math.random() - 0.5) * 0.6,
+        Math.sin(a) * 2.2,
+      ];
+    }),
+};
+const FX_SIZE = { trail: 0.035, blocks: 0.08, radial: 0.06 };
+
 /**
- * The threats and their explosions. `fxRef.current.burst(enemy)` blows one up, with one pooled
- * particle burst per threat (made, and compiled, up front: no allocation or shader compile at
- * the moment of the shot)
+ * The weapons' particle effects. `fxRef.current.spawn(kind, from, to)` makes one (THREE.Points)
+ * that lives FX_LIFE seconds and is then disposed. The particle shader is compiled up front on a
+ * hidden copy, so the first shot does not stall
  */
-const Threats = ({ enemies, labels, solid, reduced, fxRef }) => {
+const Effects = ({ reduced, fxRef }) => {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
-  const time = useRef(0);
+  const live = useRef([]);
+  const colors = useMemo(() => {
+    const c = readTheme(Object.values(FX_COLORS));
+    return Object.fromEntries(Object.entries(FX_COLORS).map(([k, v]) => [k, threeColor(c[v])]));
+  }, []);
 
-  // GPU resources made here, so freed here (they are not R3F's)
-  const resources = useMemo(() => {
-    const colors = readTheme(['background', 'foreground', ...Object.values(THREAT_COLORS)]);
-    const materials = Object.fromEntries(
-      Object.entries(THREAT_COLORS).map(([type, color]) => [
-        type,
-        new SpriteMaterial({ map: makeThreatTexture(colors, color, labels[type]) }),
-      ])
+  const make = (kind, particles) => {
+    const geometry = new BufferGeometry();
+    geometry.setAttribute(
+      'position',
+      new BufferAttribute(new Float32Array(particles.flatMap((p) => p.slice(0, 3))), 3)
     );
-    const pool = enemies.current.map(({ type }) => {
-      const geometry = new BufferGeometry();
-      geometry.setAttribute('position', new BufferAttribute(new Float32Array(BURST * 3), 3));
-      const points = new Points(
-        geometry,
-        new PointsMaterial({
-          color: threeColor(colors[THREAT_COLORS[type]]),
-          size: 0.07,
-          transparent: true,
-          depthWrite: false,
-          blending: AdditiveBlending,
-        })
-      );
-      points.visible = false;
-      // Its particles fly out from one point: no bounding sphere to cull by
-      points.frustumCulled = false;
-      return { points, velocities: new Float32Array(BURST * 3), age: BURST_LIFE };
-    });
-    return { materials, pool };
-    // The threats are fixed (rooms.js); labels change with the language
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [labels]);
+    const points = new Points(
+      geometry,
+      new PointsMaterial({
+        color: colors[kind],
+        size: FX_SIZE[kind],
+        transparent: true,
+        depthWrite: false,
+      })
+    );
+    // Its particles fly out from one place: no bounding sphere to cull by
+    points.frustumCulled = false;
+    return points;
+  };
+  const free = (points) => {
+    scene.remove(points);
+    points.geometry.dispose();
+    points.material.dispose();
+  };
 
   useEffect(() => {
-    const { materials, pool } = resources;
-    pool.forEach(({ points }) => scene.add(points));
-    // Compile every program now (three compiles invisible objects too), not on the first kill
+    // The program every effect uses, compiled now on a hidden copy kept until unmount
+    const warm = make('radial', PARTICLES.radial([0, 0, 0], [0, -10, 0]));
+    warm.visible = false;
+    scene.add(warm);
     gl.compile(scene, camera);
+    fxRef.current = {
+      spawn: (kind, from, to) => {
+        // Reduced motion: no flying particles
+        if (reduced) return;
+        const particles = PARTICLES[kind](from, to);
+        const points = make(kind, particles);
+        scene.add(points);
+        live.current.push({
+          points,
+          velocities: new Float32Array(particles.flatMap((p) => p.slice(3))),
+          gravity: kind === 'blocks' ? 3 : 0,
+          age: 0,
+        });
+      },
+    };
+    const effects = live.current;
     return () => {
+      fxRef.current = null;
+      free(warm);
+      effects.forEach(({ points }) => free(points));
+      effects.length = 0;
+    };
+    // The effects' colors are read once; the scene, renderer and camera are the Canvas's own
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fxRef, reduced, scene, gl, camera]);
+
+  useFrame((state, delta) => {
+    const effects = live.current;
+    if (!effects.length) return;
+    const dt = Math.min(delta, 0.1);
+    // In place: freed once FX_LIFE is up
+    let kept = 0;
+    effects.forEach((fx) => {
+      fx.age += dt;
+      if (fx.age >= FX_LIFE) {
+        free(fx.points);
+        return;
+      }
+      const pos = fx.points.geometry.attributes.position;
+      const v = fx.velocities;
+      for (let i = 0; i < pos.count; i += 1) {
+        v[i * 3 + 1] -= fx.gravity * dt;
+        pos.array[i * 3] += v[i * 3] * dt;
+        pos.array[i * 3 + 1] += v[i * 3 + 1] * dt;
+        pos.array[i * 3 + 2] += v[i * 3 + 2] * dt;
+      }
+      pos.needsUpdate = true;
+      fx.points.material.opacity = 1 - fx.age / FX_LIFE;
+      effects[kept] = fx;
+      kept += 1;
+    });
+    effects.length = kept;
+  }, -1);
+  return null;
+};
+
+/**
+ * The threats and the crew. Threats drift toward the player once in sight, unless `paused` (a
+ * dialogue is open) or motion is reduced; the crew stand where rooms.js puts them
+ */
+const Sprites = ({ enemies, npcs, labels, solid, reduced, paused }) => {
+  const time = useRef(0);
+
+  // GPU resources made here, so freed here (they are not R3F's). One material per threat type,
+  // shared by every threat of that type
+  const materials = useMemo(() => {
+    const colors = readTheme([
+      'background',
+      'foreground',
+      ...new Set([...Object.values(THREAT_COLORS), ...npcs.current.map((n) => n.color)]),
+    ]);
+    const made = {};
+    Object.entries(THREAT_COLORS).forEach(([type, color]) => {
+      made[type] = new SpriteMaterial({ map: makeTexture(BUG, colors, color, labels[type]) });
+    });
+    npcs.current.forEach(({ id, color }) => {
+      made[id] = new SpriteMaterial({ map: makeTexture(PERSON, colors, color, labels[id]) });
+    });
+    return made;
+    // The crew are fixed (rooms.js); labels change with the language
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [labels]);
+  useEffect(
+    () => () =>
       Object.values(materials).forEach((m) => {
         m.map.dispose();
         m.dispose();
-      });
-      pool.forEach(({ points }) => {
-        scene.remove(points);
-        points.geometry.dispose();
-        points.material.dispose();
-      });
-    };
-  }, [resources, scene, gl, camera]);
+      }),
+    [materials]
+  );
 
   const blocked = (x, z) => solid(Math.floor(x), Math.floor(z));
   const free = (x, z) =>
@@ -157,30 +298,8 @@ const Threats = ({ enemies, labels, solid, reduced, fxRef }) => {
     return true;
   };
 
-  useEffect(() => {
-    fxRef.current = {
-      burst: (enemy) => {
-        // Reduced motion: the threat just goes, with no flying particles
-        if (reduced) return;
-        const burst = resources.pool[enemies.current.indexOf(enemy)];
-        if (!burst) return;
-        const pos = burst.points.geometry.attributes.position;
-        for (let i = 0; i < BURST; i += 1) {
-          pos.setXYZ(i, enemy.x, 0.5, enemy.z);
-          const a = (i / BURST) * Math.PI * 2;
-          burst.velocities.set([Math.cos(a) * 1.2, Math.random() * 1.4, Math.sin(a) * 1.2], i * 3);
-        }
-        pos.needsUpdate = true;
-        burst.age = 0;
-        burst.points.visible = true;
-      },
-    };
-    return () => {
-      fxRef.current = null;
-    };
-  }, [fxRef, resources, reduced, enemies]);
-
   useFrame((state, delta) => {
+    if (paused.current) return;
     const dt = Math.min(delta, 0.1);
     const { x: px, z: pz } = state.camera.position;
     // Its own clock: R3F's restarts at 0 whenever the frame loop mode changes
@@ -202,40 +321,33 @@ const Threats = ({ enemies, labels, solid, reduced, fxRef }) => {
       const y = reduced ? 0.5 : 0.5 + Math.sin(time.current * 2 + i) * 0.05;
       sprite.position.set(enemy.x, y, enemy.z);
     });
-    // Explosions: particles fly out, fall and fade
-    resources.pool.forEach((burst) => {
-      if (burst.age >= BURST_LIFE) return;
-      burst.age += dt;
-      if (burst.age >= BURST_LIFE) {
-        burst.points.visible = false;
-        return;
-      }
-      const pos = burst.points.geometry.attributes.position;
-      const v = burst.velocities;
-      for (let i = 0; i < BURST; i += 1) {
-        v[i * 3 + 1] -= 2.5 * dt;
-        pos.array[i * 3] += v[i * 3] * dt;
-        pos.array[i * 3 + 1] += v[i * 3 + 1] * dt;
-        pos.array[i * 3 + 2] += v[i * 3 + 2] * dt;
-      }
-      pos.needsUpdate = true;
-      burst.points.material.opacity = 1 - burst.age / BURST_LIFE;
-    });
   }, -1);
 
-  return enemies.current.map((enemy) => (
-    <sprite
-      key={enemy.id}
-      // An enemy's `sprite` lets a kill hide it without a render
-      ref={(el) => {
-        enemy.sprite = el;
-      }}
-      material={resources.materials[enemy.type]}
-      position={[enemy.x, 0.5, enemy.z]}
-      scale={[0.5, 0.625, 1]}
-      visible={enemy.alive}
-    />
-  ));
+  return (
+    <>
+      {enemies.current.map((enemy) => (
+        <sprite
+          key={enemy.id}
+          // An enemy's `sprite` lets a kill hide it without a render
+          ref={(el) => {
+            enemy.sprite = el;
+          }}
+          material={materials[enemy.type]}
+          position={[enemy.x, 0.5, enemy.z]}
+          scale={[0.5, 0.625, 1]}
+          visible={enemy.alive}
+        />
+      ))}
+      {npcs.current.map((npc) => (
+        <sprite
+          key={npc.id}
+          material={materials[npc.id]}
+          position={[npc.x, 0.42, npc.z]}
+          scale={[0.55, 0.69, 1]}
+        />
+      ))}
+    </>
+  );
 };
 
 /** The Skills hall's tech icons, floating; they load on their own, after the world */
@@ -268,7 +380,8 @@ const TechIcons = ({ icons, reduced }) => {
 /**
  * Per frame: the weapon's bob (from the distance walked), sway (behind the turning) and recoil,
  * written as one transform, plus a short screen shake after a shot. `motion` is shared with
- * Cub3DWorld: it sets `recoil` and `shake` to 1 on a shot. Then `onTick` (the aim)
+ * Cub3DWorld: a shot sets `recoil` and `shake` (each weapon its own amount). Then
+ * `onTick(camera, dt)`: the aim, the radar and automatic fire
  */
 const GameMotion = ({ weaponRef, motion, reduced, onTick }) => {
   // Seeded from the camera on the first frame, so the start (or a return) is not a jolt
@@ -321,7 +434,7 @@ const GameMotion = ({ weaponRef, motion, reduced, onTick }) => {
       camera.rotation.x = 0;
       camera.rotation.z = 0;
     }
-    onTick(camera);
+    onTick(camera, dt);
   }, -1);
   return null;
 };
@@ -332,10 +445,12 @@ const GameMotion = ({ weaponRef, motion, reduced, onTick }) => {
  */
 export const GameLayer = memo(function GameLayer({
   enemies,
+  npcs,
   labels,
   icons,
   solid,
   reduced,
+  paused,
   fxRef,
   weaponRef,
   motion,
@@ -343,7 +458,15 @@ export const GameLayer = memo(function GameLayer({
 }) {
   return (
     <>
-      <Threats enemies={enemies} labels={labels} solid={solid} reduced={reduced} fxRef={fxRef} />
+      <Sprites
+        enemies={enemies}
+        npcs={npcs}
+        labels={labels}
+        solid={solid}
+        reduced={reduced}
+        paused={paused}
+      />
+      <Effects reduced={reduced} fxRef={fxRef} />
       {icons && (
         <Suspense fallback={null}>
           <TechIcons icons={icons} reduced={reduced} />

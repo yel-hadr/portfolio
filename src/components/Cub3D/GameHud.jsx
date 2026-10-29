@@ -1,4 +1,4 @@
-import { memo, useEffect, useId } from 'react';
+import { memo, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useModalDialog } from '../../hooks/useModalDialog';
@@ -328,5 +328,225 @@ export const GameInfo = ({ t, title, detail = {}, onClose, closeLabel, children 
       </div>
     </div>,
     document.body
+  );
+};
+
+const MENU_BUTTON = 'w-full justify-center font-mono uppercase tracking-widest';
+
+/**
+ * Game Mode's main menu, over the paused view: Play (the story, then start), Info / Controls and
+ * Exit, with the text-only portfolio offered first for anyone who would rather skip the game.
+ * A new screen moves focus to its heading, so it is read from the top; Back returns it to the
+ * button that opened the screen
+ */
+export const MainMenu = ({
+  t,
+  screen,
+  onScreen,
+  keys,
+  lockable,
+  onStart,
+  onStartLook,
+  onTextMode,
+  onExit,
+}) => {
+  const panel = useRef(null);
+  const previous = useRef(null);
+  useEffect(() => {
+    const from = previous.current;
+    previous.current = screen;
+    // Not on the first render: the Game Mode dialog itself takes focus as it opens
+    if (from === null) return;
+    const opener = screen === 'menu' && panel.current?.querySelector(`[data-screen=${from}]`);
+    (opener || panel.current?.querySelector('h3'))?.focus();
+  }, [screen]);
+  const back = (
+    <button
+      type='button'
+      onClick={() => onScreen('menu')}
+      className={`${styles.buttonGhost} ${MENU_BUTTON}`}
+    >
+      {t('demos.game.menu.back')}
+    </button>
+  );
+
+  return (
+    // Scrolls on short or zoomed screens, so every button stays reachable
+    <div className='absolute inset-0 z-40 flex overflow-y-auto bg-background/70 p-4 backdrop-blur-sm'>
+      <div ref={panel} className='card-glass m-auto w-full max-w-md p-6 shadow-xl'>
+        {screen === 'menu' && (
+          <>
+            <h3
+              tabIndex={-1}
+              className='font-mono text-3xl font-black uppercase tracking-widest text-foreground outline-none'
+            >
+              {t('demos.game.title')}
+            </h3>
+            <button
+              type='button'
+              onClick={onTextMode}
+              className={`${styles.buttonGhost} mt-5 w-full justify-center`}
+            >
+              {t('demos.game.menu.skip')}
+            </button>
+            <ul aria-label={t('demos.game.menu.label')} className='mt-5 space-y-3'>
+              <li>
+                <button
+                  type='button'
+                  data-screen='story'
+                  onClick={() => onScreen('story')}
+                  className={`${styles.buttonPrimary} ${MENU_BUTTON}`}
+                >
+                  {t('demos.game.menu.play')}
+                </button>
+              </li>
+              <li>
+                <button
+                  type='button'
+                  data-screen='info'
+                  onClick={() => onScreen('info')}
+                  className={`${styles.buttonGhost} ${MENU_BUTTON}`}
+                >
+                  {t('demos.game.menu.info')}
+                </button>
+              </li>
+              <li>
+                <button
+                  type='button'
+                  onClick={onExit}
+                  className={`${styles.buttonGhost} ${MENU_BUTTON}`}
+                >
+                  {t('demos.game.menu.exit')}
+                </button>
+              </li>
+            </ul>
+          </>
+        )}
+        {screen === 'story' && (
+          <>
+            <h3
+              tabIndex={-1}
+              className='font-mono text-2xl font-black uppercase tracking-widest text-primary-400 outline-none'
+            >
+              {t('demos.game.storyTitle')}
+            </h3>
+            <p className='mt-4 leading-relaxed text-foreground'>{t('demos.game.story')}</p>
+            <div className='mt-6 space-y-3'>
+              {lockable && (
+                <button
+                  type='button'
+                  onClick={onStartLook}
+                  className={`${styles.buttonPrimary} ${MENU_BUTTON}`}
+                >
+                  {t('demos.cub3d.welcome.startLook')}
+                </button>
+              )}
+              <button
+                type='button'
+                onClick={onStart}
+                className={`${lockable ? styles.buttonGhost : styles.buttonPrimary} ${MENU_BUTTON}`}
+              >
+                {t('demos.cub3d.welcome.start')}
+              </button>
+              {back}
+            </div>
+          </>
+        )}
+        {screen === 'info' && (
+          <>
+            <h3
+              tabIndex={-1}
+              className='font-mono text-2xl font-black uppercase tracking-widest text-foreground outline-none'
+            >
+              {t('demos.game.menu.info')}
+            </h3>
+            <ul className='mt-4 space-y-2 text-sm leading-relaxed text-foreground'>
+              {keys.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+            <div className='mt-6'>{back}</div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * A crew member's line, typed out at the bottom of the view like an RPG (all at once with reduced
+ * motion). Screen readers get the whole line at once. E or Escape closes it, and the threats
+ * resume
+ */
+export const NpcDialogue = ({ t, name, line, reduced, onClose }) => {
+  const titleId = useId();
+  const lineId = useId();
+  const box = useRef(null);
+  const button = useRef(null);
+  const [shown, setShown] = useState(reduced ? line.length : 0);
+
+  useEffect(() => {
+    box.current?.focus();
+  }, []);
+  useEffect(() => {
+    if (reduced) {
+      setShown(line.length);
+      return undefined;
+    }
+    setShown(0);
+    const timer = window.setInterval(() => {
+      setShown((n) => {
+        if (n >= line.length) window.clearInterval(timer);
+        return Math.min(n + 1, line.length);
+      });
+    }, 28);
+    return () => window.clearInterval(timer);
+  }, [line, reduced]);
+
+  const onKeyDown = (e) => {
+    // Keys stay here: Escape closes this, not Game Mode. A held E does not close the line it
+    // just opened
+    e.stopPropagation();
+    if (e.repeat) return;
+    if (e.key === 'Escape' || e.code === 'KeyE') {
+      e.preventDefault();
+      onClose();
+    } else if (e.key === 'Tab') {
+      // Its one control: the close button
+      e.preventDefault();
+      button.current?.focus();
+    }
+  };
+
+  return (
+    <div
+      ref={box}
+      role='dialog'
+      aria-modal='true'
+      aria-labelledby={titleId}
+      aria-describedby={lineId}
+      tabIndex={-1}
+      onKeyDown={onKeyDown}
+      className='absolute inset-x-3 bottom-12 z-[45] mx-auto max-w-2xl rounded-2xl border-2 border-primary-400 bg-background p-4 text-foreground shadow-2xl outline-none'
+    >
+      <p
+        id={titleId}
+        className='font-mono text-sm font-bold uppercase tracking-wider text-primary-400'
+      >
+        {name}
+      </p>
+      <p className='mt-2 min-h-14 leading-relaxed'>
+        <span id={lineId} className='sr-only'>
+          {line}
+        </span>
+        <span aria-hidden='true'>{line.slice(0, shown)}</span>
+      </p>
+      <div className='mt-2 flex flex-wrap items-center justify-between gap-3'>
+        <span className='text-sm text-foreground-muted'>{t('demos.game.dialogueClose')}</span>
+        <button ref={button} type='button' onClick={onClose} className={HUD_BUTTON}>
+          {t('demos.game.closeDialog')}
+        </button>
+      </div>
+    </div>
   );
 };

@@ -13,6 +13,7 @@ import { Html, PointerLockControls } from '@react-three/drei';
 import {
   BoxGeometry,
   CanvasTexture,
+  MathUtils,
   MeshBasicMaterial,
   NearestFilter,
   Object3D,
@@ -26,9 +27,9 @@ import { readTheme, rgb } from '../../utils/themeColors';
 import ContactForm from '../ContactForm';
 import ReleaseContext from '../canvas/ReleaseContext';
 import { GameLayer } from './Enemies';
-import { GameHud, GameInfo } from './GameHud';
+import { GameHud, GameInfo, MainMenu, NpcDialogue } from './GameHud';
 import { MAP_CUB, parseCub } from './map';
-import { ENEMIES, GAME_PANELS, WEAPON_COUNT, roomAt } from './rooms';
+import { ENEMIES, GAME_DOORS, GAME_PANELS, NPCS, WEAPON_COUNT, WEAPON_FX, roomAt } from './rooms';
 
 // A web homage to cub3D: the project's own map.cub as a first-person maze. The original casts
 // one ray per screen column; here three.js draws the walls as boxes, and the minimap shows the
@@ -46,6 +47,8 @@ const REDUCED_TURN = Math.PI / 4; // with reduced motion, each arrow press turns
 const RADIUS = 0.2; // how close the player gets to a wall
 const MINIMAP_CELL = 6; // px
 const MINIMAP_RAYS = 24;
+const RADAR_CELL = 9; // px: Game Mode's tactical radar draws the whole map larger
+const RADAR_CONE = 3; // cells: the length of the player's view cone on the radar
 // Distance shading: three.js fog on the walls, floor and ceiling, from FOG_NEAR to black at FOG_FAR
 const FOG_NEAR = 1.5;
 const FOG_FAR = 14;
@@ -53,6 +56,32 @@ const AIM_RANGE = 8; // cells: how far away a wall panel can be opened
 const AIM_RADIUS = 0.9; // cells from a panel's center that still count as aiming at it
 const STRIDE = 0.75; // cells walked per footstep sound
 const ENEMY_RADIUS = 0.25; // cells from a threat's center that still count as a hit
+const NPC_RADIUS = 0.3; // cells, the same for the crew
+const DOOR_LABEL_RANGE = 2.5;
+// The radar's legend: the same shapes as on the radar, so it does not rely on color alone
+const RADAR_LEGEND = [
+  {
+    key: 'you',
+    color: 'text-foreground',
+    shape: <circle cx='5' cy='5' r='4' fill='currentColor' />,
+  },
+  {
+    key: 'threats',
+    color: 'text-danger',
+    shape: <path d='M1.5 1.5l7 7m0-7l-7 7' stroke='currentColor' strokeWidth='2.5' />,
+  },
+  {
+    key: 'crew',
+    color: 'text-primary-400',
+    shape: <path d='M5 0l5 5-5 5-5-5z' fill='currentColor' />,
+  },
+  {
+    key: 'doors',
+    color: 'text-info',
+    shape: <rect x='1' y='1' width='8' height='8' fill='currentColor' />,
+  },
+]; // cells: how close a closed door shows where it leads
+const DOOR_REACH = [0.8, 1.6]; // cells ahead where E (or Space) finds a door
 const TOAST_MS = 8000; // long enough to read the fact (it is also in the text-only mode)
 // Canvas options, made once (R3F re-applies `gl` whenever it is a new object)
 const GAME_DPR = [1, 1.5];
@@ -195,8 +224,10 @@ const COLOR_NAMES = [
   'foreground',
 ];
 
+// Game Mode adds doors between its rooms (rooms.js) to map.cub's own
+const GAME_DOOR_CELLS = [...DOOR_CELLS, ...GAME_DOORS.map(([x, z]) => z * W + x)];
 // Every door starts closed: { [cell]: true while closed }
-const DOORS_CLOSED = Object.fromEntries(DOOR_CELLS.map((cell) => [cell, true]));
+const allClosed = (cells) => Object.fromEntries(cells.map((cell) => [cell, true]));
 
 // The panels on the walls of the large north-east room (map rows 1-4): position just off a wall
 // face, and the yaw that faces the room
@@ -208,12 +239,35 @@ const PANELS = [
 ];
 const PANEL_STEP = 0.1; // line-of-sight sampling, in cells
 
+// Where a closed door leads, floating on it. Announced as well, so hidden from assistive tech
+// here. Its own component: a new label does not re-render Scene and its panels' Html roots
+const DoorLabel = memo(function DoorLabel({ label }) {
+  if (!label) return null;
+  return (
+    <Html
+      key={label.cell}
+      center
+      position={[(label.cell % W) + 0.5, 0.85, Math.floor(label.cell / W) + 0.5]}
+      zIndexRange={[25, 0]}
+      pointerEvents='none'
+    >
+      <p
+        aria-hidden='true'
+        className='select-none text-nowrap rounded-md border-2 border-info bg-background/90 px-2 py-0.5 font-mono text-xs font-bold uppercase tracking-wider text-foreground'
+      >
+        {label.text}
+      </p>
+    </Html>
+  );
+});
+
 /** The world inside the Canvas: walls, door, floor and ceiling, movement and the panels */
 // Memoized: HUD state (the aimed wall, the open dialog) re-renders the HUD, not the 3D tree and
 // its four Html roots
 const Scene = memo(function Scene({
   input,
   solid,
+  doorCells,
   closedDoors,
   panels,
   onMove,
@@ -227,6 +281,9 @@ const Scene = memo(function Scene({
   const size = useThree((s) => s.size);
   const invalidate = useThree((s) => s.invalidate);
   const walls = useRef(null);
+  const doorMesh = useRef(null);
+  // Each door's height, eased between 1 (closed) and 0 (sunk into the floor)
+  const doorHeights = useRef({});
   const panelEls = useRef({});
   // The panels within fog range: only those are mounted (a transformed drei Html restyles itself
   // every frame, so far-off panels would cost DOM work for nothing)
@@ -342,8 +399,39 @@ const Scene = memo(function Scene({
     if (inRange !== last.near) {
       last.near = inRange;
       setNear(new Set(inRange.split(' ')));
+      // Panels mounted by this get their visibility on the next frame
+      last.x = NaN;
       invalidate();
     }
+  }, -1);
+
+  // Doors slide down into the floor as they open (and back up), unless motion is reduced; one
+  // instanced mesh for all of them, updated only while one moves
+  const dummy = useMemo(() => new Object3D(), []);
+  useFrame((state, delta) => {
+    const mesh = doorMesh.current;
+    if (!mesh) return;
+    let changed = false;
+    let moving = false;
+    doorCells.forEach((cell, i) => {
+      const target = closedDoors[cell] ? 1 : 0;
+      const now = doorHeights.current[cell];
+      let next =
+        now === undefined || reduced
+          ? target
+          : MathUtils.damp(now, target, 9, Math.min(delta, 1 / 30));
+      if (Math.abs(next - target) < 0.01) next = target;
+      if (next === now) return;
+      doorHeights.current[cell] = next;
+      dummy.position.set((cell % W) + 0.5, next / 2, Math.floor(cell / W) + 0.5);
+      dummy.scale.set(1, Math.max(next, 0.0001), 1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      changed = true;
+      moving ||= next !== target;
+    });
+    if (changed) mesh.instanceMatrix.needsUpdate = true;
+    if (moving) state.invalidate();
   }, -1);
 
   // Held keys move the player; demand mode renders only while something moves
@@ -395,15 +483,12 @@ const Scene = memo(function Scene({
     <>
       <fog attach='fog' args={[resources.fog, FOG_NEAR, FOG_FAR]} />
       <instancedMesh ref={walls} args={[resources.box, resources.wallMaterials, shell.length]} />
-      {DOOR_CELLS.map((cell) => (
-        <mesh
-          key={cell}
-          position={[(cell % W) + 0.5, 0.5, Math.floor(cell / W) + 0.5]}
-          geometry={resources.box}
-          material={resources.door}
-          visible={closedDoors[cell]}
-        />
-      ))}
+      <instancedMesh
+        ref={doorMesh}
+        args={[resources.box, resources.door, doorCells.length]}
+        // Its instances move: no bounding sphere to cull by
+        frustumCulled={false}
+      />
       {/* Flat floor and ceiling colors, the F and C lines of map.cub */}
       <mesh position={[W / 2, 0, H / 2]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[W + 2, H + 2]} />
@@ -420,6 +505,11 @@ const Scene = memo(function Scene({
             key={id}
             ref={(el) => {
               panelEls.current[id] = el;
+              // A panel just mounted gets its visibility (behind a wall or a door?) next frame
+              if (el) {
+                seen.current.x = NaN;
+                invalidate();
+              }
             }}
             transform
             position={position}
@@ -491,9 +581,10 @@ const castRay = (x, z, angle, solid) => {
   return [x + dx * dist, z + dz * dist];
 };
 
-// What is in the crosshair: the nearest live threat on the view's center line, closer than the
-// wall it meets, else the panel hanging where that line meets the wall. Returns an id or null
-const aimAt = (camera, solid, panels, enemies) => {
+// What is in the crosshair: the nearest live threat or crew member on the view's center line,
+// closer than the wall it meets, else the panel hanging where that line meets the wall. Returns
+// an id or null
+const aimAt = (camera, solid, panels, enemies, npcs = []) => {
   const { x, z } = camera.position;
   const yaw = camera.rotation.y;
   const [hx, hz] = castRay(x, z, yaw, solid);
@@ -502,21 +593,44 @@ const aimAt = (camera, solid, panels, enemies) => {
   const dz = -Math.cos(yaw);
   let hit = null;
   let nearest = Math.min(wall, AIM_RANGE);
-  enemies.forEach((enemy) => {
-    const ex = enemy.x - x;
-    const ez = enemy.z - z;
+  const consider = (thing, radius) => {
+    const ex = thing.x - x;
+    const ez = thing.z - z;
     const along = ex * dx + ez * dz;
-    if (!enemy.alive || along <= 0 || along >= nearest) return;
-    if (Math.abs(ex * dz - ez * dx) < ENEMY_RADIUS) {
-      hit = enemy.id;
-      nearest = along;
-    }
-  });
+    if (along <= 0 || along >= nearest || Math.abs(ex * dz - ez * dx) >= radius) return;
+    hit = thing.id;
+    nearest = along;
+  };
+  enemies.forEach((enemy) => enemy.alive && consider(enemy, ENEMY_RADIUS));
+  npcs.forEach((npc) => consider(npc, NPC_RADIUS));
   if (hit || wall > AIM_RANGE) return hit;
   const panel = panels.find(
     ({ position: [px, , pz] }) => Math.hypot(hx - px, hz - pz) < AIM_RADIUS
   );
   return panel ? panel.id : null;
+};
+
+// Clear grid line of sight between two points (cells), stepping 0.1 cell
+const clearLine = (x, z, tx, tz, solid) => {
+  const steps = Math.ceil(Math.hypot(tx - x, tz - z) / 0.1);
+  for (let i = 1; i < steps; i += 1) {
+    if (solid(Math.floor(x + ((tx - x) * i) / steps), Math.floor(z + ((tz - z) * i) / steps)))
+      return false;
+  }
+  return true;
+};
+// The blaster's cone: every live threat within `cone` radians of the view and `range` cells, in
+// line of sight
+const inCone = (camera, enemies, solid, { cone, range }) => {
+  const { x, z } = camera.position;
+  const yaw = camera.rotation.y;
+  return enemies.filter((enemy) => {
+    if (!enemy.alive) return false;
+    const d = Math.hypot(enemy.x - x, enemy.z - z);
+    const bearing = Math.atan2(-(enemy.x - x), -(enemy.z - z));
+    const off = Math.abs(MathUtils.euclideanModulo(bearing - yaw + Math.PI, 2 * Math.PI) - Math.PI);
+    return d < range && off < cone && clearLine(x, z, enemy.x, enemy.z, solid);
+  });
 };
 
 const HEADINGS = ['north', 'west', 'south', 'east'];
@@ -538,13 +652,30 @@ const TOUCH_BUTTON = `inline-flex h-12 w-12 select-none items-center justify-cen
 const KIND = Object.fromEntries(GAME_PANELS.map(({ id, kind }) => [id, kind]));
 const panelTitle = (t, id) =>
   t(KIND[id] === 'info' || !KIND[id] ? `demos.cub3d.panels.${id}` : `demos.game.panels.${id}`);
-// What the crosshair is on (a threat or a panel id), as the HUD shows and announces it
+const NPC_IDS = new Set(NPCS.map(({ id }) => id));
+// What the crosshair is on (a threat, a crew member or a panel id), as the HUD shows and
+// announces it
 const aimText = (t, enemies, id) => {
   const enemy = enemies.find((e) => e.id === id);
-  return enemy
-    ? t('demos.game.aimEnemy', { name: t(`demos.game.enemies.${enemy.type}`) })
-    : t('demos.game.aim', { name: panelTitle(t, id) });
+  if (enemy) return t('demos.game.aimEnemy', { name: t(`demos.game.enemies.${enemy.type}`) });
+  if (NPC_IDS.has(id)) return t('demos.game.aimNpc', { name: t(`demos.game.npcs.${id}.name`) });
+  return t('demos.game.aim', { name: panelTitle(t, id) });
 };
+// The rooms on either side of each door; one joining two rooms gets a title (where it leads)
+const DOOR_ROOMS = new Map(
+  GAME_DOOR_CELLS.map((cell) => {
+    const x = cell % W;
+    const z = Math.floor(cell / W);
+    const sides = [
+      [x + 1, z],
+      [x - 1, z],
+      [x, z + 1],
+      [x, z - 1],
+    ].filter(([sx, sz]) => isFloor(sx, sz));
+    const rooms = new Set(sides.map(([sx, sz]) => roomAt(sx + 0.5, sz + 0.5)).filter(Boolean));
+    return [cell, [...rooms]];
+  })
+);
 
 /**
  * The cub3D demo: the canvas, minimap, HUD, welcome card and touch controls. In Game Mode
@@ -572,6 +703,8 @@ const Cub3DWorld = ({
   if (touch) keysKey = 'demos.cub3d.welcome.keysTouch';
   else if (game) keysKey = 'demos.game.keys';
   const [started, setStarted] = useState(!!initialState);
+  // Game Mode's main menu: 'menu', 'story' (Play) or 'info'
+  const [screen, setScreen] = useState('menu');
   // For the frame loop's aim: nothing is announced while the briefing covers the view
   const startedRef = useRef(started);
   startedRef.current = started;
@@ -580,10 +713,19 @@ const Cub3DWorld = ({
   const wrapperRef = useRef(null);
   const minimapRef = useRef(null);
   const staticLayer = useRef(null);
+  const radarRef = useRef(null);
+  const radarLayer = useRef(null);
+  const radarDue = useRef(0);
+  // The radar shows from the sm breakpoint
+  const radarShown = useRef(true);
+  const wideEnough = useMediaQuery('(min-width: 640px)');
+  radarShown.current = wideEnough;
   const lockRef = useRef(null);
   const input = useRef(new Set());
-  // Door state: React state to draw the door meshes, mirrored in a ref for the movement loop
-  const [closedDoors, setClosedDoors] = useState(initialState?.doors ?? DOORS_CLOSED);
+  // Door state: React state to draw the door meshes, mirrored in a ref for the movement loop.
+  // Game Mode has its doors between rooms as well as map.cub's
+  const doorCells = game ? GAME_DOOR_CELLS : DOOR_CELLS;
+  const [closedDoors, setClosedDoors] = useState(initialState?.doors ?? allClosed(doorCells));
   const doors = useRef(closedDoors);
   const heading = useRef('north');
   const invalidateRef = useRef(() => {});
@@ -603,6 +745,19 @@ const Cub3DWorld = ({
     })
   );
   const [kills, setKills] = useState(() => enemies.current.filter((e) => !e.alive).length);
+  // The crew: fixed (rooms.js); `paused` holds the threats while one of them talks
+  const npcs = useRef(NPCS.map((npc) => ({ ...npc, x: npc.cell[0] + 0.5, z: npc.cell[1] + 0.5 })));
+  const paused = useRef(false);
+  const [talk, setTalk] = useState(null);
+  // The closed door near the player, with where it leads: { cell, text }
+  const [doorLabel, setDoorLabel] = useState(null);
+  const nearDoor = useRef('');
+  const nearDoorCell = useRef(-1);
+  const doorSaid = useRef({ key: '', at: -Infinity });
+  // The trigger: held (automatic weapons keep firing) and when the gun that last fired is ready
+  const firing = useRef({ held: false, ready: -Infinity });
+  const fireRef = useRef(() => {});
+  const pointerType = useRef('mouse');
   const [room, setRoom] = useState(null);
   const roomRef = useRef(null);
   const [weapon, setWeapon] = useState(initialState?.weapon ?? 0);
@@ -647,14 +802,28 @@ const Cub3DWorld = ({
       }),
     [t, technologies, projects, panelList, game]
   );
+  // The sprites' labels: threat types and the crew's names
   const threatLabels = useMemo(
-    () => ({ ddos: t('demos.game.enemies.ddos'), sql: t('demos.game.enemies.sql') }),
+    () => ({
+      ddos: t('demos.game.enemies.ddos'),
+      sql: t('demos.game.enemies.sql'),
+      ...Object.fromEntries(NPCS.map(({ id }) => [id, t(`demos.game.npcs.${id}.name`)])),
+    }),
     [t]
   );
 
   // Read once: the page (and its theme toggle) is inert while the demo is open
   const colors = useMemo(() => {
-    const c = readTheme(['foreground', 'background', 'primary', 'danger', 'success']);
+    const c = readTheme([
+      'foreground',
+      'foreground-muted',
+      'background',
+      'primary',
+      'primary-400',
+      'danger',
+      'success',
+      'info',
+    ]);
     return {
       back: rgb(c.background, 0.85),
       wall: rgb(c.foreground, 0.75),
@@ -662,6 +831,14 @@ const Cub3DWorld = ({
       open: rgb(c.success),
       ray: rgb(c.primary, 0.55),
       player: rgb(c.primary),
+      // The tactical radar: gray walls, you in white with your view cone, threats red, the crew
+      // amber, doors blue
+      radarWall: rgb(c['foreground-muted'], 0.85),
+      you: rgb(c.foreground),
+      cone: rgb(c.foreground, 0.22),
+      threat: rgb(c.danger),
+      crew: rgb(c['primary-400']),
+      door: rgb(c.info),
     };
   }, []);
 
@@ -683,7 +860,7 @@ const Cub3DWorld = ({
     }
     // Red and filled when closed, a green outline when open (the original's colors, plus a
     // shape so the state does not rest on color alone)
-    DOOR_CELLS.forEach((i) => {
+    doorCells.forEach((i) => {
       const x = (i % W) * s;
       const z = Math.floor(i / W) * s;
       if (doors.current[i]) {
@@ -695,7 +872,103 @@ const Cub3DWorld = ({
         ctx.strokeRect(x + 0.75, z + 0.75, s - 1.5, s - 1.5);
       }
     });
-  }, [colors]);
+  }, [colors, doorCells]);
+
+  // Game Mode's tactical radar, every frame: the whole map (its walls painted once), the doors,
+  // every threat and the crew through the walls, and the player with a view cone. The player's
+  // halo blinks, unless motion is reduced
+  const drawRadar = useCallback(
+    (camera, time) => {
+      const canvas = radarRef.current;
+      if (!canvas) return;
+      const s = RADAR_CELL;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      // Painted again when the pixel ratio (browser zoom, another monitor) or the theme changes
+      if (radarLayer.current?.dpr !== dpr || radarLayer.current.colors !== colors) {
+        const layer = document.createElement('canvas');
+        layer.width = W * s * dpr;
+        layer.height = H * s * dpr;
+        const ctx = layer.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.fillStyle = colors.back;
+        ctx.fillRect(0, 0, W * s, H * s);
+        ctx.fillStyle = colors.radarWall;
+        for (let i = 0; i < W * H; i += 1) {
+          if (!WALKABLE[i]) ctx.fillRect((i % W) * s, Math.floor(i / W) * s, s, s);
+        }
+        radarLayer.current = { layer, dpr, colors };
+        canvas.width = layer.width;
+        canvas.height = layer.height;
+      }
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      // The layer is translucent: cleared first, or each frame would pile up on the last
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(radarLayer.current.layer, 0, 0);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // Doors: filled while closed, an outline once open
+      ctx.fillStyle = colors.door;
+      ctx.strokeStyle = colors.door;
+      ctx.lineWidth = 1.5;
+      doorCells.forEach((i) => {
+        const x = (i % W) * s;
+        const z = Math.floor(i / W) * s;
+        if (doors.current[i]) ctx.fillRect(x + 1, z + 1, s - 2, s - 2);
+        else ctx.strokeRect(x + 1.5, z + 1.5, s - 3, s - 3);
+      });
+      const dot = (x, z, r, color) => {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x * s, z * s, r, 0, Math.PI * 2);
+        ctx.fill();
+      };
+      // Told apart by shape as well as color: threats are crosses, the crew diamonds
+      ctx.strokeStyle = colors.threat;
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'square';
+      ctx.beginPath();
+      enemies.current.forEach((e) => {
+        if (!e.alive) return;
+        ctx.moveTo(e.x * s - 3, e.z * s - 3);
+        ctx.lineTo(e.x * s + 3, e.z * s + 3);
+        ctx.moveTo(e.x * s + 3, e.z * s - 3);
+        ctx.lineTo(e.x * s - 3, e.z * s + 3);
+      });
+      ctx.stroke();
+      ctx.fillStyle = colors.crew;
+      ctx.beginPath();
+      npcs.current.forEach((n) => {
+        ctx.moveTo(n.x * s, n.z * s - 4.5);
+        ctx.lineTo(n.x * s + 4.5, n.z * s);
+        ctx.lineTo(n.x * s, n.z * s + 4.5);
+        ctx.lineTo(n.x * s - 4.5, n.z * s);
+        ctx.closePath();
+      });
+      ctx.fill();
+      const { x, z } = camera.position;
+      const yaw = camera.rotation.y;
+      const half = (FOV * Math.PI) / 360;
+      ctx.fillStyle = colors.cone;
+      ctx.beginPath();
+      ctx.moveTo(x * s, z * s);
+      [yaw + half, yaw - half].forEach((a) =>
+        ctx.lineTo((x - Math.sin(a) * RADAR_CONE) * s, (z - Math.cos(a) * RADAR_CONE) * s)
+      );
+      ctx.closePath();
+      ctx.fill();
+      dot(x, z, 3.5, colors.you);
+      if (!reduced) {
+        ctx.strokeStyle = colors.you;
+        ctx.lineWidth = 1.5;
+        ctx.globalAlpha = 0.5 + 0.5 * Math.sin(time * 6);
+        ctx.beginPath();
+        ctx.arc(x * s, z * s, 6, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    },
+    [colors, doorCells, reduced]
+  );
 
   // Per move: the static layer, then the field of view's rays and the player
   const drawMinimap = useCallback(
@@ -745,6 +1018,7 @@ const Cub3DWorld = ({
     requestAnimationFrame(() => setMessage(text));
   }, []);
   const aimTimer = useRef(0);
+  const [aimSaid, setAimSaid] = useState('');
   useEffect(() => {
     const all = timers.current;
     return () => {
@@ -754,21 +1028,73 @@ const Cub3DWorld = ({
     };
   }, []);
 
-  // Game Mode, every frame: the aim (threats move, so it can change while the player stands
-  // still). A new target is announced once the aim settles, not for everything swept past
+  // Game Mode, every frame: the radar, an automatic weapon's next shot, the closed door near
+  // the player (shown and announced with where it leads), and the aim (threats move, so it can
+  // change while the player stands still). A new target is announced once the aim settles, not
+  // for everything swept past
+  const clock = useRef(0);
   const onTick = useCallback(
-    (camera) => {
+    (camera, dt) => {
+      clock.current += dt;
+      // About 30 times a second (every frame it is asked for under reduced motion), and not at
+      // all while it is hidden on a small window
+      radarDue.current -= dt;
+      if (radarShown.current && (reduced || radarDue.current <= 0)) {
+        radarDue.current = 1 / 30;
+        drawRadar(camera, clock.current);
+      }
       if (!startedRef.current) return;
-      const aimed = aimAt(camera, solid, GAME_PANELS, enemies.current);
+      if (firing.current.held) {
+        fireRef.current(false);
+        // The frame loop is on demand under reduced motion: keep it running for the next shot
+        if (WEAPON_FX[weaponState.current].auto) invalidateRef.current();
+      }
+      const { x, z } = camera.position;
+      let door = null;
+      let nearest = DOOR_LABEL_RANGE;
+      doorCells.forEach((cell) => {
+        const cx = cell % W;
+        const cz = Math.floor(cell / W);
+        const d = Math.hypot(cx + 0.5 - x, cz + 0.5 - z);
+        // The door already offered keeps its label a little further, so the edge does not flicker
+        const range = cell === nearDoorCell.current ? nearest + 0.5 : nearest;
+        if (!doors.current[cell] || DOOR_ROOMS.get(cell).length < 2 || d >= range) return;
+        // In sight: not one behind a wall
+        const blocked = (bx, bz) => (bx !== cx || bz !== cz) && solid(bx, bz);
+        if (!clearLine(x, z, cx + 0.5, cz + 0.5, blocked)) return;
+        door = cell;
+        nearest = d;
+      });
+      const here = roomAt(x, z);
+      const place = door === null ? null : DOOR_ROOMS.get(door).find((room) => room !== here);
+      const key = door === null ? '' : `${door}:${place}`;
+      nearDoorCell.current = door ?? -1;
+      if (key !== nearDoor.current) {
+        nearDoor.current = key;
+        const name = place && t(`demos.game.doorTo.${place}`);
+        setDoorLabel(
+          door === null ? null : { cell: door, text: t('demos.game.doorLabel', { place: name }) }
+        );
+        // Once per door, again only after a while
+        const now = performance.now();
+        if (door !== null && (key !== doorSaid.current.key || now - doorSaid.current.at > 15000)) {
+          doorSaid.current = { key, at: now };
+          announce(t('demos.game.doorNear', { place: name }));
+        }
+      }
+      const aimed = aimAt(camera, solid, GAME_PANELS, enemies.current, npcs.current);
       if (aimed === targetRef.current) return;
       targetRef.current = aimed;
       setTarget(aimed);
       window.clearTimeout(aimTimer.current);
-      if (!aimed) return;
+      if (!aimed) {
+        setAimSaid('');
+        return;
+      }
       const text = aimText(t, enemies.current, aimed);
-      aimTimer.current = window.setTimeout(() => announce(text), 300);
+      aimTimer.current = window.setTimeout(() => setAimSaid(text), 300);
     },
-    [announce, solid, t]
+    [announce, solid, t, drawRadar, doorCells, reduced]
   );
 
   // Called after every move: redraw the minimap; a new heading is announced once turning has
@@ -776,7 +1102,8 @@ const Cub3DWorld = ({
   const onMove = useCallback(
     (camera) => {
       cameraRef.current = camera;
-      drawMinimap(camera);
+      // Game Mode's radar is drawn every frame instead (onTick)
+      if (!game) drawMinimap(camera);
       if (game) {
         const { x, z } = camera.position;
         const here = roomAt(x, z);
@@ -806,22 +1133,34 @@ const Cub3DWorld = ({
     [drawMinimap, announce, t, game]
   );
 
-  // The door cell about half a cell ahead, or -1
+  const play = (name) => {
+    if (soundRef.current) sfx.current?.[name]();
+  };
+  const later = (name, fn, ms) => {
+    window.clearTimeout(timers.current[name]);
+    timers.current[name] = window.setTimeout(fn, ms);
+  };
+
+  // The door cell just ahead (within DOOR_REACH), or -1
   const doorAhead = () => {
     const camera = cameraRef.current;
     if (!camera) return -1;
     const yaw = camera.rotation.y;
-    const ax = Math.floor(camera.position.x - Math.sin(yaw) * 0.8);
-    const az = Math.floor(camera.position.z - Math.cos(yaw) * 0.8);
-    const ahead = az * W + ax;
     const here = Math.floor(camera.position.z) * W + Math.floor(camera.position.x);
-    return ahead in doors.current && ahead !== here ? ahead : -1;
+    for (const reach of DOOR_REACH) {
+      const ax = Math.floor(camera.position.x - Math.sin(yaw) * reach);
+      const az = Math.floor(camera.position.z - Math.cos(yaw) * reach);
+      const ahead = az * W + ax;
+      if (ahead in doors.current && ahead !== here) return ahead;
+    }
+    return -1;
   };
 
-  // Space opens or closes the door ahead, as in the original
+  // Space opens or closes the door ahead, as in the original. In Game Mode the closed door whose
+  // label is showing counts as ahead
   const toggleDoor = () => {
     const camera = cameraRef.current;
-    const ahead = doorAhead();
+    const ahead = game && nearDoorCell.current >= 0 ? nearDoorCell.current : doorAhead();
     if (ahead < 0) {
       announce(t('demos.cub3d.sr.noDoor'));
       return;
@@ -830,17 +1169,12 @@ const Cub3DWorld = ({
     doors.current = { ...doors.current, [ahead]: closed };
     setClosedDoors(doors.current);
     announce(t(closed ? 'demos.cub3d.sr.doorClosed' : 'demos.cub3d.sr.doorOpened'));
-    paintStatic();
-    drawMinimap(camera);
+    play('hiss');
+    if (!game) {
+      paintStatic();
+      drawMinimap(camera);
+    }
     invalidateRef.current();
-  };
-
-  const play = (name) => {
-    if (soundRef.current) sfx.current?.[name]();
-  };
-  const later = (name, fn, ms) => {
-    window.clearTimeout(timers.current[name]);
-    timers.current[name] = window.setTimeout(fn, ms);
   };
 
   // Where the game is, for a terminal's demo or the text-only mode to hand back
@@ -861,14 +1195,14 @@ const Cub3DWorld = ({
   const neutralize = (enemy) => {
     enemy.alive = false;
     // Off the crosshair now, not at the next frame's aim
-    targetRef.current = null;
-    setTarget(null);
+    if (targetRef.current === enemy.id) {
+      targetRef.current = null;
+      setTarget(null);
+    }
     if (enemy.sprite) enemy.sprite.visible = false;
-    fxRef.current?.burst(enemy);
     // Reduced motion draws on demand: the hidden threat must be redrawn away
     invalidateRef.current();
     setKills((n) => n + 1);
-    play('blip');
     // The fact shows in the HUD's own live region, which announces it
     setToast({
       key: enemy.id,
@@ -878,30 +1212,12 @@ const Cub3DWorld = ({
     later('toast', () => setToast(null), TOAST_MS);
   };
 
-  // Game Mode. `fire` (click, F) shoots: recoil, a flash, a shake; `use` (E, Enter, the touch
-  // Use button) does not. Either way a threat in the crosshair is neutralized and a panel opens:
-  // its text, the contact form, or (after "Access granted") a terminal's live demo. Using nothing
-  // works the door ahead
-  const interact = (mode) => {
-    if (mode === 'fire') {
-      motion.current.recoil = 1;
-      motion.current.shake = 1;
-      play('zap');
-      if (!reduced) flashRef.current?.animate?.([{ opacity: 0.8 }, { opacity: 0 }], 160);
-    }
-    const id = targetRef.current;
-    const enemy = enemies.current.find((e) => e.id === id && e.alive);
-    if (enemy) {
-      neutralize(enemy);
-      return;
-    }
-    if (!id) {
-      if (mode === 'use') toggleDoor();
-      return;
-    }
+  // Before a dialog or a talk: the mouse is freed, keys let go, and no recoil or shake is left
+  // frozen mid-way while the view pauses
+  const holdView = () => {
     lockRef.current?.unlock();
     input.current.clear();
-    // The view pauses behind the dialog: no recoil or shake frozen mid-way
+    firing.current.held = false;
     motion.current = { recoil: 0, shake: 0 };
     const camera = cameraRef.current;
     if (camera) {
@@ -910,6 +1226,41 @@ const Cub3DWorld = ({
     }
     if (weaponRef.current) weaponRef.current.style.transform = '';
     invalidateRef.current();
+  };
+
+  // A crew member talks: the threats hold still until the dialogue closes
+  const talkTo = (id) => {
+    holdView();
+    paused.current = true;
+    setTalk(id);
+    play('talk');
+  };
+  const closeTalk = () => {
+    setTalk(null);
+    paused.current = false;
+    requestAnimationFrame(() => wrapperRef.current?.focus({ preventScroll: true }));
+  };
+
+  // Game Mode. E, Enter or the touch Use button acts on what is in the crosshair: a crew member
+  // talks, a panel opens (its text, the contact form, or after "Access granted" a terminal's live
+  // demo). Nothing in the crosshair works the door ahead
+  const interact = () => {
+    const id = targetRef.current;
+    if (!id) {
+      toggleDoor();
+      return;
+    }
+    // Threats are shot, not used: E opens the door that is offered, or says how to shoot
+    if (enemies.current.some((e) => e.id === id)) {
+      if (nearDoorCell.current >= 0) toggleDoor();
+      else announce(aimText(t, enemies.current, id));
+      return;
+    }
+    if (NPC_IDS.has(id)) {
+      talkTo(id);
+      return;
+    }
+    holdView();
     if (!readRef.current.includes(id)) readRef.current = [...readRef.current, id];
     setRead(readRef.current);
     play('blip');
@@ -921,6 +1272,54 @@ const Cub3DWorld = ({
       setOpenPanel(id);
     }
   };
+
+  // Fires the weapon in hand (WEAPON_FX): `press` is a click or F, otherwise an automatic
+  // weapon's next shot while the trigger is held. A press on a panel or a crew member uses it
+  // instead. Each weapon has its own shake, recoil, sound and particles: the rifle a trail to the
+  // target, the pistol blocks where it lands, the blaster a burst on everything in its cone
+  const fire = (press) => {
+    const cfg = WEAPON_FX[weaponState.current];
+    const now = performance.now();
+    const camera = cameraRef.current;
+    if (!camera || (!press && !cfg.auto) || now < firing.current.ready) return;
+    const id = targetRef.current;
+    if (press && id && (KIND[id] || NPC_IDS.has(id))) {
+      interact();
+      return;
+    }
+    firing.current.ready = now + cfg.cooldown * 1000;
+    motion.current.recoil = cfg.kick;
+    motion.current.shake = cfg.shake;
+    play(cfg.sound);
+    if (!reduced) flashRef.current?.animate?.([{ opacity: 0.8 }, { opacity: 0 }], 160);
+    const { x, z } = camera.position;
+    const yaw = camera.rotation.y;
+    const fx = -Math.sin(yaw);
+    const fz = -Math.cos(yaw);
+    // Far enough ahead that the first particles are not drawn huge right at the eye
+    const muzzle = [x + fx * 0.9, 0.42, z + fz * 0.9];
+    const hits = cfg.cone
+      ? inCone(camera, enemies.current, solid, cfg)
+      : enemies.current.filter((e) => e.alive && e.id === id);
+    let impacts = hits.map((e) => [e.x, 0.5, e.z]);
+    if (!impacts.length) {
+      const [hx, hz] = castRay(x, z, yaw, solid);
+      const d = Math.min(Math.hypot(hx - x, hz - z), cfg.cone ? 2.5 : AIM_RANGE);
+      impacts = [[x + fx * d, 0.5, z + fz * d]];
+    }
+    impacts.forEach((at) => fxRef.current?.spawn(cfg.fx, muzzle, at));
+    hits.forEach(neutralize);
+  };
+  fireRef.current = fire;
+  const pullTrigger = () => {
+    firing.current.held = true;
+    fire(true);
+    // An automatic weapon's next shots come from the frame loop: start it (on demand otherwise)
+    if (WEAPON_FX[weaponState.current].auto) invalidateRef.current();
+  };
+  const releaseTrigger = () => {
+    firing.current.held = false;
+  };
   const switchWeapon = (next) => {
     const w = (next + WEAPON_COUNT) % WEAPON_COUNT;
     weaponState.current = w;
@@ -929,7 +1328,7 @@ const Cub3DWorld = ({
   };
   const wheelAt = useRef(0);
   const onWheel = (e) => {
-    if (!game || !started || openPanel || performance.now() - wheelAt.current < 200) return;
+    if (!game || !started || openPanel || talk || performance.now() - wheelAt.current < 200) return;
     wheelAt.current = performance.now();
     switchWeapon(weapon + (e.deltaY > 0 ? 1 : -1));
   };
@@ -987,6 +1386,15 @@ const Cub3DWorld = ({
   // moves behind the welcome card. Escape is left to the dialog (it closes the demo); while the
   // mouse is captured, the browser takes the first Escape to release it
   const onKeyDown = (e) => {
+    // The crew's dialogue is modal: if focus got out of it, keys only close it
+    if (talk) {
+      if (e.key === 'Escape' || e.code === 'KeyE') {
+        e.preventDefault();
+        e.stopPropagation();
+        closeTalk();
+      }
+      return;
+    }
     if (e.altKey || e.ctrlKey || e.metaKey || e.target !== e.currentTarget || !started) return;
     const action = KEYS[e.code];
     if (reduced && (action === 'turnLeft' || action === 'turnRight')) {
@@ -1005,10 +1413,10 @@ const Cub3DWorld = ({
       if (!e.repeat) toggleDoor();
     } else if (game && (e.code === 'KeyE' || e.key === 'Enter')) {
       e.preventDefault();
-      if (!e.repeat) interact('use');
+      if (!e.repeat) interact();
     } else if (game && e.code === 'KeyF') {
       e.preventDefault();
-      if (!e.repeat) interact('fire');
+      if (!e.repeat) pullTrigger();
     } else if (game && /^Digit[1-9]$/.test(e.code) && Number(e.code[5]) <= WEAPON_COUNT) {
       if (!e.repeat) switchWeapon(Number(e.code[5]) - 1);
     } else if (game && e.code === 'KeyQ') {
@@ -1022,19 +1430,31 @@ const Cub3DWorld = ({
       );
     }
   };
-  const onKeyUp = (e) => release(e.code);
+  const onKeyUp = (e) => {
+    release(e.code);
+    if (e.code === 'KeyF') releaseTrigger();
+  };
 
   // Touch: dragging on the view turns (there is no pointer lock on touch screens)
   const drag = useRef(null);
-  // Events from the GameInfo portal bubble here through React: only the view's own count
+  // Events from the GameInfo portal bubble here through React: only the view's own count. In
+  // Game Mode the mouse's main button is the trigger, once the mouse is captured (a press before
+  // that captures it)
   const onPointerDown = (e) => {
+    pointerType.current = e.pointerType;
     if (
-      e.pointerType === 'mouse' ||
+      talk ||
       !e.currentTarget.contains(e.target) ||
-      e.target.closest('button, summary, details')
+      e.target.closest('button, a, summary, details, [role=dialog]')
     )
       return;
-    drag.current = e.clientX;
+    if (e.pointerType !== 'mouse') {
+      drag.current = e.clientX;
+      return;
+    }
+    if (!game || !started || e.button !== 0) return;
+    if (lockable && !locked) lookWithMouse();
+    else pullTrigger();
   };
   const onPointerMove = (e) => {
     const camera = cameraRef.current;
@@ -1064,17 +1484,18 @@ const Cub3DWorld = ({
     if (value) wrapperRef.current?.focus({ preventScroll: true });
   }, []);
 
-  // Game Mode: a click on the view opens the panel in the crosshair, else captures the mouse
+  // Game Mode on a touch screen: a tap on the view fires (the mouse fires from onPointerDown)
   const onClick = (e) => {
     if (
       !game ||
+      talk ||
       !started ||
+      pointerType.current === 'mouse' ||
       !e.currentTarget.contains(e.target) ||
-      e.target.closest('button, a, summary, details')
+      e.target.closest('button, a, summary, details, [role=dialog]')
     )
       return;
-    if (lockable && !locked) lookWithMouse();
-    else interact('fire');
+    fire(true);
   };
 
   // Releasing keys when focus leaves keeps the player from walking on alone
@@ -1083,7 +1504,11 @@ const Cub3DWorld = ({
   };
   useEffect(() => {
     const keys = input.current;
-    const clear = () => keys.clear();
+    const trigger = firing.current;
+    const clear = () => {
+      keys.clear();
+      trigger.held = false;
+    };
     window.addEventListener('blur', clear);
     return () => window.removeEventListener('blur', clear);
   }, []);
@@ -1123,15 +1548,21 @@ const Cub3DWorld = ({
       ref={wrapperRef}
       // In Game Mode the view is reached through the briefing's Start buttons, which focus it
       tabIndex={game && !started ? -1 : 0}
-      role='application'
-      aria-label={t(game ? 'demos.game.title' : 'demos.cub3d.appLabel')}
+      // Not over Game Mode's menu: its story and controls are text to read, not a game to play
+      role={game && !started ? undefined : 'application'}
+      aria-label={
+        game && !started ? undefined : t(game ? 'demos.game.title' : 'demos.cub3d.appLabel')
+      }
       aria-describedby={helpId}
       onKeyDown={onKeyDown}
       onKeyUp={onKeyUp}
       onBlur={onBlur}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={endDrag}
+      onPointerUp={() => {
+        endDrag();
+        releaseTrigger();
+      }}
       onPointerCancel={endDrag}
       onClick={onClick}
       onWheel={onWheel}
@@ -1141,7 +1572,9 @@ const Cub3DWorld = ({
         // Game Mode draws every frame while playing (the threats and the weapon move); paused
         // (briefing, a dialog, Access granted), or with reduced motion (nothing moves on its
         // own), it draws on demand
-        frameloop={game && started && !openPanel && !access && !reduced ? 'always' : 'demand'}
+        frameloop={
+          game && started && !openPanel && !access && !talk && !reduced ? 'always' : 'demand'
+        }
         // Full screen in Game Mode: a lower pixel ratio and no MSAA (the textures are pixel art)
         dpr={game ? GAME_DPR : DEMO_DPR}
         gl={game ? GAME_GL : DEMO_GL}
@@ -1151,6 +1584,7 @@ const Cub3DWorld = ({
         <Scene
           input={input}
           solid={solid}
+          doorCells={doorCells}
           closedDoors={closedDoors}
           panels={panels}
           onMove={onMove}
@@ -1163,25 +1597,53 @@ const Cub3DWorld = ({
         {game && (
           <GameLayer
             enemies={enemies}
+            npcs={npcs}
             labels={threatLabels}
             icons={techIcons}
             solid={solid}
             reduced={reduced}
+            paused={paused}
             fxRef={fxRef}
             weaponRef={weaponRef}
             motion={motion}
             onTick={onTick}
           />
         )}
+        {game && <DoorLabel label={doorLabel} />}
       </Canvas>
 
       {/* HUD */}
-      <canvas
-        ref={minimapRef}
-        aria-hidden='true'
-        className={`pointer-events-none absolute z-30 rounded-md border border-line-strong ${game ? 'bottom-12 left-3' : 'right-3 top-3'}`}
-        style={{ width: W * MINIMAP_CELL, height: H * MINIMAP_CELL }}
-      />
+      {game ? (
+        // The tactical radar: the whole map, with threats and crew seen through walls. A visual
+        // aid (its legend too): the same places and people are announced and in the text-only mode
+        <div
+          aria-hidden='true'
+          className='pointer-events-none absolute right-3 top-44 z-30 hidden sm:top-16 sm:block'
+        >
+          <canvas
+            ref={radarRef}
+            className='rounded-md border border-line-strong'
+            style={{ width: W * RADAR_CELL, height: H * RADAR_CELL }}
+          />
+          <p className='mt-1 flex justify-end gap-3 rounded-md bg-background px-2 py-0.5 text-xs text-foreground'>
+            {RADAR_LEGEND.map(({ key, color, shape }) => (
+              <span key={key} className='inline-flex items-center gap-1'>
+                <svg viewBox='0 0 10 10' className={`h-2.5 w-2.5 ${color}`}>
+                  {shape}
+                </svg>
+                {t(`demos.game.radar.${key}`)}
+              </span>
+            ))}
+          </p>
+        </div>
+      ) : (
+        <canvas
+          ref={minimapRef}
+          aria-hidden='true'
+          className='pointer-events-none absolute right-3 top-3 z-30 rounded-md border border-line-strong'
+          style={{ width: W * MINIMAP_CELL, height: H * MINIMAP_CELL }}
+        />
+      )}
       <p
         id={helpId}
         className={
@@ -1241,7 +1703,7 @@ const Cub3DWorld = ({
           ))}
           <button
             type='button'
-            onClick={game ? () => interact('use') : toggleDoor}
+            onClick={game ? interact : toggleDoor}
             className={`${TOUCH_BUTTON} col-start-2 row-start-3 w-auto px-2 text-xs`}
           >
             {t(game ? 'demos.game.use' : 'demos.cub3d.touch.door')}
@@ -1249,46 +1711,39 @@ const Cub3DWorld = ({
         </div>
       )}
 
-      {!started && (
+      {!started && game && (
+        <MainMenu
+          t={t}
+          screen={screen}
+          onScreen={setScreen}
+          keys={t(keysKey)}
+          lockable={lockable}
+          onStart={start}
+          onStartLook={lookWithMouse}
+          onTextMode={() => onTextMode(snapshot())}
+          onExit={onExit}
+        />
+      )}
+      {!started && !game && (
         // Scrolls on short or zoomed screens, so Start is always reachable
         <div className='absolute inset-0 z-40 flex overflow-y-auto bg-background/70 p-4 backdrop-blur-sm'>
           <div className='m-auto w-full max-w-lg rounded-3xl border border-line bg-glass-strong p-6 shadow-xl'>
             <h3 className='text-2xl font-black text-foreground'>
-              {t(game ? 'demos.game.title' : 'demos.cub3d.welcome.title')}
+              {t('demos.cub3d.welcome.title')}
             </h3>
             <p className='mt-3 leading-relaxed text-foreground-muted'>
-              {t(game ? 'demos.game.briefing' : 'demos.cub3d.welcome.body')}
+              {t('demos.cub3d.welcome.body')}
             </p>
             <ul className='mt-4 space-y-1 text-sm text-foreground'>
               {t(keysKey).map((line) => (
                 <li key={line}>{line}</li>
               ))}
             </ul>
-            {/* Game Mode leads with mouse look, the demo with the keyboard */}
             <div className='mt-5 flex flex-wrap gap-3'>
-              {game && (
-                // First: the way to the same content without the 3D view
-                <button
-                  type='button'
-                  onClick={() => onTextMode(snapshot())}
-                  className={styles.buttonGhost}
-                >
-                  {t('demos.game.textMode')}
-                </button>
-              )}
-              {game && lockable && (
-                <button type='button' onClick={lookWithMouse} className={styles.buttonPrimary}>
-                  {t('demos.cub3d.welcome.startLook')}
-                </button>
-              )}
-              <button
-                type='button'
-                onClick={start}
-                className={game && lockable ? styles.buttonGhost : styles.buttonPrimary}
-              >
+              <button type='button' onClick={start} className={styles.buttonPrimary}>
                 {t('demos.cub3d.welcome.start')}
               </button>
-              {!game && lockable && (
+              {lockable && (
                 <button type='button' onClick={lookWithMouse} className={styles.buttonGhost}>
                   {t('demos.cub3d.welcome.startLook')}
                 </button>
@@ -1318,6 +1773,15 @@ const Cub3DWorld = ({
           flashRef={flashRef}
         />
       )}
+      {talk && (
+        <NpcDialogue
+          t={t}
+          name={t(`demos.game.npcs.${talk}.name`)}
+          line={t(`demos.game.npcs.${talk}.line`)}
+          reduced={reduced}
+          onClose={closeTalk}
+        />
+      )}
       {openPanel && (
         <GameInfo
           t={t}
@@ -1332,6 +1796,12 @@ const Cub3DWorld = ({
       <p role='status' className='sr-only'>
         {message}
       </p>
+      {/* What is in the crosshair, in its own region: it does not cut off the other messages */}
+      {game && (
+        <p role='status' className='sr-only'>
+          {aimSaid}
+        </p>
+      )}
       {/* The focus ring, drawn above the opaque canvas */}
       <span aria-hidden='true' className={styles.viewFocusRing} />
     </div>

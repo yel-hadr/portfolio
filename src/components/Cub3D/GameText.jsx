@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { styles } from '../../styles';
 import ContactForm from '../ContactForm';
 import { GameInfo } from './GameHud';
-import { GAME_PANELS, ROOMS } from './rooms';
+import { GAME_PANELS, NPCS, ROOMS } from './rooms';
 
 const TERMINALS = GAME_PANELS.filter(({ kind }) => kind === 'terminal').map(({ id }) => id);
 
@@ -138,6 +138,21 @@ const GameText = ({ t, details, canPlay, returnTo, onRunDemo, onBack, onExit }) 
                 </dt>
                 <dd className='text-sm leading-relaxed text-foreground-muted'>
                   {t(`demos.game.facts.${type}.body`)}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        {/* What the crew say in the game, so their lines are not only in the 3D view */}
+        <section className='mt-8 border-t border-line pt-6'>
+          <h4 className='text-xl font-bold text-primary-400'>{t('demos.game.crewTitle')}</h4>
+          <dl className='mt-3 space-y-3'>
+            {NPCS.map(({ id }) => (
+              <div key={id}>
+                <dt className='font-bold'>{t(`demos.game.npcs.${id}.name`)}</dt>
+                <dd className='text-sm leading-relaxed text-foreground-muted'>
+                  {t(`demos.game.npcs.${id}.line`)}
                 </dd>
               </div>
             ))}

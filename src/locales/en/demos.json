@@ -102,11 +102,12 @@
     "playAnyway": "Play anyway",
     "briefing": "A DevOps command center in four rooms: About, Skills, Projects and Contact. Neutralize the threats, open the terminals and read the walls.",
     "keys": [
-      "W S or ↑ ↓: walk, A D: step sideways",
-      "Mouse (click the view) or ← →: turn",
-      "Click or F: shoot · E: open what is in the crosshair",
-      "1 2 3 or Q: switch weapon · M: sound on or off",
-      "Esc: free the mouse, Esc again to leave"
+      "W A S D (Z Q S D on AZERTY): move · ← →: turn",
+      "Mouse: look around (click the view to capture it)",
+      "Click or F: fire · 1 2 3 or Q: switch weapon",
+      "E: interact with doors, walls, terminals and the crew",
+      "Space: open the door ahead · M: sound on or off",
+      "Esc: free the mouse, Esc again to exit"
     ],
     "status": {
       "system": "System: online",
@@ -162,6 +163,47 @@
     "intel": "Threat intel",
     "runDemo": "Run the {name} demo",
     "openContact": "Open the contact form",
-    "closeDialog": "Close"
+    "closeDialog": "Close",
+    "menu": {
+      "label": "Main menu",
+      "play": "Play",
+      "info": "Info / Controls",
+      "exit": "Exit",
+      "skip": "Skip game: text-only portfolio",
+      "back": "Back"
+    },
+    "storyTitle": "Mission briefing",
+    "story": "Year: 2026. Role: Lead DevOps Engineer. Mission: Navigate the infrastructure, neutralize DDoS and Injection threats, and secure the core systems. Use your arsenal to explore the facility.",
+    "crewTitle": "The crew",
+    "npcs": {
+      "sysadmin": {
+        "name": "Senior SysAdmin",
+        "line": "Hey! Did you know I use Argo CD for all my GitOps pipelines? Keeps the cluster state perfectly synced."
+      },
+      "architect": {
+        "name": "Cloud Architect",
+        "line": "Psst: read up on Cloud-1. Terraform provisions the AWS infrastructure, then Ansible configures the host."
+      },
+      "network": {
+        "name": "Network Engineer",
+        "line": "Over in BADASS, VXLAN overlays carry the traffic and BGP EVPN runs the control plane, routed with FRRouting."
+      }
+    },
+    "aimNpc": "{name}: press E to talk",
+    "dialogueClose": "E or Esc to close",
+    "doorTo": {
+      "about": "About room",
+      "skills": "Skills room",
+      "projects": "Projects terminal",
+      "contact": "Comms room"
+    },
+    "doorLabel": "Enter: {place}",
+    "doorNear": "Door to the {place}. Press E to open.",
+    "radar": {
+      "you": "You",
+      "threats": "Threats",
+      "crew": "Crew",
+      "doors": "Doors"
+    }
   }
 }
