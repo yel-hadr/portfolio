@@ -19,7 +19,7 @@ const ErrorFallback = ({ error, resetErrorBoundary, sectionName }) => {
         <p className='text-foreground-muted mb-6 text-center max-w-md'>{t('error.body')}</p>
         <button
           onClick={resetErrorBoundary}
-          className='bg-surface-raised border border-line-strong py-3 px-8 rounded-xl text-foreground font-bold hover:bg-surface transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus'
+          className='bg-surface-raised border border-line-strong py-3 px-8 rounded-xl text-foreground font-bold hover:bg-surface transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-focus'
         >
           {t('error.reload')}
         </button>

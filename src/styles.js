@@ -1,17 +1,18 @@
 // Shared layout and type presets. Sizes come from Tailwind's default scale, colors from the
-// tokens in tailwind.config.js; avoid arbitrary px values in components.
+// tokens in the @theme of src/index.css; avoid arbitrary px values in components.
 const styles = {
   container: 'max-w-7xl mx-auto px-6 sm:px-10 lg:px-16',
   section: 'py-20 sm:py-28',
 
   heroHeadText:
-    'font-black text-foreground text-5xl sm:text-6xl xl:text-7xl leading-[1.05] tracking-tight',
+    'font-black text-foreground text-5xl sm:text-6xl xl:text-7xl leading-[1.05] sm:leading-none xl:leading-none tracking-tight',
   heroSubText:
-    'text-primary-400 font-semibold text-lg sm:text-xl lg:text-2xl leading-snug max-w-2xl',
+    'text-primary-400 font-semibold text-lg sm:text-xl lg:text-2xl leading-snug sm:leading-7 lg:leading-8 max-w-2xl',
 
   sectionHeadText:
-    'font-black text-foreground text-4xl sm:text-5xl lg:text-6xl leading-tight tracking-tight',
-  sectionLead: 'mt-4 text-foreground-muted text-base sm:text-lg leading-relaxed max-w-prose',
+    'font-black text-foreground text-4xl sm:text-5xl lg:text-6xl leading-tight sm:leading-none lg:leading-none tracking-tight',
+  sectionLead:
+    'mt-4 text-foreground-muted text-base sm:text-lg leading-relaxed sm:leading-7 max-w-prose',
 
   cardTitle: 'text-foreground text-xl font-bold',
   card: 'card-glass p-6 sm:p-8',
@@ -25,7 +26,7 @@ const styles = {
   // Focus ring of a 3D view (its wrapper has `group`): a layer above the canvas, since an inset
   // ring on the wrapper is painted under an opaque canvas
   viewFocusRing:
-    'pointer-events-none absolute inset-0 z-50 group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:-outline-offset-2 group-focus-visible:outline-focus',
+    'pointer-events-none absolute inset-0 z-50 group-focus-visible:outline-2 group-focus-visible:-outline-offset-2 group-focus-visible:outline-focus',
   // HUD controls over a 3D scene: a two-tone ring that stays visible on any scene color
   hudFocus: 'focus-visible:outline-foreground focus-visible:ring-4 focus-visible:ring-background',
 };

@@ -69,7 +69,7 @@ export default [
         sourceType: 'module',
       },
     },
-    settings: { react: { version: '18.3' } },
+    settings: { react: { version: '19.3' } },
     plugins: {
       react,
       'react-hooks': reactHooks,
@@ -79,7 +79,11 @@ export default [
       ...js.configs.recommended.rules,
       ...react.configs.recommended.rules,
       ...react.configs['jsx-runtime'].rules,
-      ...reactHooks.configs.recommended.rules,
+      // The two classic hook rules. v7's preset also turns on the React Compiler's diagnostics,
+      // which flag what the compiler skips anyway: the game and 3D components read refs in render
+      // and mutate three.js objects in the frame loop by design
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
       'react/jsx-no-target-blank': 'off',
       // JS-only project without PropTypes
       'react/prop-types': 'off',

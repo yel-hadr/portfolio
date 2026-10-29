@@ -52,7 +52,7 @@ const MonitorCard = ({ monitor, samples, now, asOf }) => {
               href={monitor.url}
               target='_blank'
               rel='noopener noreferrer'
-              className='mt-0.5 inline-block break-all rounded text-xs text-foreground-muted underline-offset-2 hover:text-foreground hover:underline'
+              className='mt-0.5 inline-block break-all rounded-sm text-xs text-foreground-muted underline-offset-2 hover:text-foreground hover:underline'
             >
               {shortUrl(monitor.url)}
               <span className='sr-only'> {t('statuspage.newTab')}</span>

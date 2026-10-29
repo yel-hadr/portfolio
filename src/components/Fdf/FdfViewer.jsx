@@ -694,7 +694,7 @@ const FdfViewer = ({ t }) => {
         // The file's colors on a night glass, as in the original's dark MiniLibX window: its
         // white peaks and pure greens would vanish on the light theme, and recoloring them would
         // change what the original draws
-        className={`group relative min-h-[50vh] flex-1 touch-none outline-none md:min-h-0 ${onNight ? 'bg-night/90 backdrop-blur-md' : ''}`}
+        className={`group relative min-h-[50vh] flex-1 touch-none outline-hidden md:min-h-0 ${onNight ? 'bg-night/90 backdrop-blur-md' : ''}`}
       >
         <Canvas
           frameloop='demand'

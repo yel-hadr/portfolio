@@ -88,7 +88,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Run the checks
         # No dependencies to install: Node's built-in fetch only. Exits 0 when monitors are down

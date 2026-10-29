@@ -47,7 +47,7 @@ const DemoShell = ({ id, repo, onClose, children }) => {
   return createPortal(
     <div
       ref={overlayRef}
-      className='fixed inset-0 z-[60] flex justify-center bg-background/75 backdrop-blur-sm md:items-center md:p-6'
+      className='fixed inset-0 z-[60] flex justify-center bg-background/75 backdrop-blur-xs md:items-center md:p-6'
       {...backdrop}
     >
       <div

@@ -143,7 +143,7 @@ const GameText = ({ t, details, canPlay, returnTo, onRunDemo, onBack, onExit }) 
     <div className='h-full w-full overflow-y-auto'>
       <div className='mx-auto max-w-3xl p-6 text-foreground'>
         <div className='flex flex-wrap items-center gap-3'>
-          <h3 ref={headingRef} tabIndex={-1} className='mr-auto text-2xl font-black outline-none'>
+          <h3 ref={headingRef} tabIndex={-1} className='mr-auto text-2xl font-black outline-hidden'>
             {t('demos.game.textMode')}
           </h3>
           {canPlay && (

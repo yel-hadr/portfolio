@@ -1,17 +1,70 @@
-import { useId, useState } from 'react';
+import { useActionState, useId, useState } from 'react';
+import { useFormStatus } from 'react-dom';
 
 import { useI18n } from '../i18n/context';
 
 const FIELD =
   'w-full rounded-xl border border-line-strong bg-surface-raised px-5 py-4 font-medium text-foreground ' +
-  'placeholder:text-foreground-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ' +
+  'placeholder:text-foreground-muted focus:outline-hidden focus-visible:ring-2 focus-visible:ring-focus ' +
   'focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 const EMPTY_FORM = { name: '', email: '', message: '' };
 
+/** Sends the message through EmailJS; resolves to the status shown under the form */
+const send = async (form) => {
+  const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+  const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+  const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+  if (!serviceId || !templateId || !publicKey) {
+    console.error(
+      'Missing EmailJS configuration. Set VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID and VITE_EMAILJS_PUBLIC_KEY in .env.'
+    );
+    return { type: 'error', key: 'contact.notConfigured' };
+  }
+  try {
+    // Loaded on send only: the library reads localStorage at import time, which throws when
+    // the visitor blocks site data and would otherwise blank the whole page
+    const { default: emailjs } = await import('@emailjs/browser');
+    await emailjs.send(
+      serviceId,
+      templateId,
+      {
+        from_name: form.name,
+        to_name: 'Youssef El Hadraoui',
+        from_email: form.email,
+        to_email: 'youssefelhadraoui99@gmail.com',
+        message: form.message,
+      },
+      publicKey
+    );
+    return { type: 'success', key: 'contact.sent' };
+  } catch (error) {
+    console.error(error);
+    return { type: 'error', key: 'contact.failed' };
+  }
+};
+
+/** The submit button: its label and busy state come from the form's pending action */
+const SubmitButton = () => {
+  const { t } = useI18n();
+  const { pending } = useFormStatus();
+  return (
+    // aria-disabled instead of disabled: a disabled button would drop keyboard focus to <body>
+    <button
+      type='submit'
+      aria-disabled={pending || undefined}
+      className='rounded-xl border-2 border-transparent bg-primary px-8 py-3 font-bold text-on-primary transition-colors hover:bg-primary-hover aria-disabled:cursor-wait focus:outline-hidden focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+    >
+      {pending ? t('contact.sending') : t('contact.send')}
+    </button>
+  );
+};
+
 /**
  * The contact form (EmailJS, keys from VITE_EMAILJS_* only), used by the Contact section and by
- * Game Mode's comms room. Ids are generated, so two copies on one page never share an id.
+ * Game Mode's comms room. Ids are generated, so two copies on one page never share an id. A React
+ * 19 form action: useActionState holds the result, useFormStatus the button's pending state.
  */
 const ContactForm = () => {
   const uid = useId();
@@ -22,60 +75,26 @@ const ContactForm = () => {
     message: `${uid}message`,
   };
   const { t } = useI18n();
+  // Controlled fields: a failed send keeps what was typed, a sent one clears them
   const [form, setForm] = useState(EMPTY_FORM);
-  const [loading, setLoading] = useState(false);
   // { type: 'success' | 'error', key } shown in a live region instead of alert(); a key, not
   // text, so the message follows a language switch
-  const [status, setStatus] = useState(null);
+  const [status, sendAction, pending] = useActionState(async (previous, data) => {
+    const result = await send(
+      Object.fromEntries(['name', 'email', 'message'].map((k) => [k, data.get(k)]))
+    );
+    if (result.type === 'success') setForm(EMPTY_FORM);
+    return result;
+  }, null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (loading) return;
-
-    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-
-    if (!serviceId || !templateId || !publicKey) {
-      console.error(
-        'Missing EmailJS configuration. Set VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID and VITE_EMAILJS_PUBLIC_KEY in .env.'
-      );
-      setStatus({ type: 'error', key: 'contact.notConfigured' });
-      return;
-    }
-
-    setLoading(true);
-    setStatus(null);
-
-    try {
-      // Loaded on send only: the library reads localStorage at import time, which throws when
-      // the visitor blocks site data and would otherwise blank the whole page
-      const { default: emailjs } = await import('@emailjs/browser');
-      await emailjs.send(
-        serviceId,
-        templateId,
-        {
-          from_name: form.name,
-          to_name: 'Youssef El Hadraoui',
-          from_email: form.email,
-          to_email: 'youssefelhadraoui99@gmail.com',
-          message: form.message,
-        },
-        publicKey
-      );
-      setStatus({ type: 'success', key: 'contact.sent' });
-      setForm(EMPTY_FORM);
-    } catch (error) {
-      console.error(error);
-      setStatus({ type: 'error', key: 'contact.failed' });
-    } finally {
-      setLoading(false);
-    }
+  // One message at a time: a second submit (Enter in a field) while one is sending does nothing
+  const onSubmit = (e) => {
+    if (pending) e.preventDefault();
   };
 
   return (
@@ -83,7 +102,12 @@ const ContactForm = () => {
       <p id={ids.hint} className='mb-6 text-sm text-foreground-muted'>
         {t('contact.required')}
       </p>
-      <form onSubmit={handleSubmit} aria-describedby={ids.hint} className='flex flex-col gap-6'>
+      <form
+        action={sendAction}
+        onSubmit={onSubmit}
+        aria-describedby={ids.hint}
+        className='flex flex-col gap-6'
+      >
         <div className='flex flex-col gap-2'>
           <label htmlFor={ids.name} className='font-medium text-foreground'>
             {t('contact.name')}
@@ -132,19 +156,12 @@ const ContactForm = () => {
         </div>
 
         <div className='flex flex-wrap items-center gap-4'>
-          {/* aria-disabled instead of disabled: a disabled button would drop keyboard focus to <body> */}
-          <button
-            type='submit'
-            aria-disabled={loading || undefined}
-            className='rounded-xl border-2 border-transparent bg-primary px-8 py-3 font-bold text-on-primary transition-colors hover:bg-primary-hover aria-disabled:cursor-wait focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background'
-          >
-            {loading ? t('contact.sending') : t('contact.send')}
-          </button>
+          <SubmitButton />
           <p role='status' className='text-sm font-medium text-success'>
-            {status?.type === 'success' ? t(status.key) : ''}
+            {!pending && status?.type === 'success' ? t(status.key) : ''}
           </p>
           <p role='alert' className='text-sm font-medium text-danger'>
-            {status?.type === 'error' ? t(status.key) : ''}
+            {!pending && status?.type === 'error' ? t(status.key) : ''}
           </p>
         </div>
       </form>

@@ -229,9 +229,9 @@ const TerminalTyping = ({ t, onEnd, inputRef }) => {
               tone =
                 typed[i] === char
                   ? 'text-success'
-                  : 'rounded-sm bg-danger/10 text-danger line-through decoration-2';
+                  : 'rounded-xs bg-danger/10 text-danger line-through decoration-2';
             } else if (i === typed.length) {
-              tone = 'rounded-sm bg-primary/20 text-foreground';
+              tone = 'rounded-xs bg-primary/20 text-foreground';
             }
             return (
               <span key={i} className={tone}>
@@ -258,7 +258,7 @@ const TerminalTyping = ({ t, onEnd, inputRef }) => {
         </button>
       </div>
 
-      <div className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-base outline-2 -outline-offset-2 outline-focus focus-within:outline md:text-sm'>
+      <div className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-base -outline-offset-2 outline-focus focus-within:outline-2 md:text-sm'>
         <Prompt t={t} />
         <label htmlFor={inputId} className='sr-only'>
           {t('terminal.game.inputLabel')}
@@ -280,7 +280,7 @@ const TerminalTyping = ({ t, onEnd, inputRef }) => {
           autoCorrect='off'
           spellCheck={false}
           enterKeyHint='done'
-          className='min-w-0 flex-1 bg-transparent text-foreground caret-primary outline-none focus-visible:outline-none'
+          className='min-w-0 flex-1 bg-transparent text-foreground caret-primary outline-hidden focus-visible:outline-hidden'
         />
       </div>
 

@@ -8,8 +8,9 @@ import { useI18n } from '../i18n/context';
 import { useTheme } from '../theme/context';
 import { CloseIcon, MenuIcon, MoonIcon, SunIcon, TerminalIcon } from './icons';
 
+// No display of its own: each button sets it (`hidden lg:inline-flex` must not meet an inline-flex)
 const ICON_BUTTON =
-  'inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground';
+  'h-10 w-10 items-center justify-center rounded-xl text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground';
 
 // EN | FR segmented control. The accessible name ("English") contains the visible text ("EN").
 const LanguageToggle = () => {
@@ -54,7 +55,7 @@ const ThemeToggle = () => {
       onClick={toggleTheme}
       aria-label={toLight ? t('nav.themeToLight') : t('nav.themeToDark')}
       title={toLight ? t('nav.themeToLight') : t('nav.themeToDark')}
-      className={ICON_BUTTON}
+      className={`inline-flex ${ICON_BUTTON}`}
     >
       {toLight ? <SunIcon /> : <MoonIcon />}
     </button>
@@ -152,7 +153,7 @@ const Navbar = ({ onOpenTerminal }) => {
     </ul>
   );
 
-  const terminalButton = (extra = '') => (
+  const terminalButton = (display = 'inline-flex') => (
     <button
       type='button'
       onClick={() => {
@@ -163,7 +164,7 @@ const Navbar = ({ onOpenTerminal }) => {
       aria-keyshortcuts='Control+`'
       aria-label={t('nav.openTerminal')}
       title={`${t('nav.openTerminal')} (${t('nav.terminalShortcut')})`}
-      className={`${ICON_BUTTON} ${extra}`}
+      className={`${display} ${ICON_BUTTON}`}
     >
       <TerminalIcon />
     </button>
@@ -213,7 +214,7 @@ const Navbar = ({ onOpenTerminal }) => {
                 aria-controls='mobile-menu'
                 aria-label={open ? t('nav.closeMenu') : t('nav.openMenu')}
                 onClick={() => setOpen((v) => !v)}
-                className={ICON_BUTTON}
+                className={`inline-flex ${ICON_BUTTON}`}
               >
                 {open ? <CloseIcon className='h-6 w-6' /> : <MenuIcon className='h-6 w-6' />}
               </button>

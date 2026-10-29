@@ -120,9 +120,9 @@ const Skeleton = () => {
         <span className='text-sm font-semibold text-foreground-muted'>{t('status.checking')}</span>
       </p>
       <div aria-hidden='true' className='mt-4 flex flex-col gap-2.5 border-t border-line pt-3'>
-        <span className='h-3 w-24 rounded bg-surface-raised' />
+        <span className='h-3 w-24 rounded-sm bg-surface-raised' />
         {[0, 1, 2].map((i) => (
-          <span key={i} className='h-3.5 rounded bg-surface-raised motion-safe:animate-pulse' />
+          <span key={i} className='h-3.5 rounded-sm bg-surface-raised motion-safe:animate-pulse' />
         ))}
       </div>
     </>

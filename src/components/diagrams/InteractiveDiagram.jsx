@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 
 import { useI18n } from '../../i18n/context';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
@@ -167,11 +167,8 @@ const InteractiveDiagram = ({ spec, ns, title, headingLevel = 'h3' }) => {
   const active = hovered ?? focused ?? selected;
   const detailsRef = useRef(null);
 
-  const boxes = useMemo(
-    () => Object.fromEntries([...spec.groups, ...spec.nodes].map((b) => [b.id, b])),
-    [spec]
-  );
-  const nodeIds = useMemo(() => new Set(spec.nodes.map((n) => n.id)), [spec]);
+  const boxes = Object.fromEntries([...spec.groups, ...spec.nodes].map((b) => [b.id, b]));
+  const nodeIds = new Set(spec.nodes.map((n) => n.id));
   const nameOf = (id) =>
     nodeIds.has(id) ? t(`${ns}.nodes.${id}.name`) : t(`${ns}.groups.${id}.name`);
 
@@ -181,20 +178,17 @@ const InteractiveDiagram = ({ spec, ns, title, headingLevel = 'h3' }) => {
   );
 
   // A packet route is a list of edge ids; the dot follows their drawn lines end to end
-  const packetPaths = useMemo(
-    () =>
-      spec.packets?.map((route) =>
-        toPath(
-          route.flatMap((id) =>
-            edgePoints(
-              spec.edges.find((e) => e.id === id),
-              boxes
-            )
+  const packetPaths =
+    spec.packets?.map((route) =>
+      toPath(
+        route.flatMap((id) =>
+          edgePoints(
+            spec.edges.find((e) => e.id === id),
+            boxes
           )
         )
-      ) ?? [],
-    [spec, boxes]
-  );
+      )
+    ) ?? [];
 
   // A tap on a phone fills a panel stacked below the diagram, often off screen: bring it into
   // view. Only on click: focus and hover must not scroll the page.
@@ -402,7 +396,7 @@ const InteractiveDiagram = ({ spec, ns, title, headingLevel = 'h3' }) => {
                     tabIndex={0}
                     aria-label={t(`${ns}.nodes.${n.id}.name`)}
                     aria-pressed={selected === n.id}
-                    className='group cursor-pointer outline-none'
+                    className='group cursor-pointer outline-hidden'
                     onMouseEnter={() => setHovered(n.id)}
                     onMouseLeave={() => setHovered(null)}
                     onFocus={() => setFocused(n.id)}

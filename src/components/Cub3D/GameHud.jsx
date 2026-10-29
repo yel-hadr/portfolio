@@ -47,15 +47,15 @@ const Meter = ({ label, barRef, tone }) => (
     <p className='flex justify-between font-mono text-xs uppercase tracking-wider text-foreground'>
       {label}
     </p>
-    <div className='relative mt-1 h-1.5 overflow-hidden rounded-sm bg-background/80'>
+    <div className='relative mt-1 h-1.5 overflow-hidden rounded-xs bg-background/80'>
       <div
         ref={barRef}
-        className={`h-full origin-left rounded-sm ${tone} transition-colors data-[low=true]:bg-danger`}
+        className={`h-full origin-left rounded-xs ${tone} transition-colors data-[low=true]:bg-danger`}
       />
       {/* Tick marks every tenth, and a slow sheen running along the bar (not with reduced
           motion) */}
       <span className='absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent_0_calc(10%-1px),rgb(var(--c-background)/0.7)_calc(10%-1px)_10%)]' />
-      <span className='absolute inset-y-0 -left-8 w-8 bg-gradient-to-r from-transparent via-foreground/30 to-transparent opacity-0 motion-safe:animate-hud-tick motion-safe:opacity-100' />
+      <span className='absolute inset-y-0 -left-8 w-8 bg-linear-to-r/srgb from-transparent via-foreground/30 to-transparent opacity-0 motion-safe:animate-hud-tick motion-safe:opacity-100' />
     </div>
   </div>
 );
@@ -158,7 +158,7 @@ const GraphicsChoice = ({ t, graphics, onGraphics }) => {
               className='peer sr-only'
             />
             {/* The picked tier: orange, and underlined so it does not rest on color alone */}
-            <span className='flex h-9 cursor-pointer items-center justify-center rounded-lg text-sm font-semibold text-foreground hover:bg-surface-raised peer-checked:bg-primary peer-checked:text-on-primary peer-checked:underline peer-checked:underline-offset-4 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary'>
+            <span className='flex h-9 cursor-pointer items-center justify-center rounded-lg text-sm font-semibold text-foreground hover:bg-surface-raised peer-checked:bg-primary peer-checked:text-on-primary peer-checked:underline peer-checked:underline-offset-4 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary'>
               {t(`demos.game.graphics.${tier}`)}
             </span>
           </label>
@@ -289,7 +289,7 @@ export const GameHud = ({
           {ARMS.map((arm) => (
             <span
               key={arm}
-              className={`absolute ${arm} rounded-sm bg-current shadow-[0_0_0_1px_rgb(var(--c-background)/0.8)] transition-transform duration-75`}
+              className={`absolute ${arm} rounded-xs bg-current shadow-[0_0_0_1px_rgb(var(--c-background)/0.8)] transition-transform duration-75`}
             />
           ))}
           <span className='absolute -left-px -top-px h-0.5 w-0.5 rounded-full bg-current' />
@@ -305,7 +305,7 @@ export const GameHud = ({
         className={`pointer-events-none absolute left-1/2 top-[calc(50%+1.75rem)] z-30 flex -translate-x-1/2 items-center gap-3 whitespace-nowrap rounded-md ${SOLID} border-primary-400/50 px-3 py-2 text-foreground motion-safe:animate-prompt-in`}
       >
         <Brackets className='text-primary-400' />
-        <kbd className='inline-flex h-8 w-8 items-center justify-center rounded-sm border border-foreground font-mono text-base font-black'>
+        <kbd className='inline-flex h-8 w-8 items-center justify-center rounded-xs border border-foreground font-mono text-base font-black'>
           E
         </kbd>
         <span className='flex flex-col leading-tight'>
@@ -436,7 +436,7 @@ export const GameHud = ({
         {t('demos.game.pauseButton')}
         <kbd
           aria-hidden='true'
-          className='rounded border border-line-strong px-1.5 font-mono text-xs'
+          className='rounded-sm border border-line-strong px-1.5 font-mono text-xs'
         >
           {t('demos.game.escKey')}
         </kbd>
@@ -542,14 +542,14 @@ export const MissionComplete = ({
         aria-labelledby={titleId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className={`relative m-auto max-h-full w-full max-w-lg overflow-y-auto ${DIALOG} border-success/40 p-6 text-center text-foreground outline-none motion-safe:animate-crt-in`}
+        className={`relative m-auto max-h-full w-full max-w-lg overflow-y-auto ${DIALOG} border-success/40 p-6 text-center text-foreground outline-hidden motion-safe:animate-crt-in`}
       >
         <Brackets className='text-success' size='h-4 w-4' />
         <h2
           ref={heading}
           id={titleId}
           tabIndex={-1}
-          className='font-mono text-3xl font-black uppercase tracking-widest text-success outline-none'
+          className='font-mono text-3xl font-black uppercase tracking-widest text-success outline-hidden'
         >
           {t('demos.game.mission.title')}
         </h2>
@@ -625,7 +625,7 @@ export const PauseMenu = ({ t, onResume, onRestart, onMenu, settings }) => {
         aria-labelledby={titleId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className='card-glass m-auto max-h-full w-full max-w-md overflow-y-auto p-6 shadow-modal outline-none'
+        className='card-glass m-auto max-h-full w-full max-w-md overflow-y-auto p-6 shadow-modal outline-hidden'
       >
         <h2
           id={titleId}
@@ -688,7 +688,7 @@ export const SystemFailure = ({ t, onReboot, onMenu }) => {
         aria-describedby={bodyId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className={`relative m-auto max-h-full w-full max-w-lg overflow-y-auto ${DIALOG} border-danger/40 p-6 text-center text-foreground outline-none motion-safe:animate-crt-in`}
+        className={`relative m-auto max-h-full w-full max-w-lg overflow-y-auto ${DIALOG} border-danger/40 p-6 text-center text-foreground outline-hidden motion-safe:animate-crt-in`}
       >
         <Brackets className='text-danger' size='h-4 w-4' />
         <h2
@@ -767,7 +767,7 @@ export const GameInfo = ({
         aria-labelledby={titleId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className={`relative m-auto max-h-full w-full max-w-2xl overflow-y-auto ${DIALOG} border-primary/40 p-6 text-foreground outline-none motion-safe:animate-crt-in`}
+        className={`relative m-auto max-h-full w-full max-w-2xl overflow-y-auto ${DIALOG} border-primary/40 p-6 text-foreground outline-hidden motion-safe:animate-crt-in`}
       >
         <Brackets className='text-primary-400' size='h-4 w-4' />
         {/* Game Mode's dossier: which section of the profile this is */}
@@ -912,13 +912,13 @@ export const MainMenu = ({
 
   return (
     // Scrolls on short or zoomed screens, so every button stays reachable
-    <div className='absolute inset-0 z-40 flex overflow-y-auto bg-background/70 p-4 backdrop-blur-sm'>
+    <div className='absolute inset-0 z-40 flex overflow-y-auto bg-background/70 p-4 backdrop-blur-xs'>
       <div ref={panel} className='card-glass m-auto w-full max-w-md p-6 shadow-raised'>
         {screen === 'menu' && (
           <>
             <h3
               tabIndex={-1}
-              className='font-mono text-3xl font-black uppercase tracking-widest text-foreground outline-none'
+              className='font-mono text-3xl font-black uppercase tracking-widest text-foreground outline-hidden'
             >
               {t('demos.game.title')}
             </h3>
@@ -968,7 +968,7 @@ export const MainMenu = ({
           <>
             <h3
               tabIndex={-1}
-              className='font-mono text-2xl font-black uppercase tracking-widest text-primary-400 outline-none'
+              className='font-mono text-2xl font-black uppercase tracking-widest text-primary-400 outline-hidden'
             >
               {t('demos.game.storyTitle')}
             </h3>
@@ -999,7 +999,7 @@ export const MainMenu = ({
           <>
             <h3
               tabIndex={-1}
-              className='font-mono text-2xl font-black uppercase tracking-widest text-foreground outline-none'
+              className='font-mono text-2xl font-black uppercase tracking-widest text-foreground outline-hidden'
             >
               {t('demos.game.menu.info')}
             </h3>
@@ -1070,7 +1070,7 @@ export const NpcDialogue = ({ t, name, line, reduced, onClose }) => {
       aria-describedby={lineId}
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className={`absolute inset-x-3 bottom-12 z-[45] mx-auto max-w-2xl ${DIALOG} border-primary-400/40 p-4 text-foreground outline-none`}
+      className={`absolute inset-x-3 bottom-12 z-[45] mx-auto max-w-2xl ${DIALOG} border-primary-400/40 p-4 text-foreground outline-hidden`}
     >
       <Brackets className='text-primary-400' />
       <p

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 import blog from './build/blog.js';
 import seo from './build/seo.js';
@@ -10,7 +11,14 @@ export default defineConfig({
   // Served from the root of https://yel-hadr.github.io/ (the yel-hadr.github.io user-site repo)
   base: '/',
   // blog: Markdown posts -> static /blog/ pages + RSS. seo: meta/OG/JSON-LD, analytics, sitemap.
-  plugins: [react(), blog(), seo()],
+  // The React Compiler memoizes components and hooks it can prove pure (React 19 target), so
+  // they need no hand-written useMemo/useCallback; the ones it skips keep theirs
+  plugins: [
+    react({ babel: { plugins: [['babel-plugin-react-compiler', { target: '19' }]] } }),
+    tailwindcss(),
+    blog(),
+    seo(),
+  ],
   build: {
     rollupOptions: {
       // Pages: the portfolio and the /status/ page (its own small React entry)

@@ -9,7 +9,7 @@ import Pipelines from './Pipelines';
 import { STALE_MS } from './format';
 import { useStatusData } from './useStatusData';
 
-const LINK = 'rounded font-medium text-primary-400 underline-offset-4 hover:underline';
+const LINK = 'rounded-sm font-medium text-primary-400 underline-offset-4 hover:underline';
 
 // The clock behind every "X minutes ago" and the staleness check
 const useNow = (ms = 60 * 1000) => {

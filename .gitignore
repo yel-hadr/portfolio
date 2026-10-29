@@ -67,3 +67,6 @@ htmlcov/
 # Local tool state: Playwright MCP screenshots/logs, Superdesign canvas context
 .playwright-mcp/
 .superdesign/
+
+# Lighthouse CI reports
+.lighthouseci/

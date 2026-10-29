@@ -27,7 +27,7 @@ const Grafana = () => {
         href={GRAFANA_URL}
         target='_blank'
         rel='noopener noreferrer'
-        className='mt-3 inline-block rounded text-sm font-medium text-primary-400 underline-offset-4 hover:underline'
+        className='mt-3 inline-block rounded-sm text-sm font-medium text-primary-400 underline-offset-4 hover:underline'
       >
         {t('statuspage.metrics.grafanaOpen')}
         <span className='sr-only'> {t('statuspage.newTab')}</span>
@@ -71,7 +71,7 @@ const UptimeTable = ({ monitors, samples, now }) => {
       role='region'
       aria-label={t('statuspage.metrics.scrollRegion')}
       tabIndex={0}
-      className='mt-3 overflow-x-auto rounded'
+      className='mt-3 overflow-x-auto rounded-sm'
     >
       <table className='w-full min-w-[34rem] text-left text-sm tabular-nums'>
         <caption className='mb-2 text-left text-foreground-muted'>

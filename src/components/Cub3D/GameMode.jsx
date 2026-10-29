@@ -304,7 +304,7 @@ const GameMode = ({ onClose }) => {
         aria-describedby={playing || view !== 'game' ? descId : gateId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className='flex h-full w-full outline-none'
+        className='flex h-full w-full outline-hidden'
       >
         <h2 id={titleId} className='sr-only'>
           {t('demos.game.title')}

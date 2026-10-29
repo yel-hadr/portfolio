@@ -5,3 +5,4 @@ public
 *.md
 .claude
 CLAUDE-SECURITY-*
+.lighthouseci

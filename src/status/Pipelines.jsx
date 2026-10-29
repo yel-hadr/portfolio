@@ -104,7 +104,7 @@ const PipelineCard = ({ pipeline, now, asOf }) => {
           href={runUrl ?? actionsUrl}
           target='_blank'
           rel='noopener noreferrer'
-          className='mt-auto self-start rounded pt-3 text-sm font-medium text-primary-400 underline-offset-4 hover:underline'
+          className='mt-auto self-start rounded-sm pt-3 text-sm font-medium text-primary-400 underline-offset-4 hover:underline'
         >
           {runUrl
             ? t('statuspage.pipelines.viewRun', { number: run.number })
