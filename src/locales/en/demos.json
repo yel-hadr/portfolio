@@ -95,24 +95,27 @@
   "sourceHint": "The Source code link at the top of this dialog shows the project.",
   "game": {
     "title": "Game Mode",
-    "description": "The portfolio as a first-person maze, built on cub3D. Aim at a wall and open it to read about me.",
+    "description": "The portfolio as a first-person command center, built on cub3D: four rooms, threats to neutralize, and terminals that open the live demos.",
     "exit": "Exit Game Mode",
-    "desktopOnly": "Game Mode is optimized for desktop. Use standard view on mobile.",
+    "desktopOnly": "FPS Game Mode is optimized for desktop. Use standard scroll view on mobile.",
     "back": "Back to the portfolio",
     "playAnyway": "Play anyway",
-    "briefing": "Four walls in the room ahead hold this portfolio. Aim the crosshair at one and open it.",
+    "briefing": "A DevOps command center in four rooms: About, Skills, Projects and Contact. Neutralize the threats, open the terminals and read the walls.",
     "keys": [
-      "W S or ↑ ↓: walk, A D: step sideways",
-      "Mouse (click the view) or ← →: turn",
-      "Click or E: open the wall in the crosshair",
+      "W A S D (Z Q S D on AZERTY): move · ← →: turn",
+      "Mouse: look around (click the view to capture it)",
+      "Click or F: fire · 1 2 3 or Q: switch weapon",
+      "E: interact with doors, walls, terminals and the crew",
       "Space: open the door ahead · M: sound on or off",
-      "Esc: free the mouse, Esc again to leave"
+      "Esc: free the mouse, Esc again to exit"
     ],
     "status": {
       "system": "System: online",
       "objective": "Objective: explore the portfolio",
       "complete": "Objective complete",
-      "walls": "Walls read {count}/{total}"
+      "walls": "Walls read {count}/{total}",
+      "room": "Room: {name}",
+      "threats": "Threats {count}/{total}"
     },
     "aim": "{name}: click or press E to open",
     "allRead": "Objective complete: every wall read.",
@@ -121,6 +124,86 @@
     "off": "off",
     "backToGame": "Back to the game",
     "use": "Use",
-    "escKey": "Esc"
+    "escKey": "Esc",
+    "rooms": {
+      "about": "About",
+      "skills": "Skills",
+      "projects": "Projects",
+      "contact": "Contact"
+    },
+    "roomEntered": "{name} room.",
+    "panels": {
+      "cub3d": "Terminal: cub3D",
+      "fdf": "Terminal: FdF",
+      "contact": "Secure comms",
+      "cub3dBody": "Runs the live cub3D demo.",
+      "fdfBody": "Runs the live FdF demo.",
+      "contactBody": "Opens a channel: the contact form."
+    },
+    "weapons": ["Kubernetes Kar98k", "Terraform Tactical", "The DevOps Defender"],
+    "weapon": "Weapon: {name}",
+    "enemies": {
+      "ddos": "DDoS Bot",
+      "sql": "SQL Injection"
+    },
+    "aimEnemy": "{name}: click or press F to shoot",
+    "facts": {
+      "ddos": {
+        "title": "Threat Neutralized!",
+        "body": "Fun Fact: I mitigate DDoS using Traefik rate limiting and Fail2Ban."
+      },
+      "sql": {
+        "title": "Injection Blocked!",
+        "body": "Fun Fact: I use parameterized queries and PgBouncer for secure DB pooling."
+      }
+    },
+    "accessGranted": "Access granted",
+    "textMode": "Text-only mode",
+    "textIntro": "The command center's rooms as plain text, without the 3D view.",
+    "intel": "Threat intel",
+    "runDemo": "Run the {name} demo",
+    "openContact": "Open the contact form",
+    "closeDialog": "Close",
+    "menu": {
+      "label": "Main menu",
+      "play": "Play",
+      "info": "Info / Controls",
+      "exit": "Exit",
+      "skip": "Skip game: text-only portfolio",
+      "back": "Back"
+    },
+    "storyTitle": "Mission briefing",
+    "story": "Year: 2026. Role: Lead DevOps Engineer. Mission: Navigate the infrastructure, neutralize DDoS and Injection threats, and secure the core systems. Use your arsenal to explore the facility.",
+    "crewTitle": "The crew",
+    "npcs": {
+      "sysadmin": {
+        "name": "Senior SysAdmin",
+        "line": "Hey! Did you know I use Argo CD for all my GitOps pipelines? Keeps the cluster state perfectly synced."
+      },
+      "architect": {
+        "name": "Cloud Architect",
+        "line": "Psst: read up on Cloud-1. Terraform provisions the AWS infrastructure, then Ansible configures the host."
+      },
+      "network": {
+        "name": "Network Engineer",
+        "line": "Over in BADASS, VXLAN overlays carry the traffic and BGP EVPN runs the control plane, routed with FRRouting."
+      }
+    },
+    "aimNpc": "{name}: press E to talk",
+    "dialogueClose": "E or Esc to close",
+    "doorTo": {
+      "about": "About room",
+      "skills": "Skills room",
+      "projects": "Projects terminal",
+      "contact": "Comms room"
+    },
+    "doorLabel": "Enter: {place}",
+    "doorNear": "Door to the {place}. Press E to open.",
+    "radar": {
+      "you": "You",
+      "threats": "Threats",
+      "crew": "Crew",
+      "doors": "Doors"
+    }
   }
 }

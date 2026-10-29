@@ -25,9 +25,10 @@ export default defineConfig({
           // Vite's lazy-import helper is used by the entry; left unassigned, Rollup hoists it
           // into vendor-r3f and every lazy import() then drags three.js into the first paint.
           if (id.includes('vite/preload-helper')) return 'vendor-react';
-          // Tiny modules only the demo scenes share: in the demos chunk, not chunks of their own
-          if (/src\/(components\/canvas\/ReleaseContext|utils\/themeColors)/.test(id))
-            return 'vendor-r3f-demos';
+          // Tiny shared modules, kept out of chunks of their own: ReleaseContext goes with R3F (the
+          // page Canvas uses it too), the theme reader with the demos
+          if (id.includes('src/components/canvas/ReleaseContext')) return 'vendor-r3f';
+          if (id.includes('src/utils/themeColors')) return 'vendor-r3f-demos';
           if (!id.includes('node_modules')) return undefined;
           if (/node_modules\/three\//.test(id)) return 'vendor-three';
           // drei/three-stdlib parts only the live demos use (cub3D, FdF): their own chunk, so the

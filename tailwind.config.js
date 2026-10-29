@@ -62,17 +62,11 @@ export default {
           '0%': { opacity: '0.5', transform: 'scale(0.4, 0.01)' },
           '45%': { opacity: '1', transform: 'scale(1, 0.01)' },
         },
-        'weapon-bob': {
-          '25%': { transform: 'translate(-6px, 8px)' },
-          '50%': { transform: 'translate(0, 2px)' },
-          '75%': { transform: 'translate(6px, 8px)' },
-        },
       },
       animation: {
         'game-in': 'game-in 300ms ease-out',
         'game-out': 'game-out 250ms ease-in forwards',
         'crt-in': 'crt-in 280ms ease-out',
-        'weapon-bob': 'weapon-bob 600ms ease-in-out infinite',
       },
     },
   },

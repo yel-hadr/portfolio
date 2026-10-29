@@ -4,7 +4,7 @@ import { PageCanvasContext } from '../components/canvas/PageCanvasContext';
 import { WebGLContext } from '../components/canvas/WebGLContext';
 
 // R3F releases an unmounted Canvas's WebGL context (forceContextLoss) 500 ms after unmount
-const CONTEXT_RELEASE_MS = 600;
+export const CONTEXT_RELEASE_MS = 600;
 
 /**
  * For a view that brings its own Canvas (the live demos, Game Mode): while `active`, the page's

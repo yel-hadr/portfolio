@@ -95,16 +95,17 @@
   "sourceHint": "Le lien Code source en haut de cette fenêtre montre le projet.",
   "game": {
     "title": "Mode Jeu",
-    "description": "Le portfolio en labyrinthe à la première personne, construit sur cub3D. Visez un mur et ouvrez-le pour en savoir plus sur moi.",
+    "description": "Le portfolio en centre de commande à la première personne, construit sur cub3D : quatre salles, des menaces à neutraliser et des terminaux qui ouvrent les démos.",
     "exit": "Quitter le Mode Jeu",
-    "desktopOnly": "Le Mode Jeu est optimisé pour ordinateur. Sur mobile, utilisez la vue standard.",
+    "desktopOnly": "Le Mode Jeu FPS est optimisé pour ordinateur. Sur mobile, utilisez la vue défilante standard.",
     "back": "Retour au portfolio",
     "playAnyway": "Jouer quand même",
-    "briefing": "Quatre murs de la salle devant vous contiennent ce portfolio. Visez-en un avec le viseur et ouvrez-le.",
+    "briefing": "Un centre de commande DevOps en quatre salles : À propos, Compétences, Projets et Contact. Neutralisez les menaces, ouvrez les terminaux et lisez les murs.",
     "keys": [
-      "Z S (W S en QWERTY) ou ↑ ↓ : marcher, Q D (A D) : pas de côté",
-      "Souris (cliquez sur la vue) ou ← → : tourner",
-      "Clic ou E : ouvrir le mur dans le viseur",
+      "Z Q S D (W A S D en QWERTY) : se déplacer · ← → : tourner",
+      "Souris : regarder autour (cliquez sur la vue pour la capturer)",
+      "Clic ou F : tirer · 1 2 3 ou A (Q en QWERTY) : changer d’arme",
+      "E : interagir avec les portes, les murs, les terminaux et l’équipe",
       "Espace : ouvrir la porte devant vous · M : son activé ou coupé",
       "Échap : libérer la souris, Échap à nouveau pour quitter"
     ],
@@ -112,7 +113,9 @@
       "system": "Système : en ligne",
       "objective": "Objectif : explorer le portfolio",
       "complete": "Objectif atteint",
-      "walls": "Murs lus {count}/{total}"
+      "walls": "Murs lus {count}/{total}",
+      "room": "Salle : {name}",
+      "threats": "Menaces {count}/{total}"
     },
     "aim": "{name} : cliquez ou appuyez sur E pour ouvrir",
     "allRead": "Objectif atteint : tous les murs sont lus.",
@@ -121,6 +124,86 @@
     "off": "coupé",
     "backToGame": "Retour au jeu",
     "use": "Ouvrir",
-    "escKey": "Échap"
+    "escKey": "Échap",
+    "rooms": {
+      "about": "À propos",
+      "skills": "Compétences",
+      "projects": "Projets",
+      "contact": "Contact"
+    },
+    "roomEntered": "Salle {name}.",
+    "panels": {
+      "cub3d": "Terminal : cub3D",
+      "fdf": "Terminal : FdF",
+      "contact": "Communications sécurisées",
+      "cub3dBody": "Lance la démo cub3D.",
+      "fdfBody": "Lance la démo FdF.",
+      "contactBody": "Ouvre un canal : le formulaire de contact."
+    },
+    "weapons": ["Kubernetes Kar98k", "Terraform Tactical", "The DevOps Defender"],
+    "weapon": "Arme : {name}",
+    "enemies": {
+      "ddos": "Bot DDoS",
+      "sql": "Injection SQL"
+    },
+    "aimEnemy": "{name} : cliquez ou appuyez sur F pour tirer",
+    "facts": {
+      "ddos": {
+        "title": "Menace neutralisée !",
+        "body": "Le saviez-vous : j’atténue les DDoS avec la limitation de débit de Traefik et Fail2Ban."
+      },
+      "sql": {
+        "title": "Injection bloquée !",
+        "body": "Le saviez-vous : j’utilise des requêtes paramétrées et PgBouncer pour un pool de connexions sécurisé."
+      }
+    },
+    "accessGranted": "Accès autorisé",
+    "textMode": "Mode texte",
+    "textIntro": "Les salles du centre de commande en texte, sans la vue 3D.",
+    "intel": "Renseignements sur les menaces",
+    "runDemo": "Lancer la démo {name}",
+    "openContact": "Ouvrir le formulaire de contact",
+    "closeDialog": "Fermer",
+    "menu": {
+      "label": "Menu principal",
+      "play": "Jouer",
+      "info": "Infos / Commandes",
+      "exit": "Quitter",
+      "skip": "Passer le jeu : portfolio en texte",
+      "back": "Retour"
+    },
+    "storyTitle": "Briefing de mission",
+    "story": "Année : 2026. Rôle : Lead DevOps Engineer. Mission : parcourir l’infrastructure, neutraliser les menaces DDoS et d’injection, et sécuriser les systèmes critiques. Utilisez votre arsenal pour explorer les installations.",
+    "crewTitle": "L’équipe",
+    "npcs": {
+      "sysadmin": {
+        "name": "SysAdmin senior",
+        "line": "Salut ! Tu savais que j’utilise Argo CD pour tous mes pipelines GitOps ? L’état du cluster reste parfaitement synchronisé."
+      },
+      "architect": {
+        "name": "Architecte cloud",
+        "line": "Psst : jette un œil à Cloud-1. Terraform provisionne l’infrastructure AWS, puis Ansible configure l’hôte."
+      },
+      "network": {
+        "name": "Spécialiste réseau",
+        "line": "Dans BADASS, des overlays VXLAN transportent le trafic et BGP EVPN gère le plan de contrôle, routé avec FRRouting."
+      }
+    },
+    "aimNpc": "{name} : appuyez sur E pour parler",
+    "dialogueClose": "E ou Échap pour fermer",
+    "doorTo": {
+      "about": "salle À propos",
+      "skills": "salle Compétences",
+      "projects": "terminal Projets",
+      "contact": "salle des communications"
+    },
+    "doorLabel": "Entrer : {place}",
+    "doorNear": "Porte : {place}. Appuyez sur E pour ouvrir.",
+    "radar": {
+      "you": "Vous",
+      "threats": "Menaces",
+      "crew": "Équipe",
+      "doors": "Portes"
+    }
   }
 }
