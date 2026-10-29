@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { MotionConfig } from 'framer-motion';
 
 import {
@@ -18,6 +18,7 @@ import {
   Footer,
   Blog,
 } from './components';
+import { loadScene3D } from './components/canvas/loadScene3D';
 import { PageCanvasContext } from './components/canvas/PageCanvasContext';
 import { WebGLContext } from './components/canvas/WebGLContext';
 import { useWebGL } from './hooks/useWebGL';
@@ -43,10 +44,7 @@ function App() {
   // A live demo's own Canvas is open: the page Canvas steps aside (see PageCanvasContext). A
   // count, because a demo can open from inside Game Mode, and closing it must not resume the page
   const [pageCanvasPauses, setPageCanvasPauses] = useState(0);
-  const pausePageCanvas = useCallback(
-    (paused) => setPageCanvasPauses((n) => n + (paused ? 1 : -1)),
-    []
-  );
+  const pausePageCanvas = (paused) => setPageCanvasPauses((n) => n + (paused ? 1 : -1));
 
   // reducedMotion="user": framer-motion drops transform animations (keeps opacity)
   // when the OS asks for reduced motion.
@@ -82,44 +80,45 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
   const [gameModeOpen, setGameModeOpen] = useState(false);
   const gameModeOpener = useRef(null);
 
-  const openTerminal = useCallback(() => {
+  // Handlers stay stable across renders through the React Compiler (no useCallback)
+  const openTerminal = () => {
     terminalOpener.current = document.activeElement;
     setTerminalCommand(null);
     setTerminalOpen(true);
     track('terminal-open');
-  }, []);
+  };
 
-  const openGames = useCallback(() => {
+  const openGames = () => {
     gamesOpener.current = document.activeElement;
     setGamesOpen(true);
     track('games-open');
-  }, []);
-  const closeGames = useCallback(() => {
+  };
+  const closeGames = () => {
     setGamesOpen(false);
     requestAnimationFrame(() => gamesOpener.current?.focus?.());
-  }, []);
-  const enterGameMode = useCallback(() => {
+  };
+  const enterGameMode = () => {
     gameModeOpener.current = document.activeElement;
     setGameModeOpen(true);
     track('game-mode-open');
-  }, []);
-  const exitGameMode = useCallback(() => {
+  };
+  const exitGameMode = () => {
     setGameModeOpen(false);
     requestAnimationFrame(() => gameModeOpener.current?.focus?.());
-  }, []);
+  };
   // From the games menu: the terminal replaces it, and closing the terminal returns focus to the
   // footer button that opened the menu
-  const playTerminalChallenge = useCallback(() => {
+  const playTerminalChallenge = () => {
     setGamesOpen(false);
     terminalOpener.current = gamesOpener.current;
     setTerminalCommand('game');
     setTerminalOpen(true);
     track('terminal-open');
-  }, []);
-  const closeTerminal = useCallback(() => {
+  };
+  const closeTerminal = () => {
     setTerminalOpen(false);
     requestAnimationFrame(() => terminalOpener.current?.focus?.());
-  }, []);
+  };
 
   // Fetch the terminal chunk (~10 KB gzip) once the page is idle, so the first open is instant
   // instead of waiting on the network. Skipped when the visitor asked to save data.
@@ -131,20 +130,49 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
     return () => cancel(handle);
   }, []);
 
-  // Ctrl+` opens the terminal from anywhere
+  // The 3D layer's first scene is in the Tech section, below the hero. Its chunk is fetched at
+  // idle, and the Canvas (creating the WebGL renderer is one long task) mounts once that section
+  // is within a viewport of the screen, so the first paint and first input never wait on it. A
+  // deep link below the hero mounts it at once; once mounted it stays
+  const [near3D, setNear3D] = useState(false);
   useEffect(() => {
-    const onKeyDown = (e) => {
-      // Ctrl+` (the physical Backquote key, so it also works on AZERTY). A modifier is required,
-      // so typing never triggers it (WCAG 2.1.4 Character Key Shortcuts)
-      if (e.code !== 'Backquote' || !e.ctrlKey || e.altKey || e.shiftKey || terminalOpen) return;
-      // Another dialog (an architecture diagram) owns the keyboard while it is open
-      if (document.querySelector('[aria-modal="true"]')) return;
-      e.preventDefault();
-      openTerminal();
-    };
+    if (!webgl) return undefined;
+    const idle = window.requestIdleCallback ?? ((cb) => window.setTimeout(cb, 2500));
+    const cancel = window.cancelIdleCallback ?? window.clearTimeout;
+    const handle = idle(() => loadScene3D().catch(() => {}), { timeout: 5000 });
+    return () => cancel(handle);
+  }, [webgl]);
+  useEffect(() => {
+    if (!webgl || near3D) return undefined;
+    const target = document.getElementById('tech');
+    if (!target || typeof IntersectionObserver === 'undefined') {
+      setNear3D(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => entries.some((e) => e.isIntersecting) && setNear3D(true),
+      { rootMargin: '100% 0px' }
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [webgl, near3D]);
+
+  // Ctrl+` opens the terminal from anywhere. An effect event: it reads the latest state, so the
+  // listener is added once
+  const onShortcut = useEffectEvent((e) => {
+    // Ctrl+` (the physical Backquote key, so it also works on AZERTY). A modifier is required,
+    // so typing never triggers it (WCAG 2.1.4 Character Key Shortcuts)
+    if (e.code !== 'Backquote' || !e.ctrlKey || e.altKey || e.shiftKey || terminalOpen) return;
+    // Another dialog (an architecture diagram) owns the keyboard while it is open
+    if (document.querySelector('[aria-modal="true"]')) return;
+    e.preventDefault();
+    openTerminal();
+  });
+  useEffect(() => {
+    const onKeyDown = (e) => onShortcut(e);
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [openTerminal, terminalOpen]);
+  }, []);
 
   return (
     // overflow-clip: the 3D layer follows the scroll position and would otherwise extend the
@@ -160,10 +188,10 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
       {/* Interactive waves (2D canvas, fixed behind everything; not a WebGL context) */}
       <WavesBackground paused={!showCanvas && webgl} />
 
-      {/* The 3D layer (one Canvas, lazily loaded). Without WebGL2 it is skipped and every
-        SceneView renders its static fallback. If the renderer or its chunk fails, the
-        boundary drops only the 3D layer. */}
-      {showCanvas && (
+      {/* The 3D layer (one Canvas, lazily loaded, mounted as its first scene nears the screen).
+        Without WebGL2 it is skipped and every SceneView renders its static fallback. If the
+        renderer or its chunk fails, the boundary drops only the 3D layer. */}
+      {showCanvas && near3D && (
         <CanvasErrorBoundary sectionType='canvas' onError={onCanvasError}>
           <Suspense fallback={null}>
             <Scene3D />

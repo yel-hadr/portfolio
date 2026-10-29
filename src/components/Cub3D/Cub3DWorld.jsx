@@ -2415,7 +2415,7 @@ const Cub3DWorld = ({
       onPointerCancel={endDrag}
       onClick={onClick}
       onWheel={onWheel}
-      className='group relative h-full w-full touch-none overflow-hidden bg-background outline-none'
+      className='group relative h-full w-full touch-none overflow-hidden bg-background outline-hidden'
     >
       <Canvas
         frameloop={playing ? 'always' : 'demand'}
@@ -2534,7 +2534,7 @@ const Cub3DWorld = ({
           has its text-only mode instead) */}
       {started && !game && (
         <details className='absolute left-3 top-3 z-30 max-h-[60%] max-w-xs overflow-y-auto rounded-xl bg-background/90 p-3 text-sm text-foreground'>
-          <summary className={`cursor-pointer rounded font-semibold ${styles.hudFocus}`}>
+          <summary className={`cursor-pointer rounded-sm font-semibold ${styles.hudFocus}`}>
             {t('demos.cub3d.panelsHeading')}
           </summary>
           {panels.map(({ id, title, lines }) => (
@@ -2603,7 +2603,7 @@ const Cub3DWorld = ({
       )}
       {!started && !game && (
         // Scrolls on short or zoomed screens, so Start is always reachable
-        <div className='absolute inset-0 z-40 flex overflow-y-auto bg-background/70 p-4 backdrop-blur-sm'>
+        <div className='absolute inset-0 z-40 flex overflow-y-auto bg-background/70 p-4 backdrop-blur-xs'>
           <div className='m-auto w-full max-w-lg rounded-3xl border border-line bg-glass-strong p-6 shadow-raised'>
             <h3 className='text-2xl font-black text-foreground'>
               {t('demos.cub3d.welcome.title')}

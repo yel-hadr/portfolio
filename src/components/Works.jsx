@@ -146,8 +146,10 @@ const Works = () => {
   // Said when a demo's chunk fails to load and its dialog closes again
   const [demoNotice, setDemoNotice] = useState('');
   const Demo = running && DEMOS[running.demo];
+  // `running?.`: the React Compiler reads this as the callback's memo dependency during render,
+  // when no demo is running
   const closeDemo = () => {
-    running.opener?.focus();
+    running?.opener?.focus();
     setRunning(null);
   };
 

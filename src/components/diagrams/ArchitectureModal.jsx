@@ -38,7 +38,7 @@ const ArchitectureModal = ({ diagram, onClose }) => {
   return createPortal(
     <div
       ref={overlayRef}
-      className='fixed inset-0 z-[60] flex justify-center bg-background/75 backdrop-blur-sm sm:[@media(min-height:30rem)]:items-center sm:[@media(min-height:30rem)]:p-6'
+      className='fixed inset-0 z-[60] flex justify-center bg-background/75 backdrop-blur-xs sm:[@media(min-height:30rem)]:items-center sm:[@media(min-height:30rem)]:p-6'
       {...backdrop}
     >
       <div
@@ -71,7 +71,7 @@ const ArchitectureModal = ({ diagram, onClose }) => {
         <div className='min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-8 sm:[@media(min-height:30rem)]:py-6'>
           <p
             id={descId}
-            className='mb-5 max-w-4xl text-sm leading-relaxed text-foreground-muted sm:text-base'
+            className='mb-5 max-w-4xl text-sm leading-relaxed sm:leading-6 text-foreground-muted sm:text-base'
           >
             {t(`${ns}.description`)}
           </p>

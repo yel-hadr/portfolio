@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { ThemeContext } from './context';
@@ -31,33 +31,28 @@ const ThemeProvider = ({ children }) => {
     document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', theme);
   }, [theme]);
 
-  const setTheme = useCallback(
-    (next) => {
-      if (next !== 'light' && next !== 'dark') return;
-      const root = document.documentElement;
-      if (!reduced) {
-        // Cross-fade colors for this one switch only (not on every hover)
-        // One cross-fade window, restarted by each toggle (a quick second toggle keeps it)
-        root.classList.add('theme-transition');
-        window.clearTimeout(fadeTimer.current);
-        fadeTimer.current = window.setTimeout(() => root.classList.remove('theme-transition'), 400);
-      }
-      setThemeState(next);
-      try {
-        localStorage.setItem(STORAGE_KEY, next);
-      } catch {
-        // Storage unavailable: the choice lasts for this visit only
-      }
-    },
-    [reduced]
-  );
+  // Stable across renders through the React Compiler (no useCallback / useMemo)
+  const setTheme = (next) => {
+    if (next !== 'light' && next !== 'dark') return;
+    const root = document.documentElement;
+    if (!reduced) {
+      // Cross-fade colors for this one switch only (not on every hover)
+      // One cross-fade window, restarted by each toggle (a quick second toggle keeps it)
+      root.classList.add('theme-transition');
+      window.clearTimeout(fadeTimer.current);
+      fadeTimer.current = window.setTimeout(() => root.classList.remove('theme-transition'), 400);
+    }
+    setThemeState(next);
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      // Storage unavailable: the choice lasts for this visit only
+    }
+  };
 
-  const toggleTheme = useCallback(
-    () => setTheme(theme === 'dark' ? 'light' : 'dark'),
-    [theme, setTheme]
-  );
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
-  const value = useMemo(() => ({ theme, setTheme, toggleTheme }), [theme, setTheme, toggleTheme]);
+  const value = { theme, setTheme, toggleTheme };
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 

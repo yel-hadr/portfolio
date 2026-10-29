@@ -1,9 +1,129 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4: the theme lives here (there is no tailwind.config.js). Sources are listed by hand,
+   as the v3 config's content was: the app, the blog page templates (build/) and /status/ */
+@import 'tailwindcss' source(none);
+@source './**/*.{js,jsx}';
+@source '../build/**/*.js';
+@source '../status/**/*.html';
+
+/* light: for the few element-level differences tokens cannot carry (prefer tokens), never inside a
+   .scheme-dark island, which stays dark */
+@custom-variant light (:root[data-theme='light'] &:not(.scheme-dark, .scheme-dark *));
+
+/* Design tokens. Values live in the CSS variables below: `:root` is the dark theme,
+   `:root[data-theme='light']` the light one, so every class follows the theme. `inline`, so each
+   utility reads the `--c-*` channels on its own element (a .scheme-dark island resolves them to
+   its dark values) and opacity modifiers (bg-background/80) still work. Every text/background
+   pair meets WCAG AA in both themes (checked by script):
+     dark:  foreground 14.2:1, muted 6.2:1, primary-400 6.9:1, secondary 6.4:1 on every surface;
+            dark text on primary 6.9:1; line-strong >= 3.2:1 on surfaces.
+     light: foreground 16.0:1, muted 7.1:1, primary-400 5.7:1, secondary 5.9:1 on the warm
+            background (>= 4.5 on every surface, glass and the footer band); dark text on
+            primary 4.9:1 (hover 4.5:1); focus ring >= 3.0:1; line-strong >= 3.2:1. */
+@theme inline {
+  --color-background: rgb(var(--c-background)); /* page */
+  --color-surface: rgb(var(--c-surface)); /* opaque panels */
+  --color-surface-raised: rgb(var(--c-surface-raised)); /* inputs, chips, hover */
+  --color-foreground: rgb(var(--c-foreground)); /* headings and body */
+  --color-foreground-muted: rgb(var(--c-foreground-muted)); /* secondary copy */
+  --color-primary: rgb(var(--c-primary)); /* brand orange: button fill */
+  --color-primary-400: rgb(var(--c-primary-400)); /* orange text on the page background */
+  --color-primary-hover: rgb(var(--c-primary-hover)); /* button fill on hover */
+  --color-on-primary: rgb(var(--c-on-primary)); /* text on primary fills (dark in both themes) */
+  --color-secondary: rgb(var(--c-secondary)); /* ice cyan on dark, indigo on light: tech, data */
+  --color-tertiary: rgb(var(--c-tertiary)); /* blue: decorative */
+  --color-success: rgb(var(--c-success)); /* form sent, operational status */
+  --color-danger: rgb(var(--c-danger)); /* form errors, failed status */
+  --color-info: rgb(var(--c-info)); /* tags */
+  --color-focus: rgb(var(--c-focus)); /* keyboard focus rings */
+  --color-night: rgb(var(--c-night)); /* the dark background in both themes: FdF's file colors */
+  --color-ground: rgb(var(--c-ground)); /* the footer's band */
+  /* Translucent fills over the waves (with backdrop-blur, .card-glass) and hairlines carry their
+     own alpha; they are the variables of the same name below */
+  --color-glass: var(--color-glass);
+  --color-glass-strong: var(--color-glass-strong);
+  --color-line: var(--color-line); /* decorative hairlines */
+  --color-line-strong: rgb(var(--c-line-strong)); /* control boundaries (>= 3:1) */
+  /* Depth from tokens: an inner glow on dark cards, soft warm layers in light */
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-modal: var(--shadow-modal);
+}
+
+@theme {
+  --font-sans: Poppins, ui-sans-serif, system-ui, sans-serif;
+  --breakpoint-xs: 28.125rem; /* 450px */
+
+  /* Game Mode (src/components/Cub3D): used behind motion-safe, so reduced motion drops them */
+  --animate-game-in: game-in 300ms ease-out;
+  --animate-game-out: game-out 250ms ease-in forwards;
+  --animate-crt-in: crt-in 280ms ease-out;
+  --animate-prompt-in: prompt-in 180ms ease-out;
+  --animate-hud-tick: hud-tick 3.2s ease-in-out infinite;
+
+  @keyframes game-in {
+    from {
+      opacity: 0;
+      transform: scale(1.04);
+    }
+  }
+  @keyframes game-out {
+    to {
+      opacity: 0;
+      transform: scale(1.04);
+    }
+  }
+  /* A CRT switching on: a bright line, then the picture opens vertically */
+  @keyframes crt-in {
+    0% {
+      opacity: 0.5;
+      transform: scale(0.4, 0.01);
+    }
+    45% {
+      opacity: 1;
+      transform: scale(1, 0.01);
+    }
+  }
+  /* Opacity only: the Press E prompt is centered with a transform */
+  @keyframes prompt-in {
+    from {
+      opacity: 0;
+    }
+  }
+  /* The HUD meters' sheen, running along the bar now and then */
+  @keyframes hud-tick {
+    0% {
+      transform: translateX(0);
+    }
+    60%,
+    100% {
+      transform: translateX(14rem);
+    }
+  }
+}
+
+/* Tailwind v3's preflight defaults that v4 changed, kept so nothing on the page moves: a light grey
+   default border color (v4: currentColor), grey placeholders, and pointer cursors on buttons */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: rgb(229 231 235);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    opacity: 1;
+    color: rgb(156 163 175);
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
 
 @layer base {
-  /* Theme tokens (see tailwind.config.js): "R G B" channels for colors that take an opacity
+  /* Theme tokens (see @theme above): "R G B" channels for colors that take an opacity
      modifier, full colors for the translucent ones. The dark theme is the default; index.html
      sets data-theme before the first paint, and ThemeProvider keeps it in sync.
      .scheme-dark is a dark island in either theme (the terminal's screen): it takes this whole

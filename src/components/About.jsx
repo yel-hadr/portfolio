@@ -22,7 +22,9 @@ const About = () => {
       <SectionHeader id='about' title={t('about.title')} />
       <div className='mt-10 grid gap-10 lg:grid-cols-[3fr_2fr] lg:items-start lg:gap-16'>
         <motion.div variants={reveal()}>
-          <p className={`${styles.body} max-w-prose sm:text-lg`}>{t('person.summary')}</p>
+          <p className={`${styles.body} max-w-prose sm:text-lg sm:leading-7`}>
+            {t('person.summary')}
+          </p>
           <ResumeLink className='mt-8' />
         </motion.div>
 

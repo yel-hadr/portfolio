@@ -1,6 +1,6 @@
 name: CI/CD Pipeline
 
-# Pull requests to main: lint and build (reported as a PR check).
+# Pull requests to main: lint, format, security audit, build and Lighthouse (PR checks).
 # Pushes to main: the same checks, then publish the tested build to GitHub Pages.
 #
 # The site is a GitHub Pages *user* site: Pages serves the main branch of
@@ -19,25 +19,52 @@ on:
 permissions:
   contents: read
 
+# One run per PR (or ref): a new push to a pull request cancels the run in progress. Pushes to
+# main are never cancelled mid-run, so a deploy always finishes (the deploy job also queues on
+# pages-deploy with the status monitor)
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: '22'
+
 jobs:
   lint-and-test:
     name: lint-and-test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          # Caches npm's download cache (~/.npm) keyed on package-lock.json. node_modules
-          # itself is not cached because `npm ci` deletes it before every install.
+          node-version: ${{ env.NODE_VERSION }}
+          # npm's download cache (~/.npm), for the installs that miss the node_modules cache
           cache: npm
 
+      # node_modules itself, keyed on the exact lockfile and Node version: a hit skips npm ci
+      # (which would delete node_modules and reinstall); any dependency change misses
+      - name: Cache node_modules
+        id: modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install (npm ci)
+        if: steps.modules.outputs.cache-hit != 'true'
         run: npm ci
+
+      - name: Security audit (production dependencies)
+        # Fails on any high or critical advisory in what ships to visitors
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Lint
         run: npm run lint
+
+      - name: Format
+        run: npm run format:check
 
       - name: Build
         run: npm run build
@@ -62,12 +89,70 @@ jobs:
           if [ -n "$bad" ]; then echo "Unexpected asset URLs:"; echo "$bad"; exit 1; fi
 
       - name: Upload build
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist
           retention-days: 7
+
+  lighthouse:
+    name: lighthouse
+    needs: lint-and-test
+    # The PR gate: performance, accessibility and best practices must each score >= 90
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Cache node_modules
+        id: modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install (npm ci)
+        if: steps.modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Lighthouse CI
+        # lighthouserc.json: `vite preview` of the tested build, the desktop preset, the median of
+        # five runs, asserted against the 0.9 thresholds. Reports stay in this run's artifacts
+        run: npx --yes @lhci/cli@0.15.1 autorun
+
+      - name: Scores
+        if: always()
+        run: |
+          node -e '
+            const fs = require("fs");
+            const dir = ".lighthouseci/reports";
+            if (!fs.existsSync(`${dir}/manifest.json`)) process.exit(0);
+            const runs = JSON.parse(fs.readFileSync(`${dir}/manifest.json`, "utf8"));
+            const med = runs.find((r) => r.isRepresentativeRun) || runs[0];
+            const pct = (v) => Math.round(v * 100);
+            const rows = Object.entries(med.summary).map(([k, v]) => `| ${k} | ${pct(v)} | ${runs.map((r) => pct(r.summary[k])).join(" / ")} |`);
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, ["### Lighthouse (desktop, median of " + runs.length + " runs)", "", "| Category | Median | Runs |", "| --- | --- | --- |", ...rows, ""].join("\n"));
+          '
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse
+          path: .lighthouseci/reports
+          retention-days: 14
 
   deploy-to-pages:
     name: deploy-to-pages

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { LANGS, dictionaries } from './dictionaries';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
@@ -44,48 +44,43 @@ const I18nProvider = ({ children }) => {
       ?.setAttribute('content', lookup(dictionaries[lang], 'meta.description'));
   }, [lang]);
 
-  const setLang = useCallback(
-    (next) => {
-      if (!LANGS.includes(next) || next === (pending.current ?? lang)) return;
-      // Saved only when the visitor chooses, so the browser language keeps deciding otherwise
-      try {
-        localStorage.setItem(STORAGE_KEY, next);
-      } catch {
-        // Storage can be unavailable (private mode); the choice then lasts for this visit only
-      }
-      if (reduced) {
-        setLangState(next);
-        return;
-      }
-      if (pending.current === null) {
-        window.dispatchEvent(new CustomEvent('site:langchange', { detail: next }));
-      }
-      pending.current = next;
-      const root = document.documentElement;
-      root.classList.add('lang-switching');
-      window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(() => {
-        setLangState(pending.current);
-        pending.current = null;
-        // Fade back in after React has painted the new text
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => root.classList.remove('lang-switching'))
-        );
-      }, FADE_MS);
-    },
-    [lang, reduced]
-  );
+  // Stable across renders through the React Compiler (no useCallback / useMemo)
+  const setLang = (next) => {
+    if (!LANGS.includes(next) || next === (pending.current ?? lang)) return;
+    // Saved only when the visitor chooses, so the browser language keeps deciding otherwise
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      // Storage can be unavailable (private mode); the choice then lasts for this visit only
+    }
+    if (reduced) {
+      setLangState(next);
+      return;
+    }
+    if (pending.current === null) {
+      window.dispatchEvent(new CustomEvent('site:langchange', { detail: next }));
+    }
+    pending.current = next;
+    const root = document.documentElement;
+    root.classList.add('lang-switching');
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      setLangState(pending.current);
+      pending.current = null;
+      // Fade back in after React has painted the new text
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => root.classList.remove('lang-switching'))
+      );
+    }, FADE_MS);
+  };
 
-  const t = useCallback(
-    (key, vars) => {
-      const value = lookup(dictionaries[lang], key) ?? lookup(dictionaries.en, key);
-      if (value === undefined) return key;
-      return typeof value === 'string' ? interpolate(value, vars) : value;
-    },
-    [lang]
-  );
+  const t = (key, vars) => {
+    const value = lookup(dictionaries[lang], key) ?? lookup(dictionaries.en, key);
+    if (value === undefined) return key;
+    return typeof value === 'string' ? interpolate(value, vars) : value;
+  };
 
-  const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
+  const value = { lang, setLang, t };
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 };
 

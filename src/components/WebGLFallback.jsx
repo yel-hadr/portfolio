@@ -30,7 +30,7 @@ const WebGLFallback = ({ reason = 'unsupported', onRetry }) => {
         {onRetry && (
           <button
             onClick={onRetry}
-            className='mt-6 px-6 py-3 border-2 border-transparent bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface'
+            className='mt-6 px-6 py-3 border-2 border-transparent bg-primary hover:bg-primary-hover text-on-primary font-semibold rounded-xl transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface'
           >
             {t('webgl.retry')}
           </button>

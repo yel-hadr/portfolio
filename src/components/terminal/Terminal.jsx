@@ -353,7 +353,7 @@ const Terminal = ({ onClose, initialCommand = null }) => {
         // keeps focus inside the dialog and Escape and the Tab cycle keep working
         tabIndex={-1}
         onKeyDown={onDialogKeyDown}
-        className='flex h-full w-full flex-col overflow-hidden bg-glass-strong font-mono text-sm text-foreground backdrop-blur-md md:h-[min(44rem,85vh)] md:max-w-4xl md:rounded-2xl md:border md:border-line-strong md:shadow-modal outline-none'
+        className='flex h-full w-full flex-col overflow-hidden bg-glass-strong font-mono text-sm text-foreground backdrop-blur-md md:h-[min(44rem,85vh)] md:max-w-4xl md:rounded-2xl md:border md:border-line-strong md:shadow-modal outline-hidden'
       >
         {/* Title bar */}
         <div className='flex items-center gap-3 border-b border-line bg-surface-raised/60 py-1.5 pl-4 pr-1.5'>
@@ -422,7 +422,7 @@ const Terminal = ({ onClose, initialCommand = null }) => {
                   </button>
                 ))}
               </div>
-              <div className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-base outline-2 -outline-offset-2 outline-focus focus-within:outline md:text-sm'>
+              <div className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-base -outline-offset-2 outline-focus focus-within:outline-2 md:text-sm'>
                 <Prompt t={t} />
                 <label htmlFor={inputId} className='sr-only'>
                   {t('terminal.inputLabel')}
@@ -443,7 +443,7 @@ const Terminal = ({ onClose, initialCommand = null }) => {
                   autoCorrect='off'
                   spellCheck={false}
                   enterKeyHint='send'
-                  className='min-w-0 flex-1 bg-transparent text-foreground caret-primary outline-none focus-visible:outline-none'
+                  className='min-w-0 flex-1 bg-transparent text-foreground caret-primary outline-hidden focus-visible:outline-hidden'
                 />
               </div>
             </div>

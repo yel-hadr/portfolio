@@ -1,4 +1,4 @@
-import { lazy, useMemo } from 'react';
+import { lazy } from 'react';
 
 import { projects, technologies } from '../../constans';
 import { useI18n } from '../../i18n/context';
@@ -14,10 +14,7 @@ const TECH_NAMES = technologies.map((tech) => tech.name);
 /** The cub3D demo's dialog, loaded lazily from the Works section */
 const Cub3DModal = ({ onClose }) => {
   const { t } = useI18n();
-  const projectNames = useMemo(
-    () => projects.filter((p) => !p.demo).map((p) => t(`works.items.${p.id}.name`)),
-    [t]
-  );
+  const projectNames = projects.filter((p) => !p.demo).map((p) => t(`works.items.${p.id}.name`));
 
   return (
     <DemoShell id='cub3d' repo={REPO} onClose={onClose}>

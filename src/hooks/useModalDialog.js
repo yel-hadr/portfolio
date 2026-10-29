@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
@@ -46,44 +46,42 @@ export const useModalDialog = (onClose) => {
     return () => releaseRef.current();
   }, []);
 
-  const release = useCallback(() => releaseRef.current(), []);
+  // Stable across renders through the React Compiler (no useCallback)
+  const release = () => releaseRef.current();
 
-  const close = useCallback(() => {
+  const close = () => {
     releaseRef.current();
     onClose();
-  }, [onClose]);
+  };
 
-  const onKeyDown = useCallback(
-    (e) => {
-      // Keys typed in the dialog never reach page-level shortcuts (Ctrl+` for the terminal)
-      e.stopPropagation();
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        close();
-        return;
-      }
-      if (e.key !== 'Tab') return;
-      const panel = panelRef.current;
-      if (!panel) return;
-      const items = [...panel.querySelectorAll(FOCUSABLE)].filter(
-        (el) => el.getClientRects().length > 0
-      );
-      if (!items.length) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      const current = document.activeElement;
-      // Focus on the panel itself (on open, or after a click on a non-interactive part) counts as
-      // outside the cycle: Tab enters at the start, Shift+Tab at the end
-      if (e.shiftKey && (current === first || current === panel)) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && (current === last || current === panel)) {
-        e.preventDefault();
-        first.focus();
-      }
-    },
-    [close]
-  );
+  const onKeyDown = (e) => {
+    // Keys typed in the dialog never reach page-level shortcuts (Ctrl+` for the terminal)
+    e.stopPropagation();
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+      return;
+    }
+    if (e.key !== 'Tab') return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const items = [...panel.querySelectorAll(FOCUSABLE)].filter(
+      (el) => el.getClientRects().length > 0
+    );
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    const current = document.activeElement;
+    // Focus on the panel itself (on open, or after a click on a non-interactive part) counts as
+    // outside the cycle: Tab enters at the start, Shift+Tab at the end
+    if (e.shiftKey && (current === first || current === panel)) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && (current === last || current === panel)) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
 
   // Close only when the press both starts and ends on the backdrop (not a text-selection drag)
   const backdrop = {

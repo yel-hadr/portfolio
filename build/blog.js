@@ -391,8 +391,8 @@ const indexPage = (ctx, lang) => {
 
   const main = `      <div class="mx-auto max-w-3xl">
         <header>
-          <h1 class="text-4xl font-black leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">${escapeHtml(s.indexHeading)}</h1>
-          <p class="mt-4 max-w-prose text-base leading-relaxed text-foreground-muted sm:text-lg">${escapeHtml(s.indexDescription)}</p>
+          <h1 class="text-4xl font-black leading-tight sm:leading-none lg:leading-none tracking-tight text-foreground sm:text-5xl lg:text-6xl">${escapeHtml(s.indexHeading)}</h1>
+          <p class="mt-4 max-w-prose text-base leading-relaxed sm:leading-7 text-foreground-muted sm:text-lg">${escapeHtml(s.indexDescription)}</p>
           <p class="mt-3 flex items-center gap-2 text-sm text-foreground-muted"><span class="text-primary-400">${ICONS.rss}</span><span>${fill(escapeHtml(s.subscribe), { rss: rssLink })}</span></p>
         </header>
         <ul class="mt-10 grid gap-6">
@@ -459,8 +459,8 @@ const postPage = (ctx, lang, index) => {
   const main = `      <article class="mx-auto max-w-3xl" aria-labelledby="post-title">
         <p><a href="${ctx.href(indexPath(lang))}" class="back-link">${ICONS.arrowLeft}${escapeHtml(s.allPosts)}</a></p>
         <header class="mt-6">
-          <h1 id="post-title" class="text-3xl font-black leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">${escapeHtml(title)}</h1>
-          <p class="mt-4 text-base leading-relaxed text-foreground-muted sm:text-lg">${escapeHtml(summary)}</p>
+          <h1 id="post-title" class="text-3xl font-black leading-tight sm:leading-10 lg:leading-none tracking-tight text-foreground sm:text-4xl lg:text-5xl">${escapeHtml(title)}</h1>
+          <p class="mt-4 text-base leading-relaxed sm:leading-7 text-foreground-muted sm:text-lg">${escapeHtml(summary)}</p>
           <div class="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">
             ${postMeta(post, lang, s)}
             ${tagList(post.tags, s.topics)}
@@ -499,8 +499,8 @@ const notFoundPage = (ctx) => {
     '<meta name="robots" content="noindex" />',
   ].join('\n    ');
   const main = `      <div class="mx-auto max-w-3xl">
-        <h1 class="text-4xl font-black leading-tight tracking-tight text-foreground sm:text-5xl">${escapeHtml(en.notFoundHeading)}</h1>
-        <p class="mt-4 text-base leading-relaxed text-foreground-muted sm:text-lg">${escapeHtml(en.notFoundBody)}</p>
+        <h1 class="text-4xl font-black leading-tight sm:leading-none tracking-tight text-foreground sm:text-5xl">${escapeHtml(en.notFoundHeading)}</h1>
+        <p class="mt-4 text-base leading-relaxed sm:leading-7 text-foreground-muted sm:text-lg">${escapeHtml(en.notFoundBody)}</p>
         <p lang="fr" class="mt-3 text-base leading-relaxed text-foreground-muted"><strong class="font-semibold text-foreground">${escapeHtml(fr.notFoundHeading)}.</strong> ${escapeHtml(fr.notFoundBody)}</p>
         <ul class="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-base">
           <li><a href="${ctx.href('/')}" class="text-link inline-block py-0.5">${escapeHtml(en.notFoundHome)}</a></li>

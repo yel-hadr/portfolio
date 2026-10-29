@@ -55,7 +55,7 @@ const PostCard = ({ slug, date, tags, title, summary }) => {
         {/* The link covers the whole card (one link per card); its focus ring is drawn there */}
         <a
           href={blogPath(lang, slug)}
-          className='underline-offset-4 after:absolute after:inset-0 after:rounded-3xl hover:underline focus-visible:outline-none focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-offset-[3px] focus-visible:after:outline-focus'
+          className='underline-offset-4 after:absolute after:inset-0 after:rounded-3xl hover:underline focus-visible:outline-hidden focus-visible:after:outline-2 focus-visible:after:outline-offset-[3px] focus-visible:after:outline-focus'
         >
           {text(title)}
         </a>

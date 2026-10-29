@@ -224,7 +224,7 @@ const ResponseChart = ({ monitor, name, samples, now }) => {
       )}
 
       <details className='mt-4 text-sm'>
-        <summary className='w-fit cursor-pointer rounded font-medium text-foreground'>
+        <summary className='w-fit cursor-pointer rounded-sm font-medium text-foreground'>
           {t('statuspage.metrics.tableToggle')}
         </summary>
         {/* Focusable so keyboard users can scroll it on narrow screens */}
@@ -232,7 +232,7 @@ const ResponseChart = ({ monitor, name, samples, now }) => {
           role='region'
           aria-label={t('statuspage.metrics.tableCaption', { name })}
           tabIndex={0}
-          className='mt-3 overflow-x-auto rounded'
+          className='mt-3 overflow-x-auto rounded-sm'
         >
           <table className='w-full min-w-[28rem] text-left tabular-nums'>
             <caption className='mb-2 text-left text-foreground-muted'>
