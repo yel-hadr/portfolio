@@ -3,9 +3,31 @@ import { useEffect, useRef, useState } from 'react';
 import { styles } from '../../styles';
 import ContactForm from '../ContactForm';
 import { GameInfo } from './GameHud';
-import { GAME_PANELS, NPCS, ROOMS } from './rooms';
+import { GAME_PANELS, NPCS, SECTIONS } from './rooms';
 
 const TERMINALS = GAME_PANELS.filter(({ kind }) => kind === 'terminal').map(({ id }) => id);
+
+/** Experience or education, as in their dossiers: what, where, when, and what was done */
+const Entries = ({ entries }) => (
+  <ol className='mt-3 space-y-4'>
+    {entries.map(({ title, place, date, points }) => (
+      <li key={`${title}-${place}`}>
+        <h5 className='font-bold'>{title}</h5>
+        <p className='text-sm font-semibold'>
+          {place}
+          {date && <span className='font-normal text-foreground-muted'> · {date}</span>}
+        </p>
+        {points.length > 0 && (
+          <ul className='mt-1 list-disc space-y-1 pl-5 text-sm leading-relaxed text-foreground-muted'>
+            {points.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
+        )}
+      </li>
+    ))}
+  </ol>
+);
 
 /**
  * Game Mode's text-only mode: the command center's rooms as plain HTML, with no canvas at all,
@@ -32,7 +54,7 @@ const GameText = ({ t, details, canPlay, returnTo, onRunDemo, onBack, onExit }) 
   };
 
   const body = {
-    about: [...details.welcome.lines, ...details.about.lines].map((line) => (
+    about: details.about.lines.map((line) => (
       <p key={line} className='mt-2 leading-relaxed'>
         {line}
       </p>
@@ -87,15 +109,33 @@ const GameText = ({ t, details, canPlay, returnTo, onRunDemo, onBack, onExit }) 
         </div>
       </>
     ),
+    experience: <Entries entries={details.experience.entries} />,
+    education: <Entries entries={details.education.entries} />,
     contact: (
-      <button
-        ref={contactButton}
-        type='button'
-        onClick={() => setContact(true)}
-        className={`${styles.buttonGhost} mt-3`}
-      >
-        {t('demos.game.openContact')}
-      </button>
+      <>
+        <div className='mt-3 flex flex-wrap gap-3'>
+          <button
+            ref={contactButton}
+            type='button'
+            onClick={() => setContact(true)}
+            className={styles.buttonGhost}
+          >
+            {t('demos.game.openContact')}
+          </button>
+          {details.contact.links.map(({ href, label }) => (
+            <a
+              key={href}
+              href={href}
+              target='_blank'
+              rel='noopener noreferrer'
+              className={styles.buttonGhost}
+            >
+              {label}
+              <span className='sr-only'>{t('footer.newTab')}</span>
+            </a>
+          ))}
+        </div>
+      </>
     ),
   };
 
@@ -121,7 +161,7 @@ const GameText = ({ t, details, canPlay, returnTo, onRunDemo, onBack, onExit }) 
         </div>
         <p className='mt-3 text-foreground-muted'>{t('demos.game.textIntro')}</p>
 
-        {ROOMS.map(({ id }) => (
+        {SECTIONS.map((id) => (
           <section key={id} className='mt-8 border-t border-line pt-6'>
             <h4 className='text-xl font-bold text-primary-400'>{t(`demos.game.rooms.${id}`)}</h4>
             {body[id]}
@@ -152,7 +192,7 @@ const GameText = ({ t, details, canPlay, returnTo, onRunDemo, onBack, onExit }) 
               <div key={id}>
                 <dt className='font-bold'>{t(`demos.game.npcs.${id}.name`)}</dt>
                 <dd className='text-sm leading-relaxed text-foreground-muted'>
-                  {t(`demos.game.npcs.${id}.line`)}
+                  {t(`demos.game.npcs.${id}.line`)} {t(`demos.game.npcs.${id}.hint`)}
                 </dd>
               </div>
             ))}

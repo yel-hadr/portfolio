@@ -1,7 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import { projects, technologies } from '../../constans';
+import { education, experiences, person, projects, technologies } from '../../constans';
 import { CONTEXT_RELEASE_MS, useDemoCanvas } from '../../hooks/useDemoCanvas';
 import { useModalDialog } from '../../hooks/useModalDialog';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
@@ -93,7 +93,6 @@ const GameMode = ({ onClose }) => {
   // What each wall opens into
   const details = useMemo(
     () => ({
-      welcome: { lines: [t('demos.cub3d.panels.welcomeBody'), t('demos.game.briefing')] },
       about: { lines: [t('person.title'), t('person.summary')] },
       skills: { tags: TECH_NAMES },
       projects: {
@@ -102,6 +101,30 @@ const GameMode = ({ onClose }) => {
           description: t(`works.items.${p.id}.description`),
           link: p.source_code_link,
         })),
+      },
+      // As the page's Experience and Education sections show them (an empty date is hidden)
+      experience: {
+        entries: experiences.map((e) => ({
+          title: t(`experience.items.${e.id}.title`),
+          place: e.company_name,
+          date: e.date,
+          points: t(`experience.items.${e.id}.points`),
+        })),
+      },
+      education: {
+        entries: education.map((e) => ({
+          title: t(`education.items.${e.id}.degree`),
+          place: e.school,
+          date: t(`education.items.${e.id}.date`),
+          points: t(`education.items.${e.id}.points`),
+        })),
+      },
+      contact: {
+        lines: [t('demos.game.panels.contactBody')],
+        links: [
+          { href: person.github, label: t('demos.game.links.github') },
+          { href: person.linkedin, label: t('demos.game.links.linkedin') },
+        ],
       },
     }),
     [t]

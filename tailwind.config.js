@@ -62,11 +62,14 @@ export default {
           '0%': { opacity: '0.5', transform: 'scale(0.4, 0.01)' },
           '45%': { opacity: '1', transform: 'scale(1, 0.01)' },
         },
+        // Opacity only: the Press E prompt is centered with a transform
+        'prompt-in': { from: { opacity: '0' } },
       },
       animation: {
         'game-in': 'game-in 300ms ease-out',
         'game-out': 'game-out 250ms ease-in forwards',
         'crt-in': 'crt-in 280ms ease-out',
+        'prompt-in': 'prompt-in 180ms ease-out',
       },
     },
   },
