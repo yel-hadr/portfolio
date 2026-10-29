@@ -285,31 +285,43 @@ const LENS = [0.1, -0.07, -0.1];
 // Past this the fog has swallowed nearly everything: the light and its shadows stop here
 const REACH = 9;
 
+// The graphics tiers (Game Mode's settings): the flashlight's shadow map, and the post-processing.
+// Low drops bloom and grain; High adds MSAA and a wider bloom
+const SHADOW_MAP = { low: 512, medium: 1024, high: 2048 };
+
 /**
- * The post-processing, on its own so it is built once: Bloom, then the passes that merge into
- * one (grain, vignette, tone mapping), then the chromatic aberration (a convolution: last, so it
- * does not split them). Its buffers follow the pixel ratio, and are freed on unmount
+ * The post-processing, on its own so it is built once (per tier: it is keyed on it): Bloom, then
+ * the passes that merge into one (grain, vignette, tone mapping), then the chromatic aberration
+ * (a convolution: last, so it does not split them). Its buffers follow the pixel ratio, and are
+ * freed on unmount. `noFlash` (Reduce flashing) drops the bloom
  */
-const PostFx = memo(function PostFx({ aberration }) {
+const PostFx = memo(function PostFx({ aberration, graphics, noFlash }) {
   const composer = useRef(null);
   const dpr = useThree((s) => s.viewport.dpr);
   useEffect(() => {
     composer.current?.setSize();
   }, [dpr]);
-  useEffect(() => {
+  // Freed in a layout cleanup: the wrapper's own layout cleanup removes the effect passes without
+  // disposing them, and on a remount (a new tier) this runs before it, while they are attached
+  useLayoutEffect(() => {
     const made = composer.current;
     return () => made?.dispose();
   }, []);
+  // MSAA only where the pixel ratio does not already supersample: it doubles two HalfFloat buffers
   return (
-    <EffectComposer ref={composer} multisampling={0}>
-      <Bloom
-        mipmapBlur
-        levels={6}
-        luminanceThreshold={0.9}
-        luminanceSmoothing={0.25}
-        intensity={0.95}
-      />
-      <Noise premultiply blendFunction={BlendFunction.SCREEN} opacity={0.18} />
+    <EffectComposer ref={composer} multisampling={graphics === 'high' && dpr < 1.5 ? 4 : 0}>
+      {graphics !== 'low' && !noFlash && (
+        <Bloom
+          mipmapBlur
+          levels={graphics === 'high' ? 8 : 6}
+          luminanceThreshold={0.9}
+          luminanceSmoothing={0.25}
+          intensity={0.95}
+        />
+      )}
+      {graphics !== 'low' && (
+        <Noise premultiply blendFunction={BlendFunction.SCREEN} opacity={0.18} />
+      )}
       <Vignette offset={0.32} darkness={0.78} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       <ChromaticAberration
@@ -362,7 +374,15 @@ const paintScreen = (canvas, panel, read, c, accent, flat) => {
   }
 };
 
-const Terminals = memo(function Terminals({ panels, discovered, targetRef, res, flat, reduced }) {
+const Terminals = memo(function Terminals({
+  panels,
+  discovered,
+  targetRef,
+  res,
+  flat,
+  reduced,
+  noFlash,
+}) {
   const invalidate = useThree((s) => s.invalidate);
   const shared = useMemo(
     () => ({
@@ -443,7 +463,7 @@ const Terminals = memo(function Terminals({ panels, discovered, targetRef, res, 
   useFrame((state, delta) => {
     const id = targetRef.current;
     // Pulsing only while the game runs every frame: paused (a dossier, Access granted) it holds
-    const pulse = id && !reduced && !flat && state.frameloop === 'always';
+    const pulse = id && !reduced && !noFlash && !flat && state.frameloop === 'always';
     if (id === lit.current && !pulse) return;
     lit.current = id;
     time.current += Math.min(delta, 0.1);
@@ -559,6 +579,8 @@ const Guide = memo(function Guide({ guideRef, W, res, flat, reduced }) {
  * @param doorCells   the door cells; `closedDoors` their state ({ [cell]: true while closed })
  * @param weapon      the weapon in hand; `motion` the shared recoil, bob and sway
  * @param postFx      a shared ref: { aberration } (0..1), pulsed by a shot or a hit
+ * @param graphics    the tier: 'low', 'medium' or 'high'; `noFlash` is Reduce flashing (no
+ *                    bloom, flicker, pulses or muzzle flash)
  */
 const Facility = ({
   shell,
@@ -568,6 +590,8 @@ const Facility = ({
   doorCells,
   closedDoors,
   reduced,
+  noFlash,
+  graphics,
   flat,
   weapon,
   motion,
@@ -1038,7 +1062,8 @@ const Facility = ({
         let changed = false;
         LAMPS.forEach(([, , flickers], i) => {
           if (!flickers) return;
-          const on = Math.sin(time * 23 + i * 7) + Math.sin(time * 3.1 + i) > -1.2;
+          // Reduce flashing: the flickering lamps stay on
+          const on = noFlash || Math.sin(time * 15 + i * 7) + Math.sin(time * 3.1 + i) > -1.2;
           if (lampsOn.current[i] === on) return;
           lampsOn.current[i] = on;
           lamps.setColorAt(i, on ? res.lampOn : res.lampOff);
@@ -1076,7 +1101,7 @@ const Facility = ({
     if (aberration.current) {
       const fx = postFx.current;
       fx.aberration = MathUtils.damp(fx.aberration, 0, 6, dt);
-      const k = reduced ? 0 : fx.aberration * 0.0035;
+      const k = reduced || noFlash ? 0 : fx.aberration * 0.0035;
       aberration.current.offset.set(k, k * 0.6);
     }
     if (moving) state.invalidate();
@@ -1092,6 +1117,7 @@ const Facility = ({
           res={res}
           flat={flat}
           reduced={reduced}
+          noFlash={noFlash}
         />
       )}
       {guideRef && <Guide guideRef={guideRef} W={W} res={res} flat={flat} reduced={reduced} />}
@@ -1168,6 +1194,8 @@ const Facility = ({
             <>
               <object3D ref={spotTarget} position={[0.06, -0.08, -5]} />
               <spotLight
+                // A new shadow map size needs a new light (three keeps the map it first made)
+                key={graphics}
                 ref={spot}
                 position={LENS}
                 angle={0.46}
@@ -1177,7 +1205,7 @@ const Facility = ({
                 decay={1.5}
                 color={res.flashlight}
                 castShadow
-                shadow-mapSize={[1024, 1024]}
+                shadow-mapSize={[SHADOW_MAP[graphics], SHADOW_MAP[graphics]]}
                 shadow-bias={-0.0004}
                 shadow-camera-near={0.1}
                 shadow-camera-far={REACH}
@@ -1191,12 +1219,26 @@ const Facility = ({
               />
             </>
           )}
-          <Gauntlet weapon={weapon} motion={motion} reduced={reduced} flat={flat} colors={res.c} />
+          <Gauntlet
+            weapon={weapon}
+            motion={motion}
+            reduced={reduced}
+            noFlash={noFlash}
+            flat={flat}
+            colors={res.c}
+          />
         </>,
         camera
       )}
 
-      {!flat && <PostFx aberration={aberration} />}
+      {!flat && (
+        <PostFx
+          key={`${graphics}-${noFlash}`}
+          aberration={aberration}
+          graphics={graphics}
+          noFlash={noFlash}
+        />
+      )}
     </>
   );
 };

@@ -23,6 +23,13 @@
     --c-danger: 249 168 212;
     --c-info: 125 211 252;
     --c-line-strong: 119 116 154;
+    /* FdF altitude gradient, low to high: ocean blue, cyan-green, the brand orange. Every point
+       along it is >= 4.5:1 on the background, surfaces and glass (1 px lines) */
+    --c-fdf-low: 59 130 246;
+    --c-fdf-mid: 45 212 191;
+    --c-fdf-high: 255 101 0;
+    /* Night: the dark background in both themes, for what is drawn on the original's dark window */
+    --c-night: 5 8 22;
     --color-glass: rgb(14 11 34 / 0.62);
     --color-glass-strong: rgb(23 19 56 / 0.78);
     --color-line: rgb(255 255 255 / 0.1);
@@ -57,6 +64,10 @@
     --c-danger: 190 24 93;
     --c-info: 3 105 161;
     --c-line-strong: 128 124 160;
+    /* Indigo, teal, burnt crimson: deep inks that hold >= 4.5:1 on the light glass */
+    --c-fdf-low: 76 29 149;
+    --c-fdf-mid: 14 114 104;
+    --c-fdf-high: 167 42 14;
     --color-glass: rgb(255 255 255 / 0.66);
     --color-glass-strong: rgb(255 255 255 / 0.85);
     --color-line: rgb(20 17 43 / 0.12);

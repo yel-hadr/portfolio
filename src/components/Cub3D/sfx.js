@@ -139,6 +139,18 @@ export const createSfx = (volume = 0.7) => {
       burst(0.35, 0.8, 5000, 600);
       tone('triangle', 900, 120, 0.3, 0.25);
     },
+    // A kill: a sharp, falling digital chirp over a low thump, distinct from the shot itself
+    kill: () => {
+      tone('square', 1760, 440, 0.12, 0.28);
+      tone('square', 1320, 330, 0.1, 0.18, 0.06);
+      tone('sine', 140, 40, 0.22, 0.9);
+    },
+    // Integrity gone: a long falling drone, a system powering down
+    failure: () => {
+      tone('sawtooth', 220, 30, 1.4, 0.45);
+      tone('sine', 110, 25, 1.6, 0.8);
+      burst(0.9, 0.4, 1800, 80, 'lowpass', 0.1);
+    },
     // A blast door sliding open: a mechanical rumble and a hiss of air
     hiss: () => {
       tone('sawtooth', 55, 40, 0.7, 0.35);

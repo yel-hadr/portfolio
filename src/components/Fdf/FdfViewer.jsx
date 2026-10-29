@@ -89,20 +89,21 @@ const setHeights = (geometry, map, zScale) => {
   geometry.computeBoundingSphere();
 };
 
-// Altitude colors: low points in blue, through violet, to orange at the top, with the theme's
-// text-safe tokens so 1 px lines keep their contrast on either background (WebGL draws no thicker
-// lines). The "original" palette is one color, as the original draws every line in one (white by
-// default): here the theme's text color. "file" takes the map's own colors (",0xRRGGBB", one per
-// altitude) and the original's white for points without one, drawn on black like its window: the
-// one place the viewer draws colors that are not tokens
+// Altitude colors: the fdf-low/mid/high tokens, ocean blue through cyan-green to the brand orange
+// in the dark theme, indigo through teal to burnt crimson in the light one; every point along
+// them keeps 4.5:1 on its background, since WebGL draws no lines thicker than 1 px. The "original"
+// palette is one color, as the original draws every line in one (white by default): here the
+// theme's text color. "file" takes the map's own colors (",0xRRGGBB", one per altitude) and the
+// original's white for points without one, drawn on night like its window: the one place the
+// viewer draws colors that are not tokens
 const FILE_DEFAULT = '#ffffff'; // the original's color for a point without one (ft_atoi_base)
 const setColors = (geometry, map, palette) => {
-  const channels = readTheme(['info', 'secondary', 'primary-400', 'foreground']);
+  const channels = readTheme(['fdf-low', 'fdf-mid', 'fdf-high', 'foreground']);
   // three.js parses only the comma form of rgb()
   const color = (name) => new Color(`rgb(${channels[name].replace(/ /g, ',')})`);
   const stops =
     palette === 'altitude'
-      ? [color('info'), color('secondary'), color('primary-400')]
+      ? [color('fdf-low'), color('fdf-mid'), color('fdf-high')]
       : [color('foreground')];
   const out = new Color();
   const attribute = geometry.getAttribute('color');
@@ -593,8 +594,8 @@ const FdfViewer = ({ t }) => {
   const fileColors = map.colors && FDF_MAPS.find(({ id }) => id === picked).colors;
   const palettes = fileColors ? ['altitude', 'original', 'file'] : ['altitude', 'original'];
   const shownPalette = palettes.includes(palette) ? palette : 'altitude';
-  // The file's colors are drawn on black: the overlays turn opaque over it, for their contrast
-  const onBlack = shownPalette === 'file';
+  // The file's colors are drawn on night: the overlays turn opaque over it, for their contrast
+  const onNight = shownPalette === 'file';
 
   // Picks a map: drawn once its file is in (at once if it was loaded before). The latest pick
   // wins; a file that fails to load leaves the current map
@@ -690,9 +691,10 @@ const FdfViewer = ({ t }) => {
         aria-label={t('demos.fdf.viewLabel')}
         aria-describedby={helpId}
         onKeyDown={onKeyDown}
-        // The file's colors on black, as in the original's MiniLibX window (light lines and pure
-        // greens would vanish on the light theme)
-        className={`group relative min-h-[50vh] flex-1 touch-none outline-none md:min-h-0 ${onBlack ? 'bg-black' : ''}`}
+        // The file's colors on a night glass, as in the original's dark MiniLibX window: its
+        // white peaks and pure greens would vanish on the light theme, and recoloring them would
+        // change what the original draws
+        className={`group relative min-h-[50vh] flex-1 touch-none outline-none md:min-h-0 ${onNight ? 'bg-night/90 backdrop-blur-md' : ''}`}
       >
         <Canvas
           frameloop='demand'
@@ -724,11 +726,11 @@ const FdfViewer = ({ t }) => {
           status={status}
           projection={projection}
           zScaleText={zScaleText}
-          solid={onBlack}
+          solid={onNight}
         />
         <p
           id={helpId}
-          className={`pointer-events-none absolute bottom-3 left-3 max-w-sm rounded-xl ${onBlack ? 'bg-background' : 'bg-background/80'} px-3 py-2 text-sm text-foreground-muted`}
+          className={`pointer-events-none absolute bottom-3 left-3 max-w-sm rounded-xl ${onNight ? 'bg-background' : 'bg-background/80'} px-3 py-2 text-sm text-foreground-muted`}
         >
           {t('demos.fdf.help')}
         </p>

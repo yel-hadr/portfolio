@@ -48,7 +48,7 @@ const GEOMETRY = {
  * @param motion  Cub3DWorld's shared ref: recoil (set by a shot), bob and sway (from GameMotion)
  * @param colors  theme channels: { dark, muted, info, success, primary }
  */
-const Gauntlet = ({ weapon, motion, reduced, flat, colors }) => {
+const Gauntlet = ({ weapon, motion, reduced, noFlash, flat, colors }) => {
   const group = useRef(null);
   const drum = useRef(null);
   const flash = useRef(null);
@@ -112,8 +112,10 @@ const Gauntlet = ({ weapon, motion, reduced, flat, colors }) => {
     // The drum spins up with each shot and winds down
     spin.current = MathUtils.damp(spin.current, 0, 2.5, dt) + recoil * dt * 60;
     if (drum.current && !reduced) drum.current.rotation.y += (1 + spin.current) * dt;
-    // The muzzle flash on a shot
-    const burst = reduced ? 0 : Math.min(1, recoil);
+    // The muzzle flash: `flash`, set by a shot at most three times a second (WCAG 2.3.1, however
+    // fast the pistol fires), eased out here; none with reduced motion or Reduce flashing
+    m.flash = MathUtils.damp(m.flash ?? 0, 0, 12, dt);
+    const burst = reduced || noFlash ? 0 : m.flash;
     if (flash.current) {
       flash.current.material.opacity = burst;
       flash.current.scale.setScalar(0.6 + burst * 1.4);
