@@ -153,7 +153,7 @@ const ResponseChart = ({ monitor, name, samples, now }) => {
               <path
                 d={d}
                 fill='none'
-                className='stroke-primary'
+                className='stroke-secondary'
                 strokeWidth='2'
                 strokeLinejoin='round'
                 strokeLinecap='round'
@@ -186,7 +186,7 @@ const ResponseChart = ({ monitor, name, samples, now }) => {
                       cx={x(hover.t)}
                       cy={y(hover.ms)}
                       r='4'
-                      className='fill-primary stroke-background'
+                      className='fill-secondary stroke-background'
                       strokeWidth='2'
                     />
                   )}

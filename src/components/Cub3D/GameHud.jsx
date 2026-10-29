@@ -20,10 +20,24 @@ const ARMS = [
   'left-0 top-1/2 h-0.5 w-2.5 -translate-y-1/2 translate-x-[var(--spread)]',
 ];
 
+// The HUD's diegetic look: Midnight Obsidian glass behind ultra-thin 1 px lines, corner brackets
+// like a fighter jet's display (Brackets), monospace labels
 const GLASS = 'border border-line bg-glass backdrop-blur-md';
-// Panels with colored text are opaque: on translucent glass over the dark facility (or a bright
-// high contrast wall) orange and green text fall under AA in one theme or the other
-const SOLID = 'border border-line bg-background';
+// Panels with colored text are near-opaque frosted glass (88%): over the dark facility, or a
+// bright high contrast wall, every text color still holds AA (muted >= 5.3:1, amber 5.9:1)
+const SOLID = 'border border-line bg-surface/[0.88] backdrop-blur-md';
+// The dialogs over the paused game: the dark island's frosted glass
+const DIALOG = 'rounded-lg border bg-glass-strong shadow-modal backdrop-blur-xl';
+
+/** Corner brackets around a panel, in its accent (`className` sets the color), 1 px */
+export const Brackets = ({ className = 'text-foreground-muted', size = 'h-2.5 w-2.5' }) => (
+  <span aria-hidden='true' className={`pointer-events-none absolute -inset-px ${className}`}>
+    <span className={`absolute left-0 top-0 ${size} border-l border-t border-current`} />
+    <span className={`absolute right-0 top-0 ${size} border-r border-t border-current`} />
+    <span className={`absolute bottom-0 left-0 ${size} border-b border-l border-current`} />
+    <span className={`absolute bottom-0 right-0 ${size} border-b border-r border-current`} />
+  </span>
+);
 const MENU_BUTTON = 'w-full justify-center font-mono uppercase tracking-widest';
 const HUD_BUTTON = `inline-flex h-11 items-center gap-2 rounded-xl ${GLASS} px-3 text-sm font-semibold text-foreground hover:border-foreground-muted ${styles.hudFocus}`;
 
@@ -33,11 +47,15 @@ const Meter = ({ label, barRef, tone }) => (
     <p className='flex justify-between font-mono text-xs uppercase tracking-wider text-foreground'>
       {label}
     </p>
-    <div className='mt-1 h-1.5 overflow-hidden rounded-full bg-background/80'>
+    <div className='relative mt-1 h-1.5 overflow-hidden rounded-sm bg-background/80'>
       <div
         ref={barRef}
-        className={`h-full origin-left rounded-full ${tone} transition-colors data-[low=true]:bg-danger`}
+        className={`h-full origin-left rounded-sm ${tone} transition-colors data-[low=true]:bg-danger`}
       />
+      {/* Tick marks every tenth, and a slow sheen running along the bar (not with reduced
+          motion) */}
+      <span className='absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent_0_calc(10%-1px),rgb(var(--c-background)/0.7)_calc(10%-1px)_10%)]' />
+      <span className='absolute inset-y-0 -left-8 w-8 bg-gradient-to-r from-transparent via-foreground/30 to-transparent opacity-0 motion-safe:animate-hud-tick motion-safe:opacity-100' />
     </div>
   </div>
 );
@@ -284,20 +302,23 @@ export const GameHud = ({
       <div
         key={prompt}
         aria-hidden='true'
-        className={`pointer-events-none absolute left-1/2 top-[calc(50%+1.75rem)] z-30 flex -translate-x-1/2 items-center gap-3 whitespace-nowrap rounded-xl ${SOLID} border-primary-400 px-3 py-2 text-foreground motion-safe:animate-prompt-in`}
+        className={`pointer-events-none absolute left-1/2 top-[calc(50%+1.75rem)] z-30 flex -translate-x-1/2 items-center gap-3 whitespace-nowrap rounded-md ${SOLID} border-primary-400/50 px-3 py-2 text-foreground motion-safe:animate-prompt-in`}
       >
-        <kbd className='inline-flex h-8 w-8 items-center justify-center rounded-md border-2 border-foreground font-mono text-base font-black'>
+        <Brackets className='text-primary-400' />
+        <kbd className='inline-flex h-8 w-8 items-center justify-center rounded-sm border border-foreground font-mono text-base font-black'>
           E
         </kbd>
         <span className='flex flex-col leading-tight'>
-          <span className='text-base font-bold'>{t('demos.game.prompt')}</span>
+          <span className='font-mono text-sm font-bold uppercase tracking-wider'>
+            {t('demos.game.prompt')}
+          </span>
           <span className='text-sm'>{prompt}</span>
         </span>
       </div>
     ) : (
       aim && (
         <p
-          className={`pointer-events-none absolute left-1/2 top-[calc(50%+1.75rem)] z-30 -translate-x-1/2 whitespace-nowrap rounded-lg ${GLASS} px-3 py-1 text-sm font-semibold text-foreground`}
+          className={`pointer-events-none absolute left-1/2 top-[calc(50%+1.75rem)] z-30 -translate-x-1/2 whitespace-nowrap rounded-md ${SOLID} px-3 py-1 font-mono text-xs font-semibold uppercase tracking-wider text-foreground`}
         >
           {aim}
         </p>
@@ -308,12 +329,13 @@ export const GameHud = ({
 
     {/* The weapon in hand, its energy, and integrity: bottom right, above the status bar */}
     <div
-      className={`pointer-events-none absolute bottom-12 right-3 z-30 hidden flex-col items-end gap-2 rounded-xl ${SOLID} px-3 py-2 sm:flex [@media(pointer:coarse)]:hidden`}
+      className={`pointer-events-none absolute bottom-12 right-3 z-30 hidden flex-col items-end gap-2 rounded-md ${SOLID} px-3 py-2 sm:flex [@media(pointer:coarse)]:hidden`}
     >
+      <Brackets className='text-primary-400' />
       <p className='font-mono text-sm font-bold uppercase tracking-wider text-primary-400'>
         {t('demos.game.weapons')[weapon]}
       </p>
-      <p className='text-xs text-foreground'>{t('demos.game.weaponRoles')[weapon]}</p>
+      <p className='font-mono text-xs text-foreground'>{t('demos.game.weaponRoles')[weapon]}</p>
       <Meter label={t('demos.game.energy')} barRef={energyBar} tone='bg-info' />
       <Meter label={t('demos.game.integrity')} barRef={integrityBar} tone='bg-success' />
     </div>
@@ -327,8 +349,9 @@ export const GameHud = ({
       {toast && (
         <p
           key={toast.key}
-          className={`rounded-xl ${SOLID} border-2 border-success px-4 py-3 text-foreground motion-safe:animate-game-in`}
+          className={`relative rounded-md ${SOLID} border-success/50 px-4 py-3 text-foreground motion-safe:animate-game-in`}
         >
+          <Brackets className='text-success' />
           <strong className='block font-mono uppercase tracking-wider text-success'>
             {toast.title}
           </strong>{' '}
@@ -341,7 +364,7 @@ export const GameHud = ({
     {slowed && (
       <p
         aria-hidden='true'
-        className={`pointer-events-none absolute bottom-12 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-lg ${SOLID} border-secondary px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider text-foreground`}
+        className={`pointer-events-none absolute bottom-12 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-md ${SOLID} border-secondary px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider text-foreground`}
       >
         {t('demos.game.slowed')}
       </p>
@@ -353,7 +376,8 @@ export const GameHud = ({
         aria-hidden='true'
         className='pointer-events-none absolute inset-0 z-[45] flex items-center justify-center bg-background/75'
       >
-        <p className='rounded-xl border-2 border-success bg-background px-8 py-4 font-mono text-3xl font-black uppercase tracking-widest text-success motion-safe:animate-crt-in'>
+        <p className='relative rounded-md border border-success/50 bg-surface/[0.92] px-8 py-4 font-mono text-3xl font-black uppercase tracking-widest text-success backdrop-blur-md motion-safe:animate-crt-in'>
+          <Brackets className='text-success' size='h-4 w-4' />
           {t('demos.game.accessGranted')}
         </p>
       </div>
@@ -435,8 +459,9 @@ const MissionTracker = ({ t, sections }) => {
   return (
     <section
       aria-label={t('demos.game.mission.label')}
-      className={`pointer-events-none absolute left-3 top-3 z-30 rounded-xl ${SOLID} px-3 py-2 text-foreground`}
+      className={`pointer-events-none absolute left-3 top-3 z-30 rounded-md ${SOLID} px-3 py-2 text-foreground`}
     >
+      <Brackets />
       <p className='font-mono text-xs font-bold uppercase tracking-wider'>
         {t('demos.game.mission.progress', { count: found, total: sections.length })}
       </p>
@@ -517,8 +542,9 @@ export const MissionComplete = ({
         aria-labelledby={titleId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className='m-auto max-h-full w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-success bg-background p-6 text-center text-foreground shadow-modal outline-none motion-safe:animate-crt-in'
+        className={`relative m-auto max-h-full w-full max-w-lg overflow-y-auto ${DIALOG} border-success/40 p-6 text-center text-foreground outline-none motion-safe:animate-crt-in`}
       >
+        <Brackets className='text-success' size='h-4 w-4' />
         <h2
           ref={heading}
           id={titleId}
@@ -662,8 +688,9 @@ export const SystemFailure = ({ t, onReboot, onMenu }) => {
         aria-describedby={bodyId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className='m-auto max-h-full w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-danger bg-background p-6 text-center text-foreground shadow-modal outline-none motion-safe:animate-crt-in'
+        className={`relative m-auto max-h-full w-full max-w-lg overflow-y-auto ${DIALOG} border-danger/40 p-6 text-center text-foreground outline-none motion-safe:animate-crt-in`}
       >
+        <Brackets className='text-danger' size='h-4 w-4' />
         <h2
           id={titleId}
           className='font-mono text-3xl font-black uppercase tracking-widest text-danger'
@@ -740,8 +767,9 @@ export const GameInfo = ({
         aria-labelledby={titleId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className='m-auto max-h-full w-full max-w-2xl overflow-y-auto rounded-2xl border-2 border-primary bg-background p-6 text-foreground shadow-modal outline-none motion-safe:animate-crt-in'
+        className={`relative m-auto max-h-full w-full max-w-2xl overflow-y-auto ${DIALOG} border-primary/40 p-6 text-foreground outline-none motion-safe:animate-crt-in`}
       >
+        <Brackets className='text-primary-400' size='h-4 w-4' />
         {/* Game Mode's dossier: which section of the profile this is */}
         {kicker && (
           <p className='mb-1 border-b border-line pb-2 font-mono text-xs font-bold uppercase tracking-widest text-foreground'>
@@ -1042,8 +1070,9 @@ export const NpcDialogue = ({ t, name, line, reduced, onClose }) => {
       aria-describedby={lineId}
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className='absolute inset-x-3 bottom-12 z-[45] mx-auto max-w-2xl rounded-2xl border-2 border-primary-400 bg-background p-4 text-foreground shadow-modal outline-none'
+      className={`absolute inset-x-3 bottom-12 z-[45] mx-auto max-w-2xl ${DIALOG} border-primary-400/40 p-4 text-foreground outline-none`}
     >
+      <Brackets className='text-primary-400' />
       <p
         id={titleId}
         className='font-mono text-sm font-bold uppercase tracking-wider text-primary-400'

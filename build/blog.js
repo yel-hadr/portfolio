@@ -232,7 +232,7 @@ const THEME_SCRIPT = `<script>
     if (theme !== 'light') theme = 'dark';
     root.dataset.theme = theme;
     document.querySelector('meta[name="theme-color"]').content =
-      theme === 'light' ? '#faf7f2' : '#050816';
+      theme === 'light' ? '#faf7f2' : '#0b0e14';
     document.querySelector('meta[name="color-scheme"]').content = theme;
   })();
 </script>`;
@@ -285,7 +285,7 @@ const renderPage = (ctx, { lang, head, alternatePaths, current, main }) => {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#050816" />
+    <meta name="theme-color" content="#0b0e14" />
     <meta name="color-scheme" content="dark" />
     <link rel="icon" type="image/svg+xml" href="${href('/logo.svg')}" />
     ${THEME_SCRIPT}
