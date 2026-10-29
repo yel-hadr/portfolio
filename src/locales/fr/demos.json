@@ -62,10 +62,39 @@
   "fdf": {
     "name": "FdF",
     "title": "FdF, dans le navigateur",
-    "description": "FdF, projet 42 en C avec MiniLibX, dessine une carte de hauteurs en fil de fer : ici sa carte test_maps/42.fdf. L’original trace des lignes blanches en vue isométrique (grille tournée de 45°, hauteur divisée par deux), déplace, zoome, tourne et change la hauteur ; cette version ajoute les couleurs d’altitude et la perspective.",
+    "description": "FdF, projet 42 en C avec MiniLibX, dessine une carte de hauteurs en fil de fer : ici six de ses test_maps, 42.fdf en premier. L’original trace des lignes blanches en vue isométrique (grille tournée de 45°, hauteur divisée par deux), ou la couleur de chaque point quand le fichier en donne une, déplace, zoome, tourne et change la hauteur ; cette version ajoute les couleurs d’altitude et la perspective.",
     "viewLabel": "Fil de fer FdF",
-    "canvasLabel": "Fil de fer de 42.fdf, {width} points sur {height}, en relief en forme de 42, projection {projection}",
-    "help": "Glisser : déplacer · clic droit ou deux doigts : tourner · molette ou + − : zoom · flèches : déplacer · R, Maj+R : tourner · P : projection",
+    "canvasLabel": "Fil de fer de {file}, {width} points sur {height}, {shape}, projection {projection}",
+    "help": "Glisser : déplacer · clic droit ou deux doigts : tourner · molette ou + − : zoom · flèches : déplacer · R, Maj+R : tourner · P : projection · M, Maj+M : carte",
+    "map": "Carte",
+    "maps": {
+      "42": {
+        "name": "42",
+        "shape": "en relief en forme de 42"
+      },
+      "julia": {
+        "name": "Ensemble de Julia",
+        "shape": "une fractale de Julia en relief"
+      },
+      "elem-fract": {
+        "name": "Ensemble de Mandelbrot",
+        "shape": "une fractale de Mandelbrot en relief"
+      },
+      "t1": {
+        "name": "Paysage",
+        "shape": "un paysage, de l’eau basse aux hauts sommets"
+      },
+      "mars": {
+        "name": "Mars",
+        "shape": "un terrain accidenté"
+      },
+      "pyra": {
+        "name": "Pic et fosse",
+        "shape": "un pic en gradins d’un côté et sa fosse en miroir de l’autre"
+      }
+    },
+    "mapLoaded": "{name} : carte chargée, {width} points sur {height}",
+    "loadError": "Impossible de charger {name}. La carte actuelle reste affichée ; choisissez-la à nouveau pour réessayer.",
     "zScale": "Échelle de hauteur (z)",
     "projection": "Projection",
     "projections": {
@@ -75,7 +104,8 @@
     "colors": "Couleurs",
     "palettes": {
       "altitude": "Selon l’altitude",
-      "original": "Une couleur (comme l’original)"
+      "original": "Une couleur (comme l’original)",
+      "file": "Comme dans le fichier"
     },
     "zoomIn": "Zoomer",
     "zoomOut": "Dézoomer",
@@ -97,7 +127,8 @@
       "view": "vue",
       "status": "état",
       "scanning": "balayage…",
-      "rendered": "rendu"
+      "rendered": "rendu",
+      "loading": "chargement…"
     }
   },
   "loading": "Lancement de la démo…",
