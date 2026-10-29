@@ -40,7 +40,7 @@ import {
 
 import { rgb } from '../../utils/themeColors';
 import { readGameTheme } from './gameTheme';
-import Gauntlet from './Gauntlet';
+import Viewmodel from './Viewmodel';
 import {
   CABLES,
   CRATES,
@@ -374,9 +374,10 @@ const dummy = new Object3D();
 // Scratch color for per-instance colors (no allocation per frame)
 const tint = toColor('0 0 0');
 const NO_OFFSET = new Vector2(0, 0);
-// The flashlight sits just ahead of the eye (the player can stand 0.2 from a wall, so it never
-// ends up inside the wall faced)
-const LENS = [0.1, -0.07, -0.1];
+// The flashlight sits just ahead of the eye, on the left shoulder (the player can stand 0.2 from
+// a wall, so it never ends up inside the wall faced): off the weapon's side, so its beam never
+// floods the viewmodel a few centimeters away
+const LENS = [-0.1, -0.06, -0.1];
 // Past this the fog has swallowed nearly everything: the light and its shadows stop here
 const REACH = 9;
 
@@ -1287,7 +1288,8 @@ const Facility = ({
         </>
       )}
 
-      {/* On the camera: the flashlight (the only shadow caster), its beam, and the gauntlet */}
+      {/* On the camera: the flashlight (the only shadow caster), its beam, and the weapon's
+          viewmodel */}
       {createPortal(
         <>
           {!flat && (
@@ -1314,12 +1316,12 @@ const Facility = ({
                 geometry={res.beamGeometry}
                 material={res.beam}
                 position={LENS}
-                rotation={[0.015, -0.012, 0]}
+                rotation={[0.015, 0.012, 0]}
                 renderOrder={10}
               />
             </>
           )}
-          <Gauntlet
+          <Viewmodel
             weapon={weapon}
             motion={motion}
             reduced={reduced}

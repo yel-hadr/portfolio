@@ -76,12 +76,18 @@ export default {
         },
         // Opacity only: the Press E prompt is centered with a transform
         'prompt-in': { from: { opacity: '0' } },
+        // The HUD meters' sheen, running along the bar now and then
+        'hud-tick': {
+          '0%': { transform: 'translateX(0)' },
+          '60%, 100%': { transform: 'translateX(14rem)' },
+        },
       },
       animation: {
         'game-in': 'game-in 300ms ease-out',
         'game-out': 'game-out 250ms ease-in forwards',
         'crt-in': 'crt-in 280ms ease-out',
         'prompt-in': 'prompt-in 180ms ease-out',
+        'hud-tick': 'hud-tick 3.2s ease-in-out infinite',
       },
     },
   },

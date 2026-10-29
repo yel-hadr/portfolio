@@ -59,7 +59,7 @@ const Sparkline = ({ points, from, to }) => {
       <path
         d={d}
         fill='none'
-        className='stroke-primary'
+        className='stroke-secondary'
         strokeWidth='2'
         strokeLinejoin='round'
         strokeLinecap='round'
@@ -81,7 +81,7 @@ const Sparkline = ({ points, from, to }) => {
         }
         const isolated = !points[i - 1]?.ok && !points[i + 1]?.ok && p.ms !== null;
         return isolated ? (
-          <circle key={p.t} cx={x(p.t)} cy={y(p.ms)} r='1.75' className='fill-primary' />
+          <circle key={p.t} cx={x(p.t)} cy={y(p.ms)} r='1.75' className='fill-secondary' />
         ) : null;
       })}
     </svg>

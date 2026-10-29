@@ -8,53 +8,58 @@
      sets data-theme before the first paint, and ThemeProvider keeps it in sync.
      .scheme-dark is a dark island in either theme (the terminal's screen): it takes this whole
      block on its own element, so every token inside it has its dark value */
+  /* Dark theme, "Midnight Obsidian": a deep slate ground with a cool tint, frosted dark glass
+     cards edged with a faint inner glow (no heavy shadows), soft pearl text, cool slate greys, an
+     electric amber that reads as a hot ember, and ice cyan for tech and data accents */
   :root,
   .scheme-dark {
     color-scheme: dark;
-    --c-background: 5 8 22;
-    --c-surface: 14 11 34;
-    --c-surface-raised: 23 19 56;
-    --c-foreground: 242 241 247;
-    --c-foreground-muted: 170 166 195;
-    --c-primary: 255 101 0;
-    --c-primary-400: 255 133 51;
-    --c-primary-hover: 255 133 51;
-    --c-on-primary: 5 8 22;
-    --c-secondary: 167 139 250;
+    --c-background: 11 14 20;
+    --c-surface: 20 24 35;
+    --c-surface-raised: 30 35 50;
+    --c-foreground: 243 244 246;
+    --c-foreground-muted: 156 163 175;
+    --c-primary: 249 115 22;
+    --c-primary-400: 251 146 60;
+    --c-primary-hover: 251 146 60;
+    --c-on-primary: 11 14 20;
+    --c-secondary: 6 182 212;
     --c-tertiary: 59 130 246;
-    --c-success: 110 231 183;
-    --c-danger: 249 168 212;
-    --c-info: 125 211 252;
-    --c-line-strong: 119 116 154;
+    --c-success: 16 185 129;
+    --c-danger: 251 113 133;
+    --c-info: 103 232 249;
+    --c-line-strong: 107 114 134;
     /* FdF altitude gradient, low to high: ocean blue, cyan-green, the brand orange. Every point
        along it is >= 4.5:1 on the background, surfaces and glass (1 px lines) */
-    --c-fdf-low: 59 130 246;
+    --c-fdf-low: 91 155 248;
     --c-fdf-mid: 45 212 191;
-    --c-fdf-high: 255 101 0;
+    --c-fdf-high: 249 115 22;
     /* Night: the dark background in both themes, for what is drawn on the original's dark window */
-    --c-night: 5 8 22;
-    --color-glass: rgb(14 11 34 / 0.62);
-    --color-glass-strong: rgb(23 19 56 / 0.78);
-    --color-line: rgb(255 255 255 / 0.1);
+    --c-night: 11 14 20;
+    --color-glass: rgb(20 24 35 / 0.6);
+    --color-glass-strong: rgb(28 33 47 / 0.82);
+    /* The cards' hairline: a faint white edge, with an inner glow along the top (shadow-card) */
+    --color-line: rgb(255 255 255 / 0.07);
     /* The timeline's line and arrows: a hairline in dark, a little firmer on the light ground */
     --color-rule: rgb(255 255 255 / 0.1);
-    /* Waves (WavesBackground): the stroke's three stops and its opacity multiplier */
-    --c-wave-1: 255 101 0;
+    /* Waves (WavesBackground): ember amber, violet, ice cyan, and their opacity multiplier */
+    --c-wave-1: 249 115 22;
     --c-wave-2: 167 139 250;
-    --c-wave-3: 59 130 246;
+    --c-wave-3: 6 182 212;
     --wave-alpha: 1;
     /* The footer's band: the page itself in dark, a shade darker than the page in light */
-    --c-ground: 5 8 22;
-    /* Depth: dark mode separates by hairlines (cards cast nothing) and keeps its deep modal
-       shadows; light mode replaces them with soft, warm, layered shadows (shadow-card/raised/modal) */
-    --shadow-card: 0 0 #0000;
-    --shadow-raised: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    --shadow-modal: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-    /* The hero portrait's orange glow: dark only (light mode has no glows) */
+    --c-ground: 11 14 20;
+    /* Depth: dark cards lift by a faint inner glow along their top edge, not a drop shadow, and
+       keep deep modal shadows; light mode uses soft, warm, layered shadows (shadow-card/raised/
+       modal) */
+    --shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.06);
+    --shadow-raised: 0 20px 25px -5px rgb(0 0 0 / 0.25), 0 8px 10px -6px rgb(0 0 0 / 0.2);
+    --shadow-modal: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+    /* The hero portrait's ember glow: dark only (light mode has no glows) */
     --glow: 1;
-    /* The keyboard focus ring: the brand orange on dark (6.8:1); on light a deeper burnt orange
-       that holds >= 3.5:1 even where the frosted navbar is over a dark photo or an orange button */
-    --c-focus: 255 101 0;
+    /* The keyboard focus ring: the amber on dark; on light a deeper burnt orange that holds
+       >= 3.5:1 even where the frosted navbar is over a dark photo or an orange button */
+    --c-focus: 249 115 22;
 
     /* Full colors for places that only take inline styles (the timeline library) */
     --color-background: rgb(var(--c-background));
