@@ -71,3 +71,10 @@ export const TerminalIcon = (props) => (
     <path d='M7 9.5l3 2.5-3 2.5M12.5 15h4.5' />
   </Svg>
 );
+
+export const CrosshairIcon = (props) => (
+  <Svg {...stroke} {...props}>
+    <circle cx='12' cy='12' r='7' />
+    <path d='M12 2v5M12 17v5M2 12h5M17 12h5' />
+  </Svg>
+);

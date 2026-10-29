@@ -168,5 +168,6 @@
     "reload": "Recharger la section",
     "details": "Détails de l’erreur (pour les développeurs)"
   },
-  "loading": "Chargement des scènes 3D"
+  "loading": "Chargement des scènes 3D",
+  "gameMode": "Mode Jeu"
 }

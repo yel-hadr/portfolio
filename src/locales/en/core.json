@@ -168,5 +168,6 @@
     "reload": "Reload section",
     "details": "Error details (for developers)"
   },
-  "loading": "Loading 3D scenes"
+  "loading": "Loading 3D scenes",
+  "gameMode": "Enter Game Mode"
 }

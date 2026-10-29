@@ -5,9 +5,10 @@ import { profile320, profile640 } from '../assets';
 import { person } from '../constans';
 import { reveal, staggerContainer } from '../utils/motion';
 import ResumeLink from './ResumeLink';
+import { CrosshairIcon } from './icons';
 import { useI18n } from '../i18n/context';
 
-const Hero = () => {
+const Hero = ({ onEnterGame }) => {
   const { t } = useI18n();
   return (
     <section
@@ -65,6 +66,16 @@ const Hero = () => {
             <a href='#contact' className={styles.buttonGhost}>
               {t('hero.getInTouch')}
             </a>
+            {/* The way into Game Mode: dashed like a HUD frame, so it reads as something else */}
+            <button
+              type='button'
+              aria-haspopup='dialog'
+              onClick={onEnterGame}
+              className='inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-primary-400 bg-glass px-6 py-[0.625rem] font-bold text-foreground backdrop-blur-md transition-colors hover:bg-primary/15'
+            >
+              <CrosshairIcon className='h-5 w-5 text-primary-400' />
+              {t('gameMode')}
+            </button>
           </motion.div>
         </div>
       </motion.div>
