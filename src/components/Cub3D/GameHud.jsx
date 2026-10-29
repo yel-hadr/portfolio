@@ -21,6 +21,9 @@ const ARMS = [
 ];
 
 const GLASS = 'border border-line bg-glass backdrop-blur-md';
+// Panels with colored text are opaque: on translucent glass over the dark facility (or a bright
+// high contrast wall) orange and green text fall under AA in one theme or the other
+const SOLID = 'border border-line bg-background';
 const HUD_BUTTON = `inline-flex h-11 items-center gap-2 rounded-xl ${GLASS} px-3 text-sm font-semibold text-foreground hover:border-foreground-muted ${styles.hudFocus}`;
 
 /** A labeled bar the game loop fills (`barRef`); it turns red under 30% */
@@ -42,8 +45,18 @@ const Meter = ({ label, barRef, tone }) => (
 export const VolumeSlider = ({ t, volume, onVolume, className = '' }) => {
   const id = useId();
   const percent = Math.round(volume * 100);
+  // Its presses and drags are the slider's own: the view under the HUD must not take them as a
+  // shot, a turn or a request to capture the mouse
+  const keep = (e) => e.stopPropagation();
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div
+      className={`flex items-center gap-2 ${className}`}
+      onPointerDown={keep}
+      onPointerMove={keep}
+      onPointerUp={keep}
+      onClick={keep}
+      onWheel={keep}
+    >
       <label htmlFor={id} className='text-sm font-semibold text-foreground'>
         {t('demos.game.volume')}
       </label>
@@ -58,7 +71,7 @@ export const VolumeSlider = ({ t, volume, onVolume, className = '' }) => {
         aria-valuetext={`${percent}%`}
         className='w-24 accent-primary'
       />
-      <span aria-hidden='true' className='w-9 text-right font-mono text-xs text-foreground-muted'>
+      <span aria-hidden='true' className='w-9 text-right font-mono text-xs text-foreground'>
         {percent}%
       </span>
     </div>
@@ -165,7 +178,7 @@ export const GameHud = ({
 
     {/* The weapon in hand, its energy, and integrity: bottom right, above the status bar */}
     <div
-      className={`pointer-events-none absolute bottom-12 right-3 z-30 hidden flex-col items-end gap-2 rounded-xl ${GLASS} px-3 py-2 sm:flex [@media(pointer:coarse)]:hidden`}
+      className={`pointer-events-none absolute bottom-12 right-3 z-30 hidden flex-col items-end gap-2 rounded-xl ${SOLID} px-3 py-2 sm:flex [@media(pointer:coarse)]:hidden`}
     >
       <p className='font-mono text-sm font-bold uppercase tracking-wider text-primary-400'>
         {t('demos.game.weapons')[weapon]}
@@ -183,11 +196,11 @@ export const GameHud = ({
       {toast && (
         <p
           key={toast.key}
-          className={`rounded-xl ${GLASS} border-2 border-success px-4 py-3 text-foreground motion-safe:animate-game-in`}
+          className={`rounded-xl ${SOLID} border-2 border-success px-4 py-3 text-foreground motion-safe:animate-game-in`}
         >
           <strong className='block font-mono uppercase tracking-wider text-success'>
             {toast.title}
-          </strong>
+          </strong>{' '}
           <span className='mt-1 block text-sm leading-relaxed'>{toast.body}</span>
         </p>
       )}

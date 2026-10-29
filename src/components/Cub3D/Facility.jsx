@@ -16,7 +16,6 @@ import {
   BufferGeometry,
   CanvasTexture,
   CatmullRomCurve3,
-  Color,
   ConeGeometry,
   DoubleSide,
   FogExp2,
@@ -51,6 +50,7 @@ import {
   ROOM_LIGHTS,
   roomAt,
 } from './rooms';
+import { toColor } from './toColor';
 
 // Game Mode's look: map.cub's grid as a dark "DevOps facility" in lockdown. Lit PBR materials
 // (paneled walls with orange and blue accent lines, metal grating, ceiling plates), neon strips
@@ -80,9 +80,6 @@ const TOKENS = [
   'secondary',
 ];
 
-// three's Color parses 'rgb(r,g,b)', not the 'R G B' channels the tokens hold
-const toColor = (channels, k = 1) =>
-  new Color(`rgb(${channels.split(' ').join(',')})`).multiplyScalar(k);
 const luminance = (channels) => channels.split(' ').reduce((a, v) => a + Number(v), 0);
 
 const canvasTexture = (size, paint, repeat) => {
@@ -250,7 +247,6 @@ const doorAxis = (cell, isFloor, W) => {
 // The flashlight's visible beam: a cone, brightest at the lens, fading with distance and toward
 // its rim; drawn additively, so it reads as light scattered in the fog
 const BEAM_SHADER = {
-  uniforms: { color: { value: new Color(1, 0.95, 0.85) }, strength: { value: 0.07 } },
   vertexShader: `
     varying float vAlong;
     varying vec3 vNormal;
@@ -278,7 +274,6 @@ const BEAM_SHADER = {
 
 const dummy = new Object3D();
 const NO_OFFSET = new Vector2(0, 0);
-const FLASHLIGHT = new Color(1, 0.95, 0.85);
 // The flashlight sits just ahead of the eye (the player can stand 0.2 from a wall, so it never
 // ends up inside the wall faced)
 const LENS = [0.1, -0.07, -0.1];
@@ -485,12 +480,14 @@ const Facility = ({
       depthWrite: false,
     });
     holoLabel.color = toColor(t['primary-400'], flat ? 1 : 2.2);
+    // The flashlight: the theme's light tone, warmed a touch toward the brand orange
+    const flashlight = toColor(c.light).lerp(toColor(t.primary), 0.06);
     const beam = flat
       ? null
       : new ShaderMaterial({
           ...BEAM_SHADER,
           uniforms: {
-            color: { value: new Color(1, 0.95, 0.85) },
+            color: { value: flashlight },
             strength: { value: 0.075 },
           },
           transparent: true,
@@ -538,7 +535,8 @@ const Facility = ({
       textures,
       fog: new FogExp2(toColor(c.dark), FOG_DENSITY),
       background: toColor(c.dark),
-      ambient: toColor(c.dark).lerp(new Color(0.5, 0.6, 1), 0.5),
+      ambient: toColor(c.dark).lerp(toColor(t.info), 0.5),
+      flashlight,
     };
     // The theme is read once (the page is inert while Game Mode is open)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -678,6 +676,9 @@ const Facility = ({
 
   // Blast doors: two halves per door, sliding into the walls on either side; dust when one opens
   const doorState = useRef({});
+  // High contrast rebuilds the materials, so the door mesh too, with blank instances: a new mesh
+  // starts from no state, so every door is placed again
+  const doorFor = useRef(null);
   const dustLive = useRef([]);
   const axes = useMemo(
     () => doorCells.map((cell) => doorAxis(cell, isFloor, W)),
@@ -726,6 +727,10 @@ const Facility = ({
     // Doors
     const mesh = doorMesh.current;
     if (mesh) {
+      if (doorFor.current !== mesh) {
+        doorFor.current = mesh;
+        doorState.current = {};
+      }
       let changed = false;
       doorCells.forEach((cell, i) => {
         const target = closedDoors[cell] ? 0 : 1;
@@ -818,8 +823,9 @@ const Facility = ({
     const light = roomLight.current;
     if (light) {
       const room = roomAt(camera.position.x, camera.position.z) ?? 'about';
-      if (room !== lit.current) {
-        lit.current = room;
+      // A new light (back from high contrast, which has none) is placed even in the same room
+      if (room !== lit.current?.room || light !== lit.current.light) {
+        lit.current = { room, light };
         const [x, z] = ROOM_LIGHTS.find(([, , id]) => id === room);
         light.position.set(x, 0.85, z);
         light.color.copy(res.accent(room, 1));
@@ -918,7 +924,7 @@ const Facility = ({
                 intensity={16}
                 distance={REACH}
                 decay={1.5}
-                color={FLASHLIGHT}
+                color={res.flashlight}
                 castShadow
                 shadow-mapSize={[1024, 1024]}
                 shadow-bias={-0.0004}

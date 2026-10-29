@@ -100,8 +100,35 @@ const DOOR_REACH = [0.8, 1.6]; // cells ahead where E (or Space) finds a door
 const TOAST_MS = 8000; // long enough to read the fact (it is also in the text-only mode)
 // Canvas options, made once (R3F re-applies `gl` whenever it is a new object)
 const GAME_DPR = [1, 1.5];
-// Game Mode drops to this when the frame rate sags (PerformanceMonitor): 44% fewer pixels at 1080p
+// Game Mode's resolution follows the frame rate (PerformanceMonitor), down to this: 44% fewer
+// pixels than 1 at 1080p. The monitor's factor (0 to 1, in tenths) and its swings are kept for the
+// session, so a world back from a demo starts where the last one was instead of learning it again
 const LOW_DPR = 0.75;
+const QUALITY_KEY = 'game-quality';
+// Changes of direction (up after down, or down after up) before the resolution stays put. drei's
+// own `flipflops` counts every step, an incline at the top included, so a fast GPU would "fall
+// back" to the lowest resolution within seconds: the swings are counted here instead
+const SWINGS = 3;
+const readTuning = () => {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(QUALITY_KEY));
+    if (saved && saved.factor >= 0 && saved.factor <= 1) {
+      return { factor: saved.factor, dir: saved.dir ?? 0, swings: saved.swings ?? 0 };
+    }
+  } catch {
+    // Nothing saved, or storage blocked
+  }
+  return { factor: 1, dir: 0, swings: 0 };
+};
+// Quarter steps of DPR: each change resizes the canvas and the post-processing buffers
+const quarter = (factor) => Math.round(factor * 4) / 4;
+// The first seconds of play compile shaders and size the shadow map: their hitches are not a
+// slow GPU, so the frame rate is only watched after this
+const WARMUP_MS = 2500;
+const gameDpr = (quality) => {
+  const top = Math.min(Math.max(window.devicePixelRatio || 1, GAME_DPR[0]), GAME_DPR[1]);
+  return LOW_DPR + (top - LOW_DPR) * quality;
+};
 const DEMO_DPR = [1, 2];
 const GAME_GL = { powerPreference: 'default', antialias: false };
 const DEMO_GL = { powerPreference: 'default' };
@@ -412,14 +439,16 @@ const Scene = memo(function Scene({
     !blocked(x + RADIUS, z + RADIUS) &&
     !onProp(x, z);
 
-  // Game Mode's mouse look: the mouse sets where the view is headed and the view eases there, a
-  // little inertia (the controls themselves only capture the mouse). Instant with reduced motion
-  const yawTarget = useRef(null);
+  // Game Mode's mouse look: the mouse adds to the turn still to make and the view eases through
+  // it, a little inertia (the controls themselves only capture the mouse). Instant with reduced
+  // motion. It is kept as what is left to turn, not as a target angle: the controls fold the
+  // camera's angle back into ±PI on every mousemove, so a target past PI would turn the long way
+  const yawPending = useRef(0);
   useEffect(() => {
     if (!facility || !lockable) return undefined;
     const onMouse = (e) => {
       if (document.pointerLockElement !== gl.domElement) return;
-      yawTarget.current = (yawTarget.current ?? camera.rotation.y) - e.movementX * 0.002;
+      yawPending.current -= e.movementX * 0.002;
       input.looked = true;
       invalidate();
     };
@@ -498,19 +527,20 @@ const Scene = memo(function Scene({
   // Held keys move the player; demand mode renders only while something moves
   useFrame((state, delta) => {
     const held = input.current;
-    if (!held.size && !input.looked && yawTarget.current === null) {
+    if (!held.size && !input.looked && !yawPending.current) {
       moving.current = false;
       return;
     }
     // In demand mode the first frame's delta spans the whole pause before it: one step instead
     const dt = moving.current ? Math.min(delta, 0.1) : 1 / 60;
     moving.current = true;
-    if (yawTarget.current !== null) {
-      const target = yawTarget.current;
-      const next = reduced ? target : MathUtils.damp(camera.rotation.y, target, 20, dt);
-      camera.rotation.y = Math.abs(next - target) < 1e-4 ? target : next;
-      if (camera.rotation.y === target) yawTarget.current = null;
-      else state.invalidate();
+    if (yawPending.current) {
+      const left = yawPending.current;
+      // The same easing as MathUtils.damp, applied to what is left to turn
+      const step = reduced || Math.abs(left) < 1e-4 ? left : left * (1 - Math.exp(-20 * dt));
+      camera.rotation.y += step;
+      yawPending.current = left - step;
+      if (yawPending.current) state.invalidate();
     }
     let turn = 0;
     let forward = 0;
@@ -525,10 +555,7 @@ const Scene = memo(function Scene({
       else if (action === 'right') strafe = 1;
     });
     // With reduced motion, turning happens in steps on key press (onKeyDown), not smoothly
-    if (turn && !reduced) {
-      if (yawTarget.current !== null) yawTarget.current += turn * TURN_SPEED * dt;
-      else camera.rotation.y += turn * TURN_SPEED * dt;
-    }
+    if (turn && !reduced) camera.rotation.y += turn * TURN_SPEED * dt;
     if (forward || strafe) {
       const yaw = camera.rotation.y;
       const step = (reduced ? MOVE_SPEED / 2 : MOVE_SPEED) * dt;
@@ -842,7 +869,7 @@ const Cub3DWorld = ({
     })
   );
   const [kills, setKills] = useState(() => enemies.current.filter((e) => !e.alive).length);
-  // The crew: fixed (rooms.js); `paused` holds the threats while one of them talks
+  // The crew: fixed (rooms.js); `paused` holds the threats while a dialog, the menu or a talk is up
   const npcs = useRef(NPCS.map((npc) => ({ ...npc, x: npc.cell[0] + 0.5, z: npc.cell[1] + 0.5 })));
   const paused = useRef(false);
   const [talk, setTalk] = useState(null);
@@ -902,8 +929,28 @@ const Cub3DWorld = ({
     }
   });
   const volumeRef = useRef(volume);
-  const [lowRes, setLowRes] = useState(false);
-  const lowerRes = useCallback(() => setLowRes(true), []);
+  const [tuning] = useState(readTuning);
+  const [quality, setQuality] = useState(() => quarter(tuning.factor));
+  const [settled, setSettled] = useState(() => tuning.swings >= SWINGS);
+  const retune = useCallback(
+    (dir, factor) => {
+      // A step at the top (or the bottom) changes nothing and is no swing
+      if (factor === tuning.factor) return;
+      if (tuning.dir && dir !== tuning.dir) tuning.swings += 1;
+      tuning.dir = dir;
+      tuning.factor = factor;
+      try {
+        sessionStorage.setItem(QUALITY_KEY, JSON.stringify(tuning));
+      } catch {
+        // Storage blocked: the tuning holds for this world only
+      }
+      setQuality(quarter(factor));
+      if (tuning.swings >= SWINGS) setSettled(true);
+    },
+    [tuning]
+  );
+  const onIncline = useCallback(({ factor }) => retune(1, factor), [retune]);
+  const onDecline = useCallback(({ factor }) => retune(-1, factor), [retune]);
   const stride = useRef(null);
   const allReadAnnounced = useRef(false);
   const timers = useRef({});
@@ -1664,7 +1711,7 @@ const Cub3DWorld = ({
   // A press on one of the view's own controls (a button, a link, a nested dialog) is not a shot
   // or a turn. Only what sits inside the view counts: Game Mode and the demo are dialogs too
   const onControl = (e) => {
-    const control = e.target.closest('button, a, summary, details, [role=dialog]');
+    const control = e.target.closest('button, a, input, label, summary, details, [role=dialog]');
     return !!control && e.currentTarget.contains(control);
   };
   const onPointerDown = (e) => {
@@ -1758,16 +1805,32 @@ const Cub3DWorld = ({
     ({ gl, invalidate }) => {
       invalidateRef.current = invalidate;
       gl.domElement.setAttribute('role', 'img');
-      gl.domElement.setAttribute('aria-label', t('demos.cub3d.canvasLabel'));
+      gl.domElement.setAttribute('aria-label', t(`demos.${game ? 'game' : 'cub3d'}.canvasLabel`));
       // Demand mode: a restored context stays blank until something asks for a frame
       gl.domElement.addEventListener('webglcontextrestored', () => invalidate());
     },
-    [t]
+    [t, game]
   );
 
   // Game Mode draws every frame while playing (the threats and the weapon move); paused (the
   // menu, a dialog, Access granted), or with reduced motion (nothing moves on its own), on demand
   const playing = game && started && !openPanel && !access && !talk && !reduced;
+  // The threats hold still, and wear nothing down, whenever the game is not being played: the
+  // menu, a wall's text or the contact form, Access granted, a crew member talking. Frames still
+  // run then (the energy refill draws), so they must be told, not just left undrawn
+  const held = game && (!started || !!openPanel || access || !!talk);
+  useLayoutEffect(() => {
+    paused.current = held;
+  }, [held]);
+  const [watching, setWatching] = useState(false);
+  useEffect(() => {
+    if (!playing) {
+      setWatching(false);
+      return undefined;
+    }
+    const id = setTimeout(() => setWatching(true), WARMUP_MS);
+    return () => clearTimeout(id);
+  }, [playing]);
 
   return (
     <div
@@ -1797,7 +1860,7 @@ const Cub3DWorld = ({
       <Canvas
         frameloop={playing ? 'always' : 'demand'}
         // Full screen in Game Mode: a lower pixel ratio and no MSAA (the textures are pixel art)
-        dpr={game ? (lowRes ? LOW_DPR : GAME_DPR) : DEMO_DPR}
+        dpr={game ? gameDpr(quality) : DEMO_DPR}
         gl={game ? GAME_GL : DEMO_GL}
         // Game Mode: the flashlight's shadows, and tone mapping left to the post-processing (or
         // none at all in high contrast)
@@ -1843,10 +1906,11 @@ const Cub3DWorld = ({
           />
         )}
         {game && <DoorLabel label={doorLabel} />}
-        {/* Watches the frame rate only while it runs every frame; a lasting dip lowers the
-            resolution for the rest of the session */}
-        {playing && !flat && (
-          <PerformanceMonitor flipflops={3} onDecline={lowerRes} onFallback={lowerRes} />
+        {/* Watches the frame rate only while it runs every frame, after the warm-up: the
+            resolution steps down on a lasting dip and back up when there is room; after three
+            changes of direction it stays where it is for the session */}
+        {watching && !flat && !settled && (
+          <PerformanceMonitor factor={tuning.factor} onIncline={onIncline} onDecline={onDecline} />
         )}
       </Canvas>
 
@@ -1913,10 +1977,11 @@ const Cub3DWorld = ({
       )}
 
       {lockable && started && !locked && (
+        // In Game Mode bottom left, above the status bar: the weapon panel holds the bottom right
         <button
           type='button'
           onClick={lookWithMouse}
-          className={`absolute right-3 z-30 inline-flex ${game ? 'bottom-24' : 'bottom-3'} h-11 items-center rounded-xl border border-line-strong bg-glass px-4 text-sm font-semibold text-foreground backdrop-blur-md hover:border-foreground-muted ${styles.hudFocus}`}
+          className={`absolute z-30 inline-flex ${game ? 'bottom-12 left-3' : 'bottom-3 right-3'} h-11 items-center rounded-xl border border-line-strong bg-glass px-4 text-sm font-semibold text-foreground backdrop-blur-md hover:border-foreground-muted ${styles.hudFocus}`}
         >
           {t('demos.cub3d.mouseLook')}
         </button>
@@ -1995,7 +2060,8 @@ const Cub3DWorld = ({
         </div>
       )}
 
-      {game && (
+      {/* Not behind the menu, whose own settings would otherwise be in the tab order twice */}
+      {game && started && (
         <GameHud
           t={t}
           aim={target && aimText(t, enemies.current, target)}

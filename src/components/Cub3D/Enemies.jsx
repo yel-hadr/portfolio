@@ -8,7 +8,6 @@ import {
   BufferGeometry,
   CanvasTexture,
   CapsuleGeometry,
-  Color,
   IcosahedronGeometry,
   InstancedMesh,
   MathUtils,
@@ -28,6 +27,7 @@ import {
 
 import { readTheme, rgb } from '../../utils/themeColors';
 import { ICON_Y, iconSpot } from './rooms';
+import { toColor } from './toColor';
 
 // Game Mode's layer inside the Canvas: the threats (low-poly "glitch" entities drifting toward
 // the player once in sight, each leaving a faint trail, the nearest two lighting the walls in
@@ -50,10 +50,6 @@ const LIGHTS = 2; // threats lighting their surroundings at once (the nearest on
 const THREAT_COLORS = { ddos: 'danger', sql: 'success' };
 // The effects' colors: the rifle's blue trail, the pistol's green blocks, the blaster's orange
 const FX_COLORS = { trail: 'info', blocks: 'success', radial: 'primary' };
-
-// three's Color parses 'rgb(r,g,b)', not the 'R G B' channels the tokens hold
-const toColor = (channels, k = 1) =>
-  new Color(`rgb(${channels.split(' ').join(',')})`).multiplyScalar(k);
 
 // A name tag over a threat or a crew member, in theme colors
 const labelTexture = (colors, color, label) => {

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import {
   BoxGeometry,
-  Color,
   CylinderGeometry,
   MathUtils,
   MeshBasicMaterial,
@@ -10,6 +9,7 @@ import {
   SphereGeometry,
   TorusGeometry,
 } from 'three';
+import { toColor } from './toColor';
 
 // Game Mode's weapon as a 3D viewmodel in the camera's lower right: a "Data Purger" gauntlet with
 // glowing coils around its barrel, a drum that spins up on each shot, vents, and a muzzle flash.
@@ -27,7 +27,10 @@ const BASE = [0.118, -0.088, -0.28];
 const SCALE = 0.5;
 // Turned in toward the crosshair and tipped a little, as a viewmodel is
 const AIM = [-0.06, 0.16, 0];
-const OVER = { depthTest: false, depthWrite: false };
+// Drawn over the world without a depth test, and marked transparent (at full opacity) so three
+// draws it in the transparent pass, after the world's own transparent objects (the beam, labels,
+// trails, lasers, dust), sorted last by its high renderOrder: nothing ever shows through it
+const OVER = { depthTest: false, depthWrite: false, transparent: true };
 
 // The parts' shapes, shared by every tuning
 const GEOMETRY = {
@@ -53,8 +56,7 @@ const Gauntlet = ({ weapon, motion, reduced, flat, colors }) => {
   const variant = VARIANTS[weapon];
 
   const materials = useMemo(() => {
-    const color = (name, k = 1) =>
-      new Color(`rgb(${colors[name].split(' ').join(',')})`).multiplyScalar(k);
+    const color = (name, k = 1) => toColor(colors[name], k);
     const glow = flat ? color(variant.color) : color(variant.color, 3);
     const made = {
       metal: flat
