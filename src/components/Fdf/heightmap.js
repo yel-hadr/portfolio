@@ -1,16 +1,5 @@
-// test_maps/42.fdf from github.com/yel-hadr/my_fdf_42, verbatim: each number is the altitude of
-// one point of a 19 x 11 grid (a .fdf may also carry ",0xRRGGBB" colors; this one has none).
-export const MAP_42 = `0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-0  0 10 10  0  0 10 10  0  0  0 10 10 10 10 10  0  0  0
-0  0 10 10  0  0 10 10  0  0  0  0  0  0  0 10 10  0  0
-0  0 10 10  0  0 10 10  0  0  0  0  0  0  0 10 10  0  0
-0  0 10 10 10 10 10 10  0  0  0  0 10 10 10 10  0  0  0
-0  0  0 10 10 10 10 10  0  0  0 10 10  0  0  0  0  0  0
-0  0  0  0  0  0 10 10  0  0  0 10 10  0  0  0  0  0  0
-0  0  0  0  0  0 10 10  0  0  0 10 10 10 10 10 10  0  0
-0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0`;
+// The .fdf format: one line per row of the grid, one altitude per point (the maps are in
+// src/data/fdfMaps.js).
 
 /** A .fdf file as { width, height, z: number[] (row by row), min, max } */
 export const parseFdf = (text) => {
@@ -26,5 +15,12 @@ export const parseFdf = (text) => {
     );
   const width = Math.min(...rows.map((r) => r.length));
   const z = rows.flatMap((r) => r.slice(0, width));
-  return { width, height: rows.length, z, min: Math.min(...z), max: Math.max(...z) };
+  // A loop, not Math.min(...z): spreading a large map overflows the call stack
+  let min = Infinity;
+  let max = -Infinity;
+  z.forEach((value) => {
+    if (value < min) min = value;
+    if (value > max) max = value;
+  });
+  return { width, height: rows.length, z, min, max };
 };
