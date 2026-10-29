@@ -5,8 +5,10 @@ import {
   BufferAttribute,
   BufferGeometry,
   Color,
+  DoubleSide,
   LineBasicMaterial,
   MathUtils,
+  MeshBasicMaterial,
   MOUSE,
   OrthographicCamera,
   PerspectiveCamera,
@@ -37,6 +39,9 @@ const SPAN = Math.hypot(MAP.width, MAP.height); // the grid's diagonal
 const ROTATE_STEP = Math.PI / 12; // 15° per R
 const PAN_STEP = 0.6; // world units per arrow key
 const ZOOM_STEP = 1.15;
+const SCAN_TIME = 1.6; // s: the wireframe drawn in, row by row, as it loads
+const EDGES = (MAP.width - 1) * MAP.height + MAP.width * (MAP.height - 1);
+const VERTICES = MAP.width * MAP.height;
 // Moves for the arrow keys and their buttons: screen direction (x right, y up) and glyph
 const PAN = [
   { dir: 'left', key: 'ArrowLeft', x: -1, y: 0, glyph: '←' },
@@ -100,9 +105,10 @@ const setColors = (geometry, palette) => {
   attribute.needsUpdate = true;
 };
 
-const Model = ({ zScale, palette, turns, reduced }) => {
+const Model = ({ zScale, palette, turns, reduced, scanId, onScan }) => {
   const invalidate = useThree((s) => s.invalidate);
   const group = useRef(null);
+  const sheet = useRef(null);
   // Not created in JSX, so R3F does not own them: freed on unmount below
   const geometry = useMemo(buildGeometry, []);
   const material = useMemo(() => new LineBasicMaterial({ vertexColors: true }), []);
@@ -143,10 +149,106 @@ const Model = ({ zScale, palette, turns, reduced }) => {
   });
   useEffect(() => invalidate(), [turns, invalidate]);
 
+  // The load scan: the edges are drawn in index order (row by row) while a translucent sheet in
+  // the theme's orange sweeps from the first row to the last. Skipped under reduced motion
+  const scan = useRef(reduced ? 1 : 0);
+  const scanning = useRef(false);
+  // Two-sided, so it shows whichever way the model is turned; freed on unmount like the lines
+  const sheetMaterial = useMemo(
+    () =>
+      new MeshBasicMaterial({
+        color: new Color(`rgb(${readTheme(['primary-400'])['primary-400'].replace(/ /g, ',')})`),
+        transparent: true,
+        opacity: 0.3,
+        depthWrite: false,
+        side: DoubleSide,
+      }),
+    []
+  );
+  useEffect(() => () => sheetMaterial.dispose(), [sheetMaterial]);
+  // Reset view scans it in again
+  const firstScan = useRef(scanId);
+  useEffect(() => {
+    if (scanId === firstScan.current || reduced) return;
+    scan.current = 0;
+    invalidate();
+  }, [scanId, reduced, invalidate]);
+  useFrame((state, delta) => {
+    const progress = scan.current;
+    if (progress >= 1 && !scanning.current) return;
+    // Its first frame's delta spans the time before it opened: one step instead
+    const dt = scanning.current ? Math.min(delta, 0.1) : 1 / 60;
+    scanning.current = progress < 1;
+    const next = reduced ? 1 : Math.min(1, progress + dt / SCAN_TIME);
+    scan.current = next;
+    const count = geometry.index.count;
+    geometry.setDrawRange(0, next >= 1 ? count : Math.floor((next * count) / 2) * 2);
+    if (sheet.current) {
+      sheet.current.visible = next < 1;
+      sheet.current.position.z = (next - 0.5) * (MAP.height - 1);
+    }
+    onScan?.(next);
+    state.invalidate();
+  });
+  const sheetHeight = MAP.max * ALTITUDE * zScale + 0.6;
+
   return (
     <group ref={group}>
       <lineSegments geometry={geometry} material={material} />
+      {!reduced && (
+        <mesh ref={sheet} position={[0, sheetHeight / 2 - 0.3, -(MAP.height - 1) / 2]}>
+          <planeGeometry args={[MAP.width + 1, sheetHeight]} />
+          <primitive object={sheetMaterial} attach='material' />
+        </mesh>
+      )}
     </group>
+  );
+};
+
+/**
+ * A terminal-style readout over the view: the original's command, the map's grid and counts, the
+ * current view, and the load scan's progress. The counter's running figure is visual only; the
+ * total is in the text for screen readers
+ */
+const Readout = ({ t, counterRef, scanned, projection, zScaleText }) => {
+  // [label, value, shown on phones too]: a short readout there, so it does not cover the model
+  const rows = [
+    ['grid', `${MAP.width} × ${MAP.height}`, false],
+    ['vertices', null, true],
+    ['edges', EDGES, true],
+    ['zRange', `${MAP.min} → ${MAP.max}`, false],
+    ['view', `${t(`demos.fdf.projections.${projection}`)} · z ${zScaleText}`, false],
+  ];
+  return (
+    <div className='pointer-events-none absolute left-3 top-3 rounded-xl border border-line bg-background/85 px-3 py-2 font-mono text-xs leading-relaxed text-foreground'>
+      <p>
+        <span aria-hidden='true' className='text-primary-400'>
+          ${' '}
+        </span>
+        ./exut_fdf_bonus test_maps/42.fdf
+      </p>
+      <dl className='mt-1 grid grid-cols-[auto_auto] gap-x-4'>
+        {rows.map(([key, value, always]) => (
+          <div key={key} className={always ? 'contents' : 'hidden sm:contents'}>
+            <dt className='text-foreground-muted'>{t(`demos.fdf.readout.${key}`)}</dt>
+            <dd className='tabular-nums'>
+              {value ?? (
+                <>
+                  <span aria-hidden='true' ref={counterRef}>
+                    {scanned ? VERTICES : 0}
+                  </span>
+                  <span className='sr-only'>{VERTICES}</span>
+                </>
+              )}
+            </dd>
+          </div>
+        ))}
+        <dt className='text-foreground-muted'>{t('demos.fdf.readout.status')}</dt>
+        <dd className={scanned ? 'text-success' : 'text-foreground-muted'}>
+          {t(`demos.fdf.readout.${scanned ? 'rendered' : 'scanning'}`)}
+        </dd>
+      </dl>
+    </div>
   );
 };
 
@@ -303,8 +405,16 @@ const FdfViewer = ({ t }) => {
   const [projection, setProjection] = useState('isometric');
   const [palette, setPalette] = useState('altitude');
   const [turns, setTurns] = useState(0);
+  const [scanId, setScanId] = useState(0);
   const actionsRef = useRef({});
   const glRef = useRef(null);
+  // The load scan's progress, written straight to the readout's counter (no render per frame)
+  const counterRef = useRef(null);
+  const [scanned, setScanned] = useState(reduced);
+  const onScan = useCallback((progress) => {
+    if (counterRef.current) counterRef.current.textContent = Math.round(progress * VERTICES);
+    if (progress >= 1) setScanned(true);
+  }, []);
   const sliderId = useId();
   const helpId = useId();
 
@@ -323,6 +433,10 @@ const FdfViewer = ({ t }) => {
   const reset = () => {
     setTurns(0);
     act('reset');
+    if (!reduced) {
+      setScanned(false);
+      setScanId((n) => n + 1);
+    }
   };
 
   // Keys act while the viewer has focus (Escape is left to the dialog)
@@ -362,9 +476,23 @@ const FdfViewer = ({ t }) => {
             gl.domElement.setAttribute('aria-label', canvasLabel);
           }}
         >
-          <Model zScale={zScale} palette={palette} turns={turns} reduced={reduced} />
+          <Model
+            zScale={zScale}
+            palette={palette}
+            turns={turns}
+            reduced={reduced}
+            scanId={scanId}
+            onScan={onScan}
+          />
           <Cameras projection={projection} reduced={reduced} actionsRef={actionsRef} />
         </Canvas>
+        <Readout
+          t={t}
+          counterRef={counterRef}
+          scanned={scanned}
+          projection={projection}
+          zScaleText={zScaleText}
+        />
         <p
           id={helpId}
           className='pointer-events-none absolute bottom-3 left-3 max-w-sm rounded-xl bg-background/80 px-3 py-2 text-sm text-foreground-muted'

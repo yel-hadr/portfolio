@@ -88,7 +88,17 @@
       "down": "Move down",
       "right": "Move right"
     },
-    "rotateBack": "Rotate back 15°"
+    "rotateBack": "Rotate back 15°",
+    "readout": {
+      "grid": "grid",
+      "vertices": "vertices",
+      "edges": "edges",
+      "zRange": "z range",
+      "view": "view",
+      "status": "status",
+      "scanning": "scanning…",
+      "rendered": "rendered"
+    }
   },
   "loading": "Starting the demo…",
   "failed": "This demo could not start on this device.",
