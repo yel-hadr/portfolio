@@ -106,6 +106,7 @@
   "game": {
     "title": "Game Mode",
     "description": "The portfolio as a first-person command center, built on cub3D: four rooms, threats to neutralize, and terminals that open the live demos.",
+    "canvasLabel": "First-person view of the map.cub facility: four dark server rooms joined by blast doors",
     "exit": "Exit Game Mode",
     "desktopOnly": "FPS Game Mode is optimized for desktop. Use standard scroll view on mobile.",
     "back": "Back to the portfolio",
@@ -184,6 +185,16 @@
     },
     "storyTitle": "Mission briefing",
     "story": "Year: 2026. Role: Lead DevOps Engineer. Mission: Navigate the infrastructure, neutralize DDoS and Injection threats, and secure the core systems. Use your arsenal to explore the facility.",
+    "settings": "Settings",
+    "contrast": "High contrast",
+    "contrastOn": "High contrast on: flat bright colors, no fog or effects.",
+    "contrastOff": "High contrast off.",
+    "volume": "Volume",
+    "energy": "Energy",
+    "integrity": "Integrity",
+    "recharging": "Recharging: wait for the energy bar to refill.",
+    "integrityLow": "Integrity low: back away from the threats.",
+    "hologram": "COMMAND HUB",
     "crewTitle": "The crew",
     "npcs": {
       "sysadmin": {

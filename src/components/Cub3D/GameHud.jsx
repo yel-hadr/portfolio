@@ -1,123 +1,106 @@
-import { memo, useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useModalDialog } from '../../hooks/useModalDialog';
 import { styles } from '../../styles';
 
-// Game Mode's heads-up display over the cub3D view: crosshair, weapon, status bar, the sound and
-// exit buttons, and the dialog a wall opens into. Everything is DOM over the canvas, so none of
-// it costs a WebGL draw.
+// Game Mode's heads-up display over the 3D view, in glass panels: crosshair (it spreads while
+// moving and after a shot), the weapon's name with its energy, integrity, the status bar, the fact
+// toast, Access granted, and the text-only, sound, volume, contrast and exit controls; the dialog a
+// wall opens into. Everything is DOM over the canvas, so none of it costs a WebGL draw. The game
+// loop writes the crosshair's spread and the bars straight to their elements (no render per frame).
 
-// The three weapons, seen from behind as in a 90s shooter: 18 columns of pixels, one letter per
-// color ('.' is empty). Gloved hands grip each one; the bottom rows run off the screen edge.
-const WEAPONS = [
-  // Kubernetes Kar98k: a long barrel with a scope over a wooden stock
-  [
-    '........oo........',
-    '.......oBBo.......',
-    '.......oBho.......',
-    '.......oBBo.......',
-    '......oSSSSo......',
-    '......oSLLSo......',
-    '......oSSSSo......',
-    '.......oBBo.......',
-    '......oWWWWo......',
-    '.....oWWWWWWo.....',
-    '....oWWWWWWWWo....',
-    '...oGGWWWWWWGGo...',
-    '..oGGGGWWWWGGGGo..',
-    '..oGgGGoWWoGGgGo..',
-    '.oGGGGGoWWoGGGGGo.',
-    '.oGGGGGo..oGGGGGo.',
-  ],
-  // Terraform Tactical: a compact pistol
-  [
-    '..................',
-    '..................',
-    '..................',
-    '.......oooo.......',
-    '......oBBBBo......',
-    '......oBhBBo......',
-    '......oBBBBo......',
-    '......oBBBBo......',
-    '.....oRRRRRRo.....',
-    '....oGGGGGGGGo....',
-    '...oGGgGGgGGgGo...',
-    '...oGGGGGGGGGGo...',
-    '..oGGGGGGGGGGGGo..',
-    '..oGGGGGGGGGGGGo..',
-    '...oCCCCCCCCCCo...',
-    '...oCCCCCCCCCCo...',
-  ],
-  // The DevOps Defender: a blaster with a glowing core
-  [
-    '..................',
-    '......oooooo......',
-    '.....oLLLLLLo.....',
-    '....oRBBBBBBRo....',
-    '....oBBLLLLBBo....',
-    '....oBBLhhLBBo....',
-    '....oBBLLLLBBo....',
-    '.....oBBBBBBo.....',
-    '.....oRRRRRRo.....',
-    '...ooGGGGGGGGoo...',
-    '..oGGgGGgGGgGGGo..',
-    '..oGGGGGGGGGGGGo..',
-    '..oGGGGGGGGGGGGo..',
-    '...oGGGGGGGGGGo...',
-    '...oCCCCCCCCCCo...',
-    '...oCCCCCCCCCCo...',
-  ],
-];
-const FILLS = {
-  o: 'fill-background',
-  L: 'fill-info',
-  h: 'fill-foreground',
-  R: 'fill-primary',
-  B: 'fill-foreground-muted',
-  S: 'fill-surface-raised',
-  W: 'fill-primary-hover',
-  G: 'fill-secondary',
-  g: 'fill-tertiary',
-  C: 'fill-primary',
-};
-// One rect per run of same-colored pixels in a row
-const toPixels = (rows) =>
-  rows.flatMap((row, y) =>
-    [...row.matchAll(/([^.])\1*/g)].map((run) => ({ x: run.index, y, w: run[0].length, c: run[1] }))
-  );
-const PIXELS = WEAPONS.map(toPixels);
-
-// The crosshair: a cross, or corner brackets while something is in the sights
-const CROSS = 'M16 5v7M16 20v7M5 16h7M20 16h7';
+// The crosshair while something is in the sights: corner brackets
 const BRACKETS = 'M6 12V6h6M20 6h6v6M26 20v6h-6M12 26H6v-6';
+// Its four arms, pushed out by --spread (set by the game loop)
+const ARMS = [
+  'left-1/2 top-0 h-2.5 w-0.5 -translate-x-1/2 -translate-y-[calc(100%+var(--spread))]',
+  'left-1/2 top-0 h-2.5 w-0.5 -translate-x-1/2 translate-y-[var(--spread)]',
+  'left-0 top-1/2 h-0.5 w-2.5 -translate-y-1/2 -translate-x-[calc(100%+var(--spread))]',
+  'left-0 top-1/2 h-0.5 w-2.5 -translate-y-1/2 translate-x-[var(--spread)]',
+];
 
-const HUD_BUTTON = `inline-flex h-11 items-center gap-2 rounded-xl border border-line-strong bg-background/85 px-3 text-sm font-semibold text-foreground hover:border-foreground-muted ${styles.hudFocus}`;
+const GLASS = 'border border-line bg-glass backdrop-blur-md';
+// Panels with colored text are opaque: on translucent glass over the dark facility (or a bright
+// high contrast wall) orange and green text fall under AA in one theme or the other
+const SOLID = 'border border-line bg-background';
+const HUD_BUTTON = `inline-flex h-11 items-center gap-2 rounded-xl ${GLASS} px-3 text-sm font-semibold text-foreground hover:border-foreground-muted ${styles.hudFocus}`;
 
-// Memoized: the rects only change with the weapon. The game loop moves `weaponRef` (bob, sway,
-// recoil) with one transform per frame, and flashes `flashRef` on a shot
-const Weapon = memo(function Weapon({ weapon, weaponRef, flashRef }) {
+/** A labeled bar the game loop fills (`barRef`); it turns red under 30% */
+const Meter = ({ label, barRef, tone }) => (
+  <div aria-hidden='true' className='w-40'>
+    <p className='flex justify-between font-mono text-xs uppercase tracking-wider text-foreground'>
+      {label}
+    </p>
+    <div className='mt-1 h-1.5 overflow-hidden rounded-full bg-background/80'>
+      <div
+        ref={barRef}
+        className={`h-full origin-left rounded-full ${tone} transition-colors data-[low=true]:bg-danger`}
+      />
+    </div>
+  </div>
+);
+
+/** The master volume, 0 to 1, as a percentage slider */
+export const VolumeSlider = ({ t, volume, onVolume, className = '' }) => {
+  const id = useId();
+  const percent = Math.round(volume * 100);
+  // Its presses and drags are the slider's own: the view under the HUD must not take them as a
+  // shot, a turn or a request to capture the mouse
+  const keep = (e) => e.stopPropagation();
   return (
     <div
-      aria-hidden='true'
-      // Decorative, and in the way of the touch pad on phones
-      className='pointer-events-none absolute bottom-9 left-1/2 z-30 hidden -translate-x-1/2 translate-y-4 sm:block'
+      className={`flex items-center gap-2 ${className}`}
+      onPointerDown={keep}
+      onPointerMove={keep}
+      onPointerUp={keep}
+      onClick={keep}
+      onWheel={keep}
     >
-      <div ref={weaponRef} data-moving='false'>
-        <svg viewBox='0 -8 18 24' shapeRendering='crispEdges' className='w-32 md:w-40'>
-          <polygon ref={flashRef} points='6,0 12,0 16,-8 2,-8' className='fill-info' opacity='0' />
-          {PIXELS[weapon].map(({ x, y, w, c }) => (
-            <rect key={`${x}-${y}`} x={x} y={y} width={w} height='1' className={FILLS[c]} />
-          ))}
-        </svg>
-      </div>
+      <label htmlFor={id} className='text-sm font-semibold text-foreground'>
+        {t('demos.game.volume')}
+      </label>
+      <input
+        id={id}
+        type='range'
+        min={0}
+        max={100}
+        step={5}
+        value={percent}
+        onChange={(e) => onVolume(Number(e.target.value) / 100)}
+        aria-valuetext={`${percent}%`}
+        className='w-24 accent-primary'
+      />
+      <span aria-hidden='true' className='w-9 text-right font-mono text-xs text-foreground'>
+        {percent}%
+      </span>
     </div>
   );
-});
+};
+
+/** The high contrast switch (bright flat colors, no fog or post-processing) */
+export const ContrastToggle = ({ t, contrast, onContrast, className }) => (
+  <button type='button' aria-pressed={contrast} onClick={onContrast} className={className}>
+    <svg
+      aria-hidden='true'
+      viewBox='0 0 24 24'
+      className='h-5 w-5'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='1.75'
+    >
+      <circle cx='12' cy='12' r='8' />
+      <path d='M12 4a8 8 0 010 16z' fill='currentColor' />
+    </svg>
+    {t('demos.game.contrast')}
+    <span aria-hidden='true'>{t(contrast ? 'demos.game.on' : 'demos.game.off')}</span>
+  </button>
+);
 
 /**
- * Crosshair, weapon and its name, status bar (room, threats, walls), the fact toast, the Access
- * granted overlay, and the text-only, sound and exit buttons
+ * Crosshair, the weapon's name and energy, integrity, status bar (room, threats, walls), the
+ * fact toast, the Access granted overlay, and the text-only, sound, volume, contrast and exit
+ * controls
  */
 export const GameHud = ({
   t,
@@ -134,48 +117,75 @@ export const GameHud = ({
   onSound,
   onTextMode,
   onExit,
-  weaponRef,
-  flashRef,
+  crosshairRef,
+  energyBar,
+  integrityBar,
+  hitRef,
+  contrast,
+  onContrast,
+  volume,
+  onVolume,
 }) => (
   <>
-    {/* CRT scanlines: one static layer, composited once */}
+    {/* A red edge, flashed by the game loop when a threat wears integrity down */}
     <div
+      ref={hitRef}
       aria-hidden='true'
-      className='pointer-events-none absolute inset-0 z-20 bg-[repeating-linear-gradient(to_bottom,transparent_0_2px,rgb(var(--c-background)/0.14)_2px_3px)]'
+      className='pointer-events-none absolute inset-0 z-20 opacity-0 shadow-[inset_0_0_120px_24px_rgb(var(--c-danger)/0.75)]'
     />
 
-    <div className='pointer-events-none absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2'>
-      <svg
-        aria-hidden='true'
-        viewBox='0 0 32 32'
-        fill='none'
-        className={`h-8 w-8 ${aim ? 'text-primary' : 'text-foreground'}`}
-      >
-        {/* A dark outline under the line, so it shows on any wall */}
-        {[
-          ['stroke-background', 5],
-          ['', 2],
-        ].map(([outline, width]) => (
-          <path
-            key={width}
-            className={outline}
-            stroke='currentColor'
-            strokeWidth={width}
-            d={aim ? BRACKETS : CROSS}
-          />
-        ))}
-      </svg>
+    <div
+      ref={crosshairRef}
+      aria-hidden='true'
+      data-moving='false'
+      style={{ '--spread': '4px' }}
+      className={`pointer-events-none absolute left-1/2 top-1/2 z-30 h-0 w-0 ${aim ? 'text-primary' : 'text-foreground'}`}
+    >
+      {aim ? (
+        <svg viewBox='0 0 32 32' fill='none' className='absolute -left-4 -top-4 h-8 w-8'>
+          {[
+            ['stroke-background', 5],
+            ['', 2],
+          ].map(([outline, width]) => (
+            <path
+              key={width}
+              className={outline}
+              stroke='currentColor'
+              strokeWidth={width}
+              d={BRACKETS}
+            />
+          ))}
+        </svg>
+      ) : (
+        <>
+          {ARMS.map((arm) => (
+            <span
+              key={arm}
+              className={`absolute ${arm} rounded-sm bg-current shadow-[0_0_0_1px_rgb(var(--c-background)/0.8)] transition-transform duration-75`}
+            />
+          ))}
+          <span className='absolute -left-px -top-px h-0.5 w-0.5 rounded-full bg-current' />
+        </>
+      )}
     </div>
     {aim && (
-      <p className='pointer-events-none absolute left-1/2 top-[calc(50%+1.75rem)] z-30 -translate-x-1/2 whitespace-nowrap rounded-lg bg-background/85 px-3 py-1 text-sm font-semibold text-foreground'>
+      <p
+        className={`pointer-events-none absolute left-1/2 top-[calc(50%+1.75rem)] z-30 -translate-x-1/2 whitespace-nowrap rounded-lg ${GLASS} px-3 py-1 text-sm font-semibold text-foreground`}
+      >
         {aim}
       </p>
     )}
 
-    <Weapon weapon={weapon} weaponRef={weaponRef} flashRef={flashRef} />
-    <p className='pointer-events-none absolute bottom-12 right-3 z-30 hidden rounded-lg bg-background px-3 py-1 font-mono text-sm font-bold uppercase tracking-wider text-primary-400 sm:block [@media(pointer:coarse)]:hidden'>
-      {t('demos.game.weapons')[weapon]}
-    </p>
+    {/* The weapon in hand, its energy, and integrity: bottom right, above the status bar */}
+    <div
+      className={`pointer-events-none absolute bottom-12 right-3 z-30 hidden flex-col items-end gap-2 rounded-xl ${SOLID} px-3 py-2 sm:flex [@media(pointer:coarse)]:hidden`}
+    >
+      <p className='font-mono text-sm font-bold uppercase tracking-wider text-primary-400'>
+        {t('demos.game.weapons')[weapon]}
+      </p>
+      <Meter label={t('demos.game.energy')} barRef={energyBar} tone='bg-info' />
+      <Meter label={t('demos.game.integrity')} barRef={integrityBar} tone='bg-success' />
+    </div>
 
     {/* Facts from a neutralized threat: a live region that is always there, filled for 8 s */}
     <div
@@ -186,11 +196,11 @@ export const GameHud = ({
       {toast && (
         <p
           key={toast.key}
-          className='rounded-xl border-2 border-success bg-background px-4 py-3 text-foreground motion-safe:animate-game-in'
+          className={`rounded-xl ${SOLID} border-2 border-success px-4 py-3 text-foreground motion-safe:animate-game-in`}
         >
           <strong className='block font-mono uppercase tracking-wider text-success'>
             {toast.title}
-          </strong>
+          </strong>{' '}
           <span className='mt-1 block text-sm leading-relaxed'>{toast.body}</span>
         </p>
       )}
@@ -208,7 +218,9 @@ export const GameHud = ({
       </div>
     )}
 
-    <p className='absolute inset-x-0 bottom-0 z-30 flex min-h-9 flex-wrap items-center gap-x-3 border-t border-line-strong bg-background/90 px-3 font-mono text-xs uppercase tracking-wider text-foreground'>
+    <p
+      className={`absolute inset-x-0 bottom-0 z-30 flex min-h-9 flex-wrap items-center gap-x-3 border-x-0 border-b-0 ${GLASS} px-3 font-mono text-xs uppercase tracking-wider text-foreground`}
+    >
       <span aria-hidden='true' className='h-2 w-2 shrink-0 rounded-full bg-success' />
       <span>{t('demos.game.status.system')}</span>
       <span aria-hidden='true'>|</span>
@@ -223,7 +235,7 @@ export const GameHud = ({
       </span>
     </p>
 
-    <div className='absolute right-3 top-3 z-50 flex flex-col items-end gap-2 sm:flex-row'>
+    <div className='absolute right-3 top-3 z-50 flex flex-col items-end gap-2 lg:flex-row lg:items-center'>
       <button type='button' onClick={onTextMode} className={HUD_BUTTON}>
         {t('demos.game.textMode')}
       </button>
@@ -244,6 +256,13 @@ export const GameHud = ({
         {t('demos.game.sound')}
         <span aria-hidden='true'>{t(sound ? 'demos.game.on' : 'demos.game.off')}</span>
       </button>
+      <VolumeSlider
+        t={t}
+        volume={volume}
+        onVolume={onVolume}
+        className={`h-11 rounded-xl ${GLASS} px-3`}
+      />
+      <ContrastToggle t={t} contrast={contrast} onContrast={onContrast} className={HUD_BUTTON} />
       <button type='button' onClick={onExit} className={HUD_BUTTON}>
         {t('demos.game.exit')}
         <kbd
@@ -349,9 +368,14 @@ export const MainMenu = ({
   onStartLook,
   onTextMode,
   onExit,
+  contrast,
+  onContrast,
+  volume,
+  onVolume,
 }) => {
   const panel = useRef(null);
   const previous = useRef(null);
+  const settingsId = useId();
   useEffect(() => {
     const from = previous.current;
     previous.current = screen;
@@ -420,6 +444,19 @@ export const MainMenu = ({
                 </button>
               </li>
             </ul>
+            {/* Settings, before the game starts: high contrast and the master volume */}
+            <section aria-labelledby={settingsId} className='mt-5 border-t border-line pt-4'>
+              <h4 id={settingsId} className='text-sm font-semibold text-foreground-muted'>
+                {t('demos.game.settings')}
+              </h4>
+              <ContrastToggle
+                t={t}
+                contrast={contrast}
+                onContrast={onContrast}
+                className={`${styles.buttonGhost} mt-3 w-full justify-center gap-2`}
+              />
+              <VolumeSlider t={t} volume={volume} onVolume={onVolume} className='mt-3' />
+            </section>
           </>
         )}
         {screen === 'story' && (
