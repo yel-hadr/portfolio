@@ -1,4 +1,6 @@
 import {
+  Suspense,
+  lazy,
   memo,
   useCallback,
   useEffect,
@@ -9,7 +11,7 @@ import {
   useState,
 } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Html, PointerLockControls } from '@react-three/drei';
+import { Html, PerformanceMonitor, PointerLockControls } from '@react-three/drei';
 import {
   BoxGeometry,
   CanvasTexture,
@@ -29,7 +31,20 @@ import ReleaseContext from '../canvas/ReleaseContext';
 import { GameLayer } from './Enemies';
 import { GameHud, GameInfo, MainMenu, NpcDialogue } from './GameHud';
 import { MAP_CUB, parseCub } from './map';
-import { ENEMIES, GAME_DOORS, GAME_PANELS, NPCS, WEAPON_COUNT, WEAPON_FX, roomAt } from './rooms';
+import {
+  ENEMIES,
+  GAME_DOORS,
+  GAME_PANELS,
+  NPCS,
+  PROP_BOXES,
+  WEAPON_COUNT,
+  WEAPON_FX,
+  roomAt,
+} from './rooms';
+
+// Game Mode's look (lit materials, props, flashlight, post-processing): its own chunk, so the
+// cub3D demo never loads it
+const Facility = lazy(() => import('./Facility'));
 
 // A web homage to cub3D: the project's own map.cub as a first-person maze. The original casts
 // one ray per screen column; here three.js draws the walls as boxes, and the minimap shows the
@@ -85,10 +100,23 @@ const DOOR_REACH = [0.8, 1.6]; // cells ahead where E (or Space) finds a door
 const TOAST_MS = 8000; // long enough to read the fact (it is also in the text-only mode)
 // Canvas options, made once (R3F re-applies `gl` whenever it is a new object)
 const GAME_DPR = [1, 1.5];
+// Game Mode drops to this when the frame rate sags (PerformanceMonitor): 44% fewer pixels at 1080p
+const LOW_DPR = 0.75;
 const DEMO_DPR = [1, 2];
 const GAME_GL = { powerPreference: 'default', antialias: false };
 const DEMO_GL = { powerPreference: 'default' };
 const CAMERA = { fov: 50, near: 0.05, far: 60 };
+const CONTRAST_KEY = 'game-contrast';
+const VOLUME_KEY = 'game-volume';
+// Fills a HUD bar to `value` (0 to 100), only when its whole percent changes
+const writeBar = (el, value) => {
+  if (!el) return;
+  const v = Math.round(value);
+  if (el.dataset.value === String(v)) return;
+  el.dataset.value = String(v);
+  el.style.transform = `scaleX(${v / 100})`;
+  el.dataset.low = String(v < 30);
+};
 
 const KEYS = {
   KeyW: 'forward',
@@ -276,8 +304,15 @@ const Scene = memo(function Scene({
   onLockChange,
   spawn,
   reduced,
+  facility,
+  flat,
+  weapon,
+  motion,
+  postFx,
+  hologramLabel,
 }) {
   const camera = useThree((s) => s.camera);
+  const gl = useThree((s) => s.gl);
   const size = useThree((s) => s.size);
   const invalidate = useThree((s) => s.invalidate);
   const walls = useRef(null);
@@ -294,6 +329,8 @@ const Scene = memo(function Scene({
   // GPU resources made here are not owned by R3F (they are passed as args), so they are freed
   // on unmount below
   const resources = useMemo(() => {
+    // Game Mode draws its own world (Facility)
+    if (facility) return null;
     const colors = readTheme(COLOR_NAMES);
     const tex = Object.fromEntries(
       Object.keys(PAINTERS).map((side) => [
@@ -314,10 +351,11 @@ const Scene = memo(function Scene({
     const fog =
       sum(colors.background) < sum(colors.foreground) ? colors.background : colors.foreground;
     return { tex, wallMaterials, door, box, fog: `rgb(${fog.split(' ').join(',')})` };
-  }, []);
+  }, [facility]);
 
   useEffect(
     () => () => {
+      if (!resources) return;
       const { tex, wallMaterials, door, box } = resources;
       Object.values(tex).forEach((t) => t.dispose());
       new Set([...wallMaterials, door]).forEach((m) => m.dispose());
@@ -327,6 +365,7 @@ const Scene = memo(function Scene({
   );
 
   useLayoutEffect(() => {
+    if (!walls.current) return;
     const dummy = new Object3D();
     shell.forEach(({ x, z }, i) => {
       dummy.position.set(x + 0.5, 0.5, z + 0.5);
@@ -360,11 +399,33 @@ const Scene = memo(function Scene({
   }, [camera, size, invalidate]);
 
   const blocked = (x, z) => solid(Math.floor(x), Math.floor(z));
+  // Game Mode's racks and crates are in the way too
+  const onProp = (x, z) =>
+    facility &&
+    PROP_BOXES.some(
+      ([x0, z0, x1, z1]) => x > x0 - RADIUS && x < x1 + RADIUS && z > z0 - RADIUS && z < z1 + RADIUS
+    );
   const free = (x, z) =>
     !blocked(x - RADIUS, z - RADIUS) &&
     !blocked(x + RADIUS, z - RADIUS) &&
     !blocked(x - RADIUS, z + RADIUS) &&
-    !blocked(x + RADIUS, z + RADIUS);
+    !blocked(x + RADIUS, z + RADIUS) &&
+    !onProp(x, z);
+
+  // Game Mode's mouse look: the mouse sets where the view is headed and the view eases there, a
+  // little inertia (the controls themselves only capture the mouse). Instant with reduced motion
+  const yawTarget = useRef(null);
+  useEffect(() => {
+    if (!facility || !lockable) return undefined;
+    const onMouse = (e) => {
+      if (document.pointerLockElement !== gl.domElement) return;
+      yawTarget.current = (yawTarget.current ?? camera.rotation.y) - e.movementX * 0.002;
+      input.looked = true;
+      invalidate();
+    };
+    document.addEventListener('mousemove', onMouse);
+    return () => document.removeEventListener('mousemove', onMouse);
+  }, [facility, lockable, gl, camera, input, invalidate]);
 
   // Walls hide the panels: a walk along the grid from the eye to each panel, far cheaper than
   // drei's occlude (raycasts against every wall instance, every frame)
@@ -437,13 +498,20 @@ const Scene = memo(function Scene({
   // Held keys move the player; demand mode renders only while something moves
   useFrame((state, delta) => {
     const held = input.current;
-    if (!held.size && !input.looked) {
+    if (!held.size && !input.looked && yawTarget.current === null) {
       moving.current = false;
       return;
     }
     // In demand mode the first frame's delta spans the whole pause before it: one step instead
     const dt = moving.current ? Math.min(delta, 0.1) : 1 / 60;
     moving.current = true;
+    if (yawTarget.current !== null) {
+      const target = yawTarget.current;
+      const next = reduced ? target : MathUtils.damp(camera.rotation.y, target, 20, dt);
+      camera.rotation.y = Math.abs(next - target) < 1e-4 ? target : next;
+      if (camera.rotation.y === target) yawTarget.current = null;
+      else state.invalidate();
+    }
     let turn = 0;
     let forward = 0;
     let strafe = 0;
@@ -457,7 +525,10 @@ const Scene = memo(function Scene({
       else if (action === 'right') strafe = 1;
     });
     // With reduced motion, turning happens in steps on key press (onKeyDown), not smoothly
-    if (turn && !reduced) camera.rotation.y += turn * TURN_SPEED * dt;
+    if (turn && !reduced) {
+      if (yawTarget.current !== null) yawTarget.current += turn * TURN_SPEED * dt;
+      else camera.rotation.y += turn * TURN_SPEED * dt;
+    }
     if (forward || strafe) {
       const yaw = camera.rotation.y;
       const step = (reduced ? MOVE_SPEED / 2 : MOVE_SPEED) * dt;
@@ -481,23 +552,47 @@ const Scene = memo(function Scene({
 
   return (
     <>
-      <fog attach='fog' args={[resources.fog, FOG_NEAR, FOG_FAR]} />
-      <instancedMesh ref={walls} args={[resources.box, resources.wallMaterials, shell.length]} />
-      <instancedMesh
-        ref={doorMesh}
-        args={[resources.box, resources.door, doorCells.length]}
-        // Its instances move: no bounding sphere to cull by
-        frustumCulled={false}
-      />
-      {/* Flat floor and ceiling colors, the F and C lines of map.cub */}
-      <mesh position={[W / 2, 0, H / 2]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[W + 2, H + 2]} />
-        <meshBasicMaterial color={`rgb(${WORLD.floor.join(',')})`} />
-      </mesh>
-      <mesh position={[W / 2, 1, H / 2]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[W + 2, H + 2]} />
-        <meshBasicMaterial color={`rgb(${WORLD.ceiling.join(',')})`} />
-      </mesh>
+      {facility ? (
+        <Suspense fallback={null}>
+          <Facility
+            shell={shell}
+            isFloor={isFloor}
+            W={W}
+            H={H}
+            doorCells={doorCells}
+            closedDoors={closedDoors}
+            reduced={reduced}
+            flat={flat}
+            weapon={weapon}
+            motion={motion}
+            postFx={postFx}
+            hologramLabel={hologramLabel}
+          />
+        </Suspense>
+      ) : (
+        <>
+          <fog attach='fog' args={[resources.fog, FOG_NEAR, FOG_FAR]} />
+          <instancedMesh
+            ref={walls}
+            args={[resources.box, resources.wallMaterials, shell.length]}
+          />
+          <instancedMesh
+            ref={doorMesh}
+            args={[resources.box, resources.door, doorCells.length]}
+            // Its instances move: no bounding sphere to cull by
+            frustumCulled={false}
+          />
+          {/* Flat floor and ceiling colors, the F and C lines of map.cub */}
+          <mesh position={[W / 2, 0, H / 2]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[W + 2, H + 2]} />
+            <meshBasicMaterial color={`rgb(${WORLD.floor.join(',')})`} />
+          </mesh>
+          <mesh position={[W / 2, 1, H / 2]} rotation={[Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[W + 2, H + 2]} />
+            <meshBasicMaterial color={`rgb(${WORLD.ceiling.join(',')})`} />
+          </mesh>
+        </>
+      )}
       {panels
         .filter(({ id }) => near.has(id))
         .map(({ id, position, yaw, title, lines }) => (
@@ -540,6 +635,8 @@ const Scene = memo(function Scene({
         <PointerLockControls
           ref={lockRef}
           selector='[data-cub3d-lock]'
+          // Game Mode turns the view itself (with inertia, above); the controls capture the mouse
+          pointerSpeed={facility ? 0 : 1}
           minPolarAngle={Math.PI / 2}
           maxPolarAngle={Math.PI / 2}
           onLock={onLock}
@@ -741,7 +838,7 @@ const Cub3DWorld = ({
     ENEMIES.map((enemy) => {
       const saved = initialState?.enemies.find(({ id }) => id === enemy.id);
       const [cx, cz] = enemy.cell;
-      return { ...enemy, x: cx + 0.5, z: cz + 0.5, alive: true, sprite: null, ...saved };
+      return { ...enemy, x: cx + 0.5, z: cz + 0.5, alive: true, node: null, ...saved };
     })
   );
   const [kills, setKills] = useState(() => enemies.current.filter((e) => !e.alive).length);
@@ -769,11 +866,44 @@ const Cub3DWorld = ({
   const [sound, setSound] = useState(initialState?.sound ?? false);
   const soundRef = useRef(sound);
   const sfx = useRef(null);
-  const weaponRef = useRef(null);
-  const flashRef = useRef(null);
   const fxRef = useRef(null);
-  // Set by a shot, eased back to 0 by GameMotion
+  // Set by a shot, eased back to 0 by GameMotion (which adds the gauntlet's bob and sway)
   const motion = useRef({ recoil: 0, shake: 0 });
+  // The HUD's crosshair (its spread), energy and integrity bars and hit flash, written per frame
+  const crosshairRef = useRef(null);
+  const energyBar = useRef(null);
+  const integrityBar = useRef(null);
+  const hitRef = useRef(null);
+  // Energy: each shot costs some (WEAPON_FX), refilled shortly after the last one. Integrity:
+  // worn down while threats are close (`pressure`, counted by the threats), restored after
+  const energy = useRef({ value: 100, at: 0, warned: false });
+  const integrity = useRef({ value: 100, at: 0, pulse: 0, warned: false });
+  const pressure = useRef(0);
+  // The chromatic aberration's pulse (Facility eases it back)
+  const postFx = useRef({ aberration: 0 });
+  // High contrast mode (bright flat colors, no fog or post-processing) and the master volume:
+  // per-viewer settings, remembered when the browser lets us
+  const prefersContrast = useMediaQuery('(prefers-contrast: more)');
+  const [contrast, setContrast] = useState(() => {
+    try {
+      const saved = localStorage.getItem(CONTRAST_KEY);
+      return saved === null ? null : saved === '1';
+    } catch {
+      return null;
+    }
+  });
+  const flat = contrast ?? prefersContrast;
+  const [volume, setVolume] = useState(() => {
+    try {
+      const saved = Number(localStorage.getItem(VOLUME_KEY));
+      return localStorage.getItem(VOLUME_KEY) !== null && saved >= 0 && saved <= 1 ? saved : 0.7;
+    } catch {
+      return 0.7;
+    }
+  });
+  const volumeRef = useRef(volume);
+  const [lowRes, setLowRes] = useState(false);
+  const lowerRes = useCallback(() => setLowRes(true), []);
   const stride = useRef(null);
   const allReadAnnounced = useRef(false);
   const timers = useRef({});
@@ -839,6 +969,7 @@ const Cub3DWorld = ({
       threat: rgb(c.danger),
       crew: rgb(c['primary-400']),
       door: rgb(c.info),
+      sweep: rgb(c.success),
     };
   }, []);
 
@@ -948,6 +1079,21 @@ const Cub3DWorld = ({
       const { x, z } = camera.position;
       const yaw = camera.rotation.y;
       const half = (FOV * Math.PI) / 360;
+      if (!reduced) {
+        // A sweep line turning around the player, its afterglow fading behind it
+        const reach = Math.hypot(W, H) * s;
+        ctx.strokeStyle = colors.sweep;
+        ctx.lineWidth = 2;
+        for (let k = 0; k < 8; k += 1) {
+          const a = time * 2.4 - k * 0.07;
+          ctx.globalAlpha = 0.45 * (1 - k / 8);
+          ctx.beginPath();
+          ctx.moveTo(x * s, z * s);
+          ctx.lineTo(x * s + Math.cos(a) * reach, z * s + Math.sin(a) * reach);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
       ctx.fillStyle = colors.cone;
       ctx.beginPath();
       ctx.moveTo(x * s, z * s);
@@ -1049,6 +1195,42 @@ const Cub3DWorld = ({
         // The frame loop is on demand under reduced motion: keep it running for the next shot
         if (WEAPON_FX[weaponState.current].auto) invalidateRef.current();
       }
+      // Energy refills shortly after the last shot
+      const now = performance.now();
+      const en = energy.current;
+      if (now - en.at > 350 && en.value < 100) {
+        en.value = Math.min(100, en.value + 40 * dt);
+        invalidateRef.current();
+      }
+      if (en.warned && en.value >= 100) en.warned = false;
+      // Threats close by wear integrity down, in pulses (a hit flash and aberration, a sound)
+      const hp = integrity.current;
+      const hurt = pressure.current;
+      if (hurt) {
+        hp.value = Math.max(0, hp.value - 12 * hurt * dt);
+        hp.at = now;
+        hp.pulse -= dt;
+        if (hp.pulse <= 0) {
+          hp.pulse = 0.5;
+          postFx.current.aberration = 1;
+          motion.current.shake = Math.max(motion.current.shake, 0.4);
+          if (soundRef.current) sfx.current?.hit();
+          if (!reduced) hitRef.current?.animate?.([{ opacity: 0.85 }, { opacity: 0 }], 420);
+        }
+        if (hp.value < 30 && !hp.warned) {
+          hp.warned = true;
+          announce(t('demos.game.integrityLow'));
+        }
+      } else {
+        hp.pulse = 0;
+        if (now - hp.at > 1500 && hp.value < 100) {
+          hp.value = Math.min(100, hp.value + 8 * dt);
+          invalidateRef.current();
+        }
+        if (hp.value > 60) hp.warned = false;
+      }
+      writeBar(energyBar.current, en.value);
+      writeBar(integrityBar.current, hp.value);
       const { x, z } = camera.position;
       let door = null;
       let nearest = DOOR_LABEL_RANGE;
@@ -1199,7 +1381,10 @@ const Cub3DWorld = ({
       targetRef.current = null;
       setTarget(null);
     }
-    if (enemy.sprite) enemy.sprite.visible = false;
+    if (enemy.node) enemy.node.visible = false;
+    // It bursts into voxels (no particles with reduced motion)
+    fxRef.current?.shatter?.([enemy.x, 0.5, enemy.z], enemy.type);
+    play('shatter');
     // Reduced motion draws on demand: the hidden threat must be redrawn away
     invalidateRef.current();
     setKills((n) => n + 1);
@@ -1224,7 +1409,6 @@ const Cub3DWorld = ({
       camera.rotation.x = 0;
       camera.rotation.z = 0;
     }
-    if (weaponRef.current) weaponRef.current.style.transform = '';
     invalidateRef.current();
   };
 
@@ -1287,11 +1471,23 @@ const Cub3DWorld = ({
       interact();
       return;
     }
+    // Out of energy: a dry click on a press, and it says so once until it has recharged (an
+    // automatic weapon running dry while held too)
+    if (energy.current.value < cfg.energy) {
+      if (press) play('empty');
+      if (!energy.current.warned) {
+        energy.current.warned = true;
+        announce(t('demos.game.recharging'));
+      }
+      return;
+    }
+    energy.current.value -= cfg.energy;
+    energy.current.at = now;
     firing.current.ready = now + cfg.cooldown * 1000;
     motion.current.recoil = cfg.kick;
     motion.current.shake = cfg.shake;
+    postFx.current.aberration = Math.max(postFx.current.aberration, cfg.shake * 0.7);
     play(cfg.sound);
-    if (!reduced) flashRef.current?.animate?.([{ opacity: 0.8 }, { opacity: 0 }], 160);
     const { x, z } = camera.position;
     const yaw = camera.rotation.y;
     const fx = -Math.sin(yaw);
@@ -1355,16 +1551,41 @@ const Cub3DWorld = ({
     import('./sfx').then(({ createSfx }) => {
       // The player may have muted again, or left, while the chunk loaded
       if (!soundRef.current || !wrapperRef.current) return;
-      sfx.current ??= createSfx();
+      sfx.current ??= createSfx(volumeRef.current);
       sfx.current.resume();
+      // The facility's low server hum, under everything
+      if (game) sfx.current.hum(true);
       sfx.current.blip();
     });
+  };
+  const changeVolume = (value) => {
+    volumeRef.current = value;
+    setVolume(value);
+    sfx.current?.setVolume(value);
+    try {
+      localStorage.setItem(VOLUME_KEY, String(value));
+    } catch {
+      // Not remembered: fine
+    }
+  };
+  const toggleContrast = () => {
+    const next = !flat;
+    setContrast(next);
+    announce(t(next ? 'demos.game.contrastOn' : 'demos.game.contrastOff'));
+    invalidateRef.current();
+    try {
+      localStorage.setItem(CONTRAST_KEY, next ? '1' : '0');
+    } catch {
+      // Not remembered: fine
+    }
   };
   useEffect(() => {
     // Back from a demo or the text-only mode with sound on: the synthesizer comes back with it
     if (soundRef.current) {
       import('./sfx').then(({ createSfx }) => {
-        if (wrapperRef.current) sfx.current ??= createSfx();
+        if (!wrapperRef.current) return;
+        sfx.current ??= createSfx(volumeRef.current);
+        if (game) sfx.current.hum(true);
       });
     }
     if (initialState) wrapperRef.current?.focus({ preventScroll: true });
@@ -1544,6 +1765,10 @@ const Cub3DWorld = ({
     [t]
   );
 
+  // Game Mode draws every frame while playing (the threats and the weapon move); paused (the
+  // menu, a dialog, Access granted), or with reduced motion (nothing moves on its own), on demand
+  const playing = game && started && !openPanel && !access && !talk && !reduced;
+
   return (
     <div
       ref={wrapperRef}
@@ -1570,15 +1795,14 @@ const Cub3DWorld = ({
       className='group relative h-full w-full touch-none overflow-hidden bg-background outline-none'
     >
       <Canvas
-        // Game Mode draws every frame while playing (the threats and the weapon move); paused
-        // (briefing, a dialog, Access granted), or with reduced motion (nothing moves on its
-        // own), it draws on demand
-        frameloop={
-          game && started && !openPanel && !access && !talk && !reduced ? 'always' : 'demand'
-        }
+        frameloop={playing ? 'always' : 'demand'}
         // Full screen in Game Mode: a lower pixel ratio and no MSAA (the textures are pixel art)
-        dpr={game ? GAME_DPR : DEMO_DPR}
+        dpr={game ? (lowRes ? LOW_DPR : GAME_DPR) : DEMO_DPR}
         gl={game ? GAME_GL : DEMO_GL}
+        // Game Mode: the flashlight's shadows, and tone mapping left to the post-processing (or
+        // none at all in high contrast)
+        shadows={game}
+        flat={game}
         camera={CAMERA}
         onCreated={onCreated}
       >
@@ -1594,6 +1818,12 @@ const Cub3DWorld = ({
           onLockChange={onLockChange}
           spawn={initialState}
           reduced={reduced}
+          facility={game}
+          flat={flat}
+          weapon={weapon}
+          motion={motion}
+          postFx={postFx}
+          hologramLabel={t('demos.game.hologram')}
         />
         {game && (
           <GameLayer
@@ -1603,14 +1833,21 @@ const Cub3DWorld = ({
             icons={techIcons}
             solid={solid}
             reduced={reduced}
+            flat={flat}
             paused={paused}
+            pressure={pressure}
             fxRef={fxRef}
-            weaponRef={weaponRef}
+            crosshairRef={crosshairRef}
             motion={motion}
             onTick={onTick}
           />
         )}
         {game && <DoorLabel label={doorLabel} />}
+        {/* Watches the frame rate only while it runs every frame; a lasting dip lowers the
+            resolution for the rest of the session */}
+        {playing && !flat && (
+          <PerformanceMonitor flipflops={3} onDecline={lowerRes} onFallback={lowerRes} />
+        )}
       </Canvas>
 
       {/* HUD */}
@@ -1723,6 +1960,10 @@ const Cub3DWorld = ({
           onStartLook={lookWithMouse}
           onTextMode={() => onTextMode(snapshot())}
           onExit={onExit}
+          contrast={flat}
+          onContrast={toggleContrast}
+          volume={volume}
+          onVolume={changeVolume}
         />
       )}
       {!started && !game && (
@@ -1770,8 +2011,14 @@ const Cub3DWorld = ({
           onSound={toggleSound}
           onTextMode={() => onTextMode(snapshot())}
           onExit={onExit}
-          weaponRef={weaponRef}
-          flashRef={flashRef}
+          crosshairRef={crosshairRef}
+          energyBar={energyBar}
+          integrityBar={integrityBar}
+          hitRef={hitRef}
+          contrast={flat}
+          onContrast={toggleContrast}
+          volume={volume}
+          onVolume={changeVolume}
         />
       )}
       {talk && (

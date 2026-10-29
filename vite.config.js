@@ -31,11 +31,14 @@ export default defineConfig({
           if (id.includes('src/utils/themeColors')) return 'vendor-r3f-demos';
           if (!id.includes('node_modules')) return undefined;
           if (/node_modules\/three\//.test(id)) return 'vendor-three';
-          // drei/three-stdlib parts only the live demos use (cub3D, FdF): their own chunk, so the
+          // Post-processing, used only by Game Mode's facility look: its own chunk, fetched with it
+          if (/node_modules\/(@react-three\/postprocessing|postprocessing|n8ao)\//.test(id))
+            return 'vendor-postfx';
+          // drei/three-stdlib parts only the live demos and Game Mode use (cub3D, FdF): their own chunk, so the
           // page's 3D layer (vendor-r3f) does not grow for visitors who never open a demo. Not
           // PerspectiveCamera: the page's ViewCamera uses it too
           if (
-            /node_modules\/(@react-three\/drei\/(core\/(OrbitControls|PointerLockControls)|web\/Html)|three-stdlib\/controls\/(OrbitControls|PointerLockControls|EventDispatcher))\.js/.test(
+            /node_modules\/(@react-three\/drei\/(core\/(OrbitControls|PointerLockControls|PerformanceMonitor)|web\/Html)|three-stdlib\/controls\/(OrbitControls|PointerLockControls|EventDispatcher))\.js/.test(
               id
             )
           )

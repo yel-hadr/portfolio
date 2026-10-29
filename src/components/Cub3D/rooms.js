@@ -72,14 +72,106 @@ export const iconSpot = (i) => [24.5 + (i % 6) * 1.2, ICON_Y, i < 6 ? 2.5 : 3.5]
 
 // The weapons (their pixel art is in GameHud.jsx, their names in the locales), each with its own
 // shot: `cooldown` (s) between shots, `auto` fires while held, `cone` (radians) hits every
-// threat in it instead of the one in the crosshair; `shake` and `kick` scale the screen shake and
+// threat in it instead of the one in the crosshair; `energy` is what a shot costs (of 100, refilled
+// shortly after the last shot); `shake` and `kick` scale the screen shake and
 // the weapon's recoil; `fx` is the particle effect (Enemies.jsx), `sound` the sfx.js voice
 export const WEAPON_FX = [
   // Kubernetes Kar98k: one heavy shot, a blue trail to the target
-  { cooldown: 0.9, shake: 1, kick: 1, fx: 'trail', sound: 'sniper' },
+  { cooldown: 0.9, energy: 30, shake: 1, kick: 1, fx: 'trail', sound: 'sniper' },
   // Terraform Tactical: rapid fire, green infrastructure blocks where it lands
-  { cooldown: 0.15, auto: true, shake: 0.2, kick: 0.35, fx: 'blocks', sound: 'provision' },
+  {
+    cooldown: 0.15,
+    auto: true,
+    energy: 7,
+    shake: 0.2,
+    kick: 0.35,
+    fx: 'blocks',
+    sound: 'provision',
+  },
   // The DevOps Defender: a wide blast, an orange radial burst
-  { cooldown: 0.6, cone: 0.22, range: 6, shake: 0.55, kick: 0.7, fx: 'radial', sound: 'thud' },
+  {
+    cooldown: 0.6,
+    cone: 0.22,
+    range: 6,
+    energy: 40,
+    shake: 0.55,
+    kick: 0.7,
+    fx: 'radial',
+    sound: 'thud',
+  },
 ];
 export const WEAPON_COUNT = WEAPON_FX.length;
+
+// Game Mode's facility set dressing (Facility.jsx), on map.cub's grid and kept off the ways
+// through the rooms. Positions are world (x, z); racks and crates block the way (PROP_BOXES)
+
+// Each room's light and neon color, as theme tokens
+export const ROOM_ACCENT = {
+  about: 'primary',
+  skills: 'info',
+  projects: 'danger',
+  contact: 'success',
+};
+
+// Server racks against the Skills hall's north and south walls: [x, z, yaw] (yaw 0 faces south)
+export const RACKS = [
+  ...[20.55, 21.5, 22.45, 23.4, 28.4, 29.35].map((x) => [x, 1.16, 0]),
+  ...[21.55, 22.5, 23.45, 24.4, 27.6, 28.55, 29.5, 30.45].map((x) => [x, 4.84, Math.PI]),
+];
+export const RACK_SIZE = [0.9, 0.92, 0.3];
+
+// Supply crates in the corners of the comms hall and the Skills hall: [x, z, size]
+export const CRATES = [
+  [1.45, 10.55, 0.45],
+  [2.5, 8.3, 0.4],
+  [7.55, 10.6, 0.4],
+  [15.5, 9.55, 0.45],
+  [31.55, 4.5, 0.38],
+];
+
+// The boxes that block movement: [x0, z0, x1, z1]
+export const PROP_BOXES = [
+  ...RACKS.map(([x, z]) => [
+    x - RACK_SIZE[0] / 2,
+    z - RACK_SIZE[2] / 2,
+    x + RACK_SIZE[0] / 2,
+    z + RACK_SIZE[2] / 2,
+  ]),
+  ...CRATES.map(([x, z, s]) => [x - s / 2, z - s / 2, x + s / 2, z + s / 2]),
+];
+
+// The vault's laser grid, across the mouth of the Projects room's south pocket (z = 5)
+export const LASER_GRID = { z: 5, x0: 12, x1: 17, heights: [0.16, 0.36, 0.56, 0.76], posts: 5 };
+
+// The command hub's holographic projection, in the About block
+export const HOLOGRAM = [20.5, 9];
+
+// Ceiling lamps: [x, z, flickers]
+export const LAMPS = [
+  [26.5, 9.5, false],
+  [26.5, 6.5, true],
+  [22.5, 8.5, false],
+  [23.5, 2.5, false],
+  [29, 3, true],
+  [14, 2.5, false],
+  [9.5, 2.5, true],
+  [4, 9, false],
+  [11, 9.5, true],
+];
+
+// One dim colored fill light per room (the flashlight is the only shadow caster): [x, z, room]
+export const ROOM_LIGHTS = [
+  [24.5, 9, 'about'],
+  [25.5, 2.8, 'skills'],
+  [14, 2.6, 'projects'],
+  [6, 9.5, 'contact'],
+];
+
+// Cables sagging from the ceiling: [x0, z0, x1, z1, lowest y]
+export const CABLES = [
+  [20.5, 2, 30.5, 2.2, 0.8],
+  [21, 3.7, 29.5, 3.5, 0.84],
+  [26.5, 6, 26.5, 11, 0.86],
+  [1.5, 8.8, 14.5, 9.2, 0.82],
+  [10, 1.5, 17, 1.8, 0.84],
+];

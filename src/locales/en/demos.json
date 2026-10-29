@@ -184,6 +184,16 @@
     },
     "storyTitle": "Mission briefing",
     "story": "Year: 2026. Role: Lead DevOps Engineer. Mission: Navigate the infrastructure, neutralize DDoS and Injection threats, and secure the core systems. Use your arsenal to explore the facility.",
+    "settings": "Settings",
+    "contrast": "High contrast",
+    "contrastOn": "High contrast on: flat bright colors, no fog or effects.",
+    "contrastOff": "High contrast off.",
+    "volume": "Volume",
+    "energy": "Energy",
+    "integrity": "Integrity",
+    "recharging": "Recharging: wait for the energy bar to refill.",
+    "integrityLow": "Integrity low: back away from the threats.",
+    "hologram": "COMMAND HUB",
     "crewTitle": "The crew",
     "npcs": {
       "sysadmin": {
