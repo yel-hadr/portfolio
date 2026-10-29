@@ -88,7 +88,17 @@
       "down": "Vers le bas",
       "right": "Vers la droite"
     },
-    "rotateBack": "Tourner de −15°"
+    "rotateBack": "Tourner de −15°",
+    "readout": {
+      "grid": "grille",
+      "vertices": "sommets",
+      "edges": "arêtes",
+      "zRange": "plage z",
+      "view": "vue",
+      "status": "état",
+      "scanning": "balayage…",
+      "rendered": "rendu"
+    }
   },
   "loading": "Lancement de la démo…",
   "failed": "Cette démo n’a pas pu démarrer sur cet appareil.",
