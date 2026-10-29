@@ -1,9 +1,8 @@
-import { Suspense, useContext, useEffect, useId, useState } from 'react';
+import { Suspense, useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 
 import CanvasErrorBoundary from './CanvasErrorBoundary';
-import { PageCanvasContext } from './canvas/PageCanvasContext';
-import { WebGLContext } from './canvas/WebGLContext';
+import { useDemoCanvas } from '../hooks/useDemoCanvas';
 import { useModalDialog } from '../hooks/useModalDialog';
 import { useI18n } from '../i18n/context';
 import { registerNamespace } from '../i18n/dictionaries';
@@ -13,9 +12,6 @@ import { CloseIcon, GithubIcon } from './icons';
 
 // The demo strings ship with the lazy demo chunks (Cub3DModal and FdfModal import this shell)
 registerNamespace('demos', { en, fr });
-
-// R3F releases an unmounted Canvas's WebGL context (forceContextLoss) 500 ms after unmount
-const CONTEXT_RELEASE_MS = 600;
 
 /** A message in place of the demo: loading, no WebGL, or a failure */
 const Notice = ({ id, role, children }) => (
@@ -31,29 +27,18 @@ const Notice = ({ id, role, children }) => (
  * and closes on Escape, the close button or a backdrop click; the caller restores focus.
  *
  * The demo brings its own Canvas, so the page's shared Canvas is paused while the dialog is open
- * (PageCanvasContext) and the demo mounts once R3F has released the page's WebGL context: never
- * two contexts at once. Without WebGL, or if the demo fails, the dialog says so and keeps the
+ * and the demo mounts once R3F has released the page's WebGL context (useDemoCanvas): never two
+ * contexts at once. Without WebGL, or if the demo fails, the dialog says so and keeps the
  * source link.
  */
 const DemoShell = ({ id, repo, onClose, children }) => {
   const { t } = useI18n();
-  const webgl = useContext(WebGLContext);
-  const pausePageCanvas = useContext(PageCanvasContext);
-  const [ready, setReady] = useState(false);
+  const { webgl, ready } = useDemoCanvas();
   const titleId = useId();
   const descId = useId();
   const noticeId = useId();
   const { overlayRef, panelRef, close, onKeyDown, backdrop } = useModalDialog(onClose);
   const name = t(`demos.${id}.name`);
-
-  useEffect(() => {
-    pausePageCanvas(true);
-    const timer = window.setTimeout(() => setReady(true), webgl ? CONTEXT_RELEASE_MS : 0);
-    return () => {
-      window.clearTimeout(timer);
-      pausePageCanvas(false);
-    };
-  }, [pausePageCanvas, webgl]);
 
   useEffect(() => {
     panelRef.current?.focus();

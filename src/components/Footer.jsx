@@ -5,7 +5,7 @@ import SystemStatus from './SystemStatus';
 
 const LINK = 'font-medium text-foreground-muted hover:text-foreground transition-colors';
 
-const Footer = ({ onOpenGames }) => {
+const Footer = ({ onOpenGames, onEnterGame }) => {
   const { t } = useI18n();
   // The Blog section is reachable from the footer and the terminal, not the main nav
   const links = [...navLinks, { id: 'blog' }];
@@ -45,6 +45,11 @@ const Footer = ({ onOpenGames }) => {
           <li>
             <button type='button' onClick={onOpenGames} className={LINK}>
               {t('footer.games')}
+            </button>
+          </li>
+          <li>
+            <button type='button' aria-haspopup='dialog' onClick={onEnterGame} className={LINK}>
+              {t('gameMode')}
             </button>
           </li>
           <li>

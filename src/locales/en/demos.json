@@ -92,5 +92,35 @@
   },
   "loading": "Starting the demo…",
   "failed": "This demo could not start on this device.",
-  "sourceHint": "The Source code link at the top of this dialog shows the project."
+  "sourceHint": "The Source code link at the top of this dialog shows the project.",
+  "game": {
+    "title": "Game Mode",
+    "description": "The portfolio as a first-person maze, built on cub3D. Aim at a wall and open it to read about me.",
+    "exit": "Exit Game Mode",
+    "desktopOnly": "Game Mode is optimized for desktop. Use standard view on mobile.",
+    "back": "Back to the portfolio",
+    "playAnyway": "Play anyway",
+    "briefing": "Four walls in the room ahead hold this portfolio. Aim the crosshair at one and open it.",
+    "keys": [
+      "W S or ↑ ↓: walk, A D: step sideways",
+      "Mouse (click the view) or ← →: turn",
+      "Click or E: open the wall in the crosshair",
+      "Space: open the door ahead · M: sound on or off",
+      "Esc: free the mouse, Esc again to leave"
+    ],
+    "status": {
+      "system": "System: online",
+      "objective": "Objective: explore the portfolio",
+      "complete": "Objective complete",
+      "walls": "Walls read {count}/{total}"
+    },
+    "aim": "{name}: click or press E to open",
+    "allRead": "Objective complete: every wall read.",
+    "sound": "Sound",
+    "on": "on",
+    "off": "off",
+    "backToGame": "Back to the game",
+    "use": "Use",
+    "escKey": "Esc"
+  }
 }

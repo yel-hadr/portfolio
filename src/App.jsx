@@ -31,6 +31,8 @@ const loadTerminal = () => import('./components/terminal/Terminal');
 const Terminal = lazy(loadTerminal);
 // The games dialog (Packet Snake is a further chunk inside it) loads on first open
 const GameMenu = lazy(() => import('./components/Games/GameMenu'));
+// Game Mode (the cub3D world full screen, with its own Canvas) loads on first open
+const GameMode = lazy(() => import('./components/Cub3D/GameMode'));
 
 function App() {
   const { supported } = useWebGL();
@@ -72,6 +74,8 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
   const terminalOpener = useRef(null);
   const [gamesOpen, setGamesOpen] = useState(false);
   const gamesOpener = useRef(null);
+  const [gameModeOpen, setGameModeOpen] = useState(false);
+  const gameModeOpener = useRef(null);
 
   const openTerminal = useCallback(() => {
     terminalOpener.current = document.activeElement;
@@ -88,6 +92,15 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
   const closeGames = useCallback(() => {
     setGamesOpen(false);
     requestAnimationFrame(() => gamesOpener.current?.focus?.());
+  }, []);
+  const enterGameMode = useCallback(() => {
+    gameModeOpener.current = document.activeElement;
+    setGameModeOpen(true);
+    track('game-mode-open');
+  }, []);
+  const exitGameMode = useCallback(() => {
+    setGameModeOpen(false);
+    requestAnimationFrame(() => gameModeOpener.current?.focus?.());
   }, []);
   // From the games menu: the terminal replaces it, and closing the terminal returns focus to the
   // footer button that opened the menu
@@ -158,7 +171,7 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
 
         <main id='main' tabIndex={-1}>
           <ErrorBoundary sectionName='hero'>
-            <Hero />
+            <Hero onEnterGame={enterGameMode} />
           </ErrorBoundary>
 
           {/* A live region mounted from the start, so a late 3D failure is announced */}
@@ -195,7 +208,7 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
           </ErrorBoundary>
         </main>
 
-        <Footer onOpenGames={openGames} />
+        <Footer onOpenGames={openGames} onEnterGame={enterGameMode} />
       </div>
 
       {terminalOpen && (
@@ -207,6 +220,12 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
       {gamesOpen && (
         <Suspense fallback={null}>
           <GameMenu onClose={closeGames} onPlayTerminal={playTerminalChallenge} />
+        </Suspense>
+      )}
+
+      {gameModeOpen && (
+        <Suspense fallback={null}>
+          <GameMode onClose={exitGameMode} />
         </Suspense>
       )}
     </div>

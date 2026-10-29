@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, PointerLockControls } from '@react-three/drei';
 import {
@@ -15,11 +24,13 @@ import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import { styles } from '../../styles';
 import { readTheme, rgb } from '../../utils/themeColors';
 import ReleaseContext from '../canvas/ReleaseContext';
+import { GameHud, GameInfo } from './GameHud';
 import { MAP_CUB, parseCub } from './map';
 
 // A web homage to cub3D: the project's own map.cub as a first-person maze. The original casts
 // one ray per screen column; here three.js draws the walls as boxes, and the minimap shows the
-// rays, stepping from grid line to grid line as the original does.
+// rays, stepping from grid line to grid line as the original does. With `game` (Game Mode) it
+// adds a HUD, and the wall panels open when aimed at.
 
 const WORLD = parseCub(MAP_CUB);
 // The grid, for the hot paths (movement, line of sight, minimap): cell index is z * W + x
@@ -32,6 +43,12 @@ const REDUCED_TURN = Math.PI / 4; // with reduced motion, each arrow press turns
 const RADIUS = 0.2; // how close the player gets to a wall
 const MINIMAP_CELL = 6; // px
 const MINIMAP_RAYS = 24;
+// Distance shading: three.js fog on the walls, floor and ceiling, from FOG_NEAR to black at FOG_FAR
+const FOG_NEAR = 1.5;
+const FOG_FAR = 14;
+const AIM_RANGE = 8; // cells: how far away a wall panel can be opened
+const AIM_RADIUS = 0.9; // cells from a panel's center that still count as aiming at it
+const STRIDE = 0.75; // cells walked per footstep sound
 
 const KEYS = {
   KeyW: 'forward',
@@ -181,7 +198,9 @@ const PANELS = [
 const PANEL_STEP = 0.1; // line-of-sight sampling, in cells
 
 /** The world inside the Canvas: walls, door, floor and ceiling, movement and the panels */
-const Scene = ({
+// Memoized: HUD state (the aimed wall, the open dialog) re-renders the HUD, not the 3D tree and
+// its four Html roots
+const Scene = memo(function Scene({
   input,
   solid,
   closedDoors,
@@ -190,14 +209,16 @@ const Scene = ({
   lockable,
   lockRef,
   onLockChange,
+  onWalk,
   reduced,
-}) => {
+}) {
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
   const invalidate = useThree((s) => s.invalidate);
   const walls = useRef(null);
   const panelEls = useRef([]);
   const moving = useRef(false);
+  const walking = useRef(false);
   const shell = useMemo(shellCells, []);
 
   // GPU resources made here are not owned by R3F (they are passed as args), so they are freed
@@ -218,7 +239,11 @@ const Scene = ({
     const wallMaterials = [face('WE'), face('EA'), hidden, hidden, face('NO'), face('SO')];
     const door = face('D');
     const box = new BoxGeometry(1, 1, 1);
-    return { tex, wallMaterials, door, box };
+    // Far walls fade to the darker of the theme's background and foreground
+    const sum = (channels) => channels.split(' ').reduce((a, v) => a + Number(v), 0);
+    const fog =
+      sum(colors.background) < sum(colors.foreground) ? colors.background : colors.foreground;
+    return { tex, wallMaterials, door, box, fog: `rgb(${fog.split(' ').join(',')})` };
   }, []);
 
   useEffect(
@@ -280,18 +305,40 @@ const Scene = ({
     }
     return true;
   };
+  // Only when the player moved or a door changed (not on turns), and only the values that changed.
+  // After the movement loop, before drei's Html (priority 0), so the panels track this frame
+  const seen = useRef({ x: NaN, z: NaN, doors: null, panels: [] });
   useFrame(() => {
-    panels.forEach(({ position }, i) => {
+    const { x, z } = camera.position;
+    const last = seen.current;
+    if (x === last.x && z === last.z && last.doors === closedDoors) return;
+    Object.assign(last, { x, z, doors: closedDoors });
+    panels.forEach(({ position: [px, , pz] }, i) => {
       const el = panelEls.current[i];
-      if (el) el.style.visibility = inSight(position[0], position[2]) ? '' : 'hidden';
+      if (!el) return;
+      const shown = (last.panels[i] ??= {});
+      // The DOM panels take no fog: they fade with distance as the walls darken, in 32 steps
+      const far = (Math.hypot(px - x, pz - z) - FOG_NEAR) / (FOG_FAR - FOG_NEAR);
+      const visibility = far < 1 && inSight(px, pz) ? '' : 'hidden';
+      const opacity = Math.round(Math.min(1, Math.max(0.15, 1 - far)) * 32) / 32;
+      if (shown.visibility !== visibility) el.style.visibility = shown.visibility = visibility;
+      if (visibility === '' && shown.opacity !== opacity)
+        el.style.opacity = shown.opacity = opacity;
     });
-  });
+  }, -1);
+
+  const setWalking = (value) => {
+    if (walking.current === value) return;
+    walking.current = value;
+    onWalk?.(value);
+  };
 
   // Held keys move the player; demand mode renders only while something moves
   useFrame((state, delta) => {
     const held = input.current;
     if (!held.size && !input.looked) {
       moving.current = false;
+      setWalking(false);
       return;
     }
     // In demand mode the first frame's delta spans the whole pause before it: one step instead
@@ -311,7 +358,9 @@ const Scene = ({
     });
     // With reduced motion, turning happens in steps on key press (onKeyDown), not smoothly
     if (turn && !reduced) camera.rotation.y += turn * TURN_SPEED * dt;
+    let moved = false;
     if (forward || strafe) {
+      const { x, z } = camera.position;
       const yaw = camera.rotation.y;
       const step = (reduced ? MOVE_SPEED / 2 : MOVE_SPEED) * dt;
       const dx = (-Math.sin(yaw) * forward + Math.cos(yaw) * strafe) * step;
@@ -319,11 +368,14 @@ const Scene = ({
       // Each axis on its own, so the player slides along a wall instead of stopping dead
       if (free(camera.position.x + dx, camera.position.z)) camera.position.x += dx;
       if (free(camera.position.x, camera.position.z + dz)) camera.position.z += dz;
+      moved = camera.position.x !== x || camera.position.z !== z;
     }
+    // The weapon bobs while the player actually moves, not when pushing against a wall
+    setWalking(moved);
     input.looked = false;
     onMove(camera);
     if (held.size) state.invalidate();
-  });
+  }, -2);
 
   // Stable handlers: drei re-subscribes the controls whenever they change
   const onLook = useCallback(() => {
@@ -334,6 +386,7 @@ const Scene = ({
 
   return (
     <>
+      <fog attach='fog' args={[resources.fog, FOG_NEAR, FOG_FAR]} />
       <instancedMesh ref={walls} args={[resources.box, resources.wallMaterials, shell.length]} />
       {DOOR_CELLS.map((cell) => (
         <mesh
@@ -398,7 +451,7 @@ const Scene = ({
       <ReleaseContext />
     </>
   );
-};
+});
 
 // Casts the minimap's rays: steps from one grid line to the next until a wall (a DDA)
 const castRay = (x, z, angle, solid) => {
@@ -429,6 +482,15 @@ const castRay = (x, z, angle, solid) => {
   return [x + dx * dist, z + dz * dist];
 };
 
+// The panel in the crosshair: where the view's center ray meets a wall, if a panel hangs there
+const aimAt = (camera, solid) => {
+  const { x, z } = camera.position;
+  const [hx, hz] = castRay(x, z, camera.rotation.y, solid);
+  if (Math.hypot(hx - x, hz - z) > AIM_RANGE) return null;
+  const hit = PANELS.find(({ position: [px, , pz] }) => Math.hypot(hx - px, hz - pz) < AIM_RADIUS);
+  return hit ? hit.id : null;
+};
+
 const HEADINGS = ['north', 'west', 'south', 'east'];
 const headingOf = (yaw) =>
   HEADINGS[Math.round(((yaw % (2 * Math.PI)) + 2 * Math.PI) / (Math.PI / 2)) % 4];
@@ -444,11 +506,17 @@ const TOUCH_MOVES = [
 ];
 const TOUCH_BUTTON = `inline-flex h-12 w-12 select-none items-center justify-center rounded-xl border border-line-strong bg-glass text-lg font-bold text-foreground backdrop-blur-md [touch-action:none] ${styles.hudFocus}`;
 
-/** The cub3D demo: the canvas, minimap, HUD, welcome card and touch controls */
-const Cub3DWorld = ({ t, technologies, projects }) => {
+/**
+ * The cub3D demo: the canvas, minimap, HUD, welcome card and touch controls. In Game Mode
+ * (`game`), also the FPS HUD, and `details` holds what each wall panel opens into.
+ */
+const Cub3DWorld = ({ t, technologies, projects, game = false, details, onExit }) => {
   const touch = useMediaQuery('(pointer: coarse)');
   const reduced = usePrefersReducedMotion();
   const lockable = !touch && 'exitPointerLock' in document;
+  let keysKey = 'demos.cub3d.welcome.keys';
+  if (touch) keysKey = 'demos.cub3d.welcome.keysTouch';
+  else if (game) keysKey = 'demos.game.keys';
   const [started, setStarted] = useState(false);
   const [locked, setLocked] = useState(false);
   const [message, setMessage] = useState('');
@@ -464,6 +532,18 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
   const invalidateRef = useRef(() => {});
   const cameraRef = useRef(null);
   const helpId = useId();
+  // Game Mode: the panel in the crosshair, the one open, the ones read, and sound (off by default)
+  const [target, setTarget] = useState(null);
+  const targetRef = useRef(null);
+  const [openPanel, setOpenPanel] = useState(null);
+  const [read, setRead] = useState([]);
+  const [sound, setSound] = useState(false);
+  const soundRef = useRef(false);
+  const sfx = useRef(null);
+  const weaponRef = useRef(null);
+  const beamRef = useRef(null);
+  const stride = useRef(null);
+  const allReadAnnounced = useRef(false);
 
   // Walls, closed doors and anything outside the enclosed area block the way
   const solid = useCallback(
@@ -575,7 +655,14 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
     requestAnimationFrame(() => setMessage(text));
   }, []);
   const facingTimer = useRef(0);
-  useEffect(() => () => window.clearTimeout(facingTimer.current), []);
+  const aimTimer = useRef(0);
+  useEffect(
+    () => () => {
+      window.clearTimeout(facingTimer.current);
+      window.clearTimeout(aimTimer.current);
+    },
+    []
+  );
 
   // Called after every move: redraw the minimap; a new heading is announced once turning has
   // settled, not at every 45° crossed on the way
@@ -583,6 +670,29 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
     (camera) => {
       cameraRef.current = camera;
       drawMinimap(camera);
+      if (game) {
+        const aimed = aimAt(camera, solid);
+        if (aimed !== targetRef.current) {
+          targetRef.current = aimed;
+          setTarget(aimed);
+          // Announced once the aim settles, not for every wall swept past
+          window.clearTimeout(aimTimer.current);
+          if (aimed) {
+            const text = t('demos.game.aim', { name: t(`demos.cub3d.panels.${aimed}`) });
+            aimTimer.current = window.setTimeout(() => announce(text), 300);
+          }
+        }
+        // A footstep every STRIDE cells walked
+        const { x, z } = camera.position;
+        const last = (stride.current ??= { x, z, left: STRIDE });
+        last.left -= Math.hypot(x - last.x, z - last.z);
+        last.x = x;
+        last.z = z;
+        if (last.left <= 0) {
+          last.left = STRIDE;
+          if (soundRef.current) sfx.current?.step();
+        }
+      }
       const next = headingOf(camera.rotation.y);
       if (next === heading.current) return;
       heading.current = next;
@@ -591,19 +701,26 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
         announce(t('demos.cub3d.sr.facing', { direction: t(`demos.cub3d.directions.${next}`) }));
       }, 500);
     },
-    [drawMinimap, announce, t]
+    [drawMinimap, announce, t, game, solid]
   );
 
-  // Space opens or closes a door about half a cell ahead, as in the original
-  const toggleDoor = () => {
+  // The door cell about half a cell ahead, or -1
+  const doorAhead = () => {
     const camera = cameraRef.current;
-    if (!camera) return;
+    if (!camera) return -1;
     const yaw = camera.rotation.y;
     const ax = Math.floor(camera.position.x - Math.sin(yaw) * 0.8);
     const az = Math.floor(camera.position.z - Math.cos(yaw) * 0.8);
     const ahead = az * W + ax;
     const here = Math.floor(camera.position.z) * W + Math.floor(camera.position.x);
-    if (!(ahead in doors.current) || ahead === here) {
+    return ahead in doors.current && ahead !== here ? ahead : -1;
+  };
+
+  // Space opens or closes the door ahead, as in the original
+  const toggleDoor = () => {
+    const camera = cameraRef.current;
+    const ahead = doorAhead();
+    if (ahead < 0) {
       announce(t('demos.cub3d.sr.noDoor'));
       return;
     }
@@ -615,6 +732,63 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
     drawMinimap(camera);
     invalidateRef.current();
   };
+
+  // Game Mode: click, E or the Use button opens the panel in the crosshair, else the door ahead;
+  // a click at nothing flashes the light
+  const interact = (byClick) => {
+    const id = targetRef.current;
+    if (id) {
+      lockRef.current?.unlock();
+      input.current.clear();
+      setOpenPanel(id);
+      setRead((ids) => (ids.includes(id) ? ids : [...ids, id]));
+      if (soundRef.current) sfx.current?.blip();
+    } else if (!byClick || doorAhead() >= 0) {
+      toggleDoor();
+    } else {
+      if (soundRef.current) sfx.current?.zap();
+      if (!reduced) beamRef.current?.animate?.([{ opacity: 0.8 }, { opacity: 0 }], 200);
+    }
+  };
+  const closePanel = () => {
+    setOpenPanel(null);
+    if (read.length === PANELS.length && !allReadAnnounced.current) {
+      allReadAnnounced.current = true;
+      announce(t('demos.game.allRead'));
+    } else {
+      announce(t('demos.game.status.walls', { count: read.length, total: PANELS.length }));
+    }
+    requestAnimationFrame(() => wrapperRef.current?.focus({ preventScroll: true }));
+  };
+
+  // The synthesizer loads on first use; sound stays off until the player turns it on
+  const toggleSound = () => {
+    soundRef.current = !soundRef.current;
+    setSound(soundRef.current);
+    // Muted: the audio thread stops too
+    if (!soundRef.current) {
+      sfx.current?.suspend();
+      return;
+    }
+    import('./sfx').then(({ createSfx }) => {
+      // The player may have muted again, or left, while the chunk loaded
+      if (!soundRef.current || !wrapperRef.current) return;
+      sfx.current ??= createSfx();
+      sfx.current.resume();
+      sfx.current.blip();
+    });
+  };
+  useEffect(
+    () => () => {
+      sfx.current?.close();
+      sfx.current = null;
+    },
+    []
+  );
+
+  const onWalk = useCallback((value) => {
+    if (weaponRef.current) weaponRef.current.dataset.moving = String(value);
+  }, []);
 
   const press = (code) => {
     input.current.add(code);
@@ -642,14 +816,30 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
     } else if (e.code === 'Space') {
       e.preventDefault();
       if (!e.repeat) toggleDoor();
+    } else if (game && (e.code === 'KeyE' || e.key === 'Enter')) {
+      e.preventDefault();
+      if (!e.repeat) interact(false);
+    } else if (game && (e.key === 'm' || e.key === 'M')) {
+      if (e.repeat) return;
+      // The button shows the state; from the keyboard, focus stays on the view, so say it
+      toggleSound();
+      announce(
+        `${t('demos.game.sound')} ${t(soundRef.current ? 'demos.game.on' : 'demos.game.off')}`
+      );
     }
   };
   const onKeyUp = (e) => release(e.code);
 
   // Touch: dragging on the view turns (there is no pointer lock on touch screens)
   const drag = useRef(null);
+  // Events from the GameInfo portal bubble here through React: only the view's own count
   const onPointerDown = (e) => {
-    if (e.pointerType === 'mouse' || e.target.closest('button, summary, details')) return;
+    if (
+      e.pointerType === 'mouse' ||
+      !e.currentTarget.contains(e.target) ||
+      e.target.closest('button, summary, details')
+    )
+      return;
     drag.current = e.clientX;
   };
   const onPointerMove = (e) => {
@@ -670,12 +860,28 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
   };
   const lookWithMouse = () => {
     start();
-    lockRef.current?.lock();
+    // Requested here rather than through the controls' lock(), so a refusal (pointer lock asked
+    // again too soon after Escape, or not allowed) is caught instead of an unhandled rejection.
+    // The controls still follow the lock through pointerlockchange.
+    lockRef.current?.domElement?.requestPointerLock()?.catch?.(() => {});
   };
   const onLockChange = useCallback((value) => {
     setLocked(value);
     if (value) wrapperRef.current?.focus({ preventScroll: true });
   }, []);
+
+  // Game Mode: a click on the view opens the panel in the crosshair, else captures the mouse
+  const onClick = (e) => {
+    if (
+      !game ||
+      !started ||
+      !e.currentTarget.contains(e.target) ||
+      e.target.closest('button, a, summary, details')
+    )
+      return;
+    if (lockable && !locked) lookWithMouse();
+    else interact(true);
+  };
 
   // Releasing keys when focus leaves keeps the player from walking on alone
   const onBlur = (e) => {
@@ -710,7 +916,8 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
   return (
     <div
       ref={wrapperRef}
-      tabIndex={0}
+      // In Game Mode the view is reached through the briefing's Start buttons, which focus it
+      tabIndex={game && !started ? -1 : 0}
       role='application'
       aria-label={t('demos.cub3d.appLabel')}
       aria-describedby={helpId}
@@ -721,12 +928,14 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
+      onClick={onClick}
       className='group relative h-full w-full touch-none overflow-hidden bg-background outline-none'
     >
       <Canvas
         frameloop='demand'
-        dpr={[1, 2]}
-        gl={{ powerPreference: 'default' }}
+        // Full screen in Game Mode: a lower pixel ratio and no MSAA (the textures are pixel art)
+        dpr={game ? [1, 1.5] : [1, 2]}
+        gl={{ powerPreference: 'default', antialias: !game }}
         camera={{ fov: 50, near: 0.05, far: 60 }}
         onCreated={({ gl, invalidate }) => {
           invalidateRef.current = invalidate;
@@ -745,6 +954,7 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
           lockable={lockable}
           lockRef={lockRef}
           onLockChange={onLockChange}
+          onWalk={game ? onWalk : undefined}
           reduced={reduced}
         />
       </Canvas>
@@ -753,26 +963,21 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
       <canvas
         ref={minimapRef}
         aria-hidden='true'
-        className='pointer-events-none absolute right-3 top-3 z-30 rounded-md border border-line-strong'
+        className={`pointer-events-none absolute z-30 rounded-md border border-line-strong ${game ? 'bottom-12 left-3' : 'right-3 top-3'}`}
         style={{ width: W * MINIMAP_CELL, height: H * MINIMAP_CELL }}
       />
       <p
         id={helpId}
-        className='absolute bottom-3 left-3 z-30 max-w-md rounded-xl bg-background/80 px-3 py-2 text-sm text-foreground-muted'
+        className={
+          // Game Mode has the status bar there; the keys stay in the briefing and the description
+          game
+            ? 'sr-only'
+            : 'absolute bottom-3 left-3 z-30 max-w-md rounded-xl bg-background/80 px-3 py-2 text-sm text-foreground-muted'
+        }
       >
         {/* The welcome card's key list, as a reminder */}
-        {t(touch ? 'demos.cub3d.welcome.keysTouch' : 'demos.cub3d.welcome.keys').join(' · ')}
+        {t(keysKey).join(' · ')}
       </p>
-      {lockable && started && !locked && (
-        <button
-          type='button'
-          onClick={lookWithMouse}
-          className={`absolute bottom-3 right-3 z-30 inline-flex h-11 items-center rounded-xl border border-line-strong bg-glass px-4 text-sm font-semibold text-foreground backdrop-blur-md hover:border-foreground-muted ${styles.hudFocus}`}
-        >
-          {t('demos.cub3d.mouseLook')}
-        </button>
-      )}
-
       {/* The wall panels' text, for anyone who cannot see or reach them in the maze */}
       {started && (
         <details className='absolute left-3 top-3 z-30 max-h-[60%] max-w-xs overflow-y-auto rounded-xl bg-background/90 p-3 text-sm text-foreground'>
@@ -790,9 +995,19 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
         </details>
       )}
 
+      {lockable && started && !locked && (
+        <button
+          type='button'
+          onClick={lookWithMouse}
+          className={`absolute right-3 z-30 inline-flex ${game ? 'bottom-12' : 'bottom-3'} h-11 items-center rounded-xl border border-line-strong bg-glass px-4 text-sm font-semibold text-foreground backdrop-blur-md hover:border-foreground-muted ${styles.hudFocus}`}
+        >
+          {t('demos.cub3d.mouseLook')}
+        </button>
+      )}
+
       {touch && started && (
         <div
-          className='absolute bottom-16 right-3 z-30 grid grid-cols-3 gap-1.5'
+          className={`absolute right-3 z-30 grid grid-cols-3 gap-1.5 ${game ? 'bottom-12' : 'bottom-16'}`}
           role='group'
           aria-label={t('demos.cub3d.touch.label')}
         >
@@ -809,10 +1024,10 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
           ))}
           <button
             type='button'
-            onClick={toggleDoor}
+            onClick={game ? () => interact(false) : toggleDoor}
             className={`${TOUCH_BUTTON} col-start-2 row-start-3 w-auto px-2 text-xs`}
           >
-            {t('demos.cub3d.touch.door')}
+            {t(game ? 'demos.game.use' : 'demos.cub3d.touch.door')}
           </button>
         </div>
       )}
@@ -822,23 +1037,31 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
         <div className='absolute inset-0 z-40 flex overflow-y-auto bg-background/70 p-4 backdrop-blur-sm'>
           <div className='m-auto w-full max-w-lg rounded-3xl border border-line bg-glass-strong p-6 shadow-xl'>
             <h3 className='text-2xl font-black text-foreground'>
-              {t('demos.cub3d.welcome.title')}
+              {t(game ? 'demos.game.title' : 'demos.cub3d.welcome.title')}
             </h3>
             <p className='mt-3 leading-relaxed text-foreground-muted'>
-              {t('demos.cub3d.welcome.body')}
+              {t(game ? 'demos.game.briefing' : 'demos.cub3d.welcome.body')}
             </p>
             <ul className='mt-4 space-y-1 text-sm text-foreground'>
-              {t(touch ? 'demos.cub3d.welcome.keysTouch' : 'demos.cub3d.welcome.keys').map(
-                (line) => (
-                  <li key={line}>{line}</li>
-                )
-              )}
+              {t(keysKey).map((line) => (
+                <li key={line}>{line}</li>
+              ))}
             </ul>
+            {/* Game Mode leads with mouse look, the demo with the keyboard */}
             <div className='mt-5 flex flex-wrap gap-3'>
-              <button type='button' onClick={start} className={styles.buttonPrimary}>
+              {game && lockable && (
+                <button type='button' onClick={lookWithMouse} className={styles.buttonPrimary}>
+                  {t('demos.cub3d.welcome.startLook')}
+                </button>
+              )}
+              <button
+                type='button'
+                onClick={start}
+                className={game && lockable ? styles.buttonGhost : styles.buttonPrimary}
+              >
                 {t('demos.cub3d.welcome.start')}
               </button>
-              {lockable && (
+              {!game && lockable && (
                 <button type='button' onClick={lookWithMouse} className={styles.buttonGhost}>
                   {t('demos.cub3d.welcome.startLook')}
                 </button>
@@ -846,6 +1069,28 @@ const Cub3DWorld = ({ t, technologies, projects }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {game && (
+        <GameHud
+          t={t}
+          target={target && t(`demos.cub3d.panels.${target}`)}
+          read={read.length}
+          total={PANELS.length}
+          sound={sound}
+          onSound={toggleSound}
+          onExit={onExit}
+          weaponRef={weaponRef}
+          beamRef={beamRef}
+        />
+      )}
+      {openPanel && (
+        <GameInfo
+          t={t}
+          title={t(`demos.cub3d.panels.${openPanel}`)}
+          detail={details[openPanel]}
+          onClose={closePanel}
+        />
       )}
 
       <p role='status' className='sr-only'>
