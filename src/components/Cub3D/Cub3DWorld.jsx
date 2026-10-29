@@ -31,6 +31,7 @@ import ReleaseContext from '../canvas/ReleaseContext';
 import { GameLayer } from './Enemies';
 import { person } from '../../constans';
 import { HIT_STOP_MS, frozen } from './freeze';
+import { readGameTheme } from './gameTheme';
 import {
   GameHud,
   GameInfo,
@@ -1251,7 +1252,8 @@ const Cub3DWorld = ({
 
   // Read once: the page (and its theme toggle) is inert while the demo is open
   const colors = useMemo(() => {
-    const c = readTheme([
+    // Game Mode's radar from its dark island; the cub3D demo's minimap from the page
+    const c = (game ? readGameTheme : readTheme)([
       'foreground',
       'foreground-muted',
       'background',
@@ -1281,7 +1283,7 @@ const Cub3DWorld = ({
       sweep: rgb(c.success),
       objective: rgb(c.success),
     };
-  }, []);
+  }, [game]);
 
   // The minimap's walls and doors, painted once (and again when a door changes)
   const paintStatic = useCallback(() => {
@@ -2602,7 +2604,7 @@ const Cub3DWorld = ({
       {!started && !game && (
         // Scrolls on short or zoomed screens, so Start is always reachable
         <div className='absolute inset-0 z-40 flex overflow-y-auto bg-background/70 p-4 backdrop-blur-sm'>
-          <div className='m-auto w-full max-w-lg rounded-3xl border border-line bg-glass-strong p-6 shadow-xl'>
+          <div className='m-auto w-full max-w-lg rounded-3xl border border-line bg-glass-strong p-6 shadow-raised'>
             <h3 className='text-2xl font-black text-foreground'>
               {t('demos.cub3d.welcome.title')}
             </h3>
@@ -2680,6 +2682,7 @@ const Cub3DWorld = ({
       {openPanel && (
         <GameInfo
           t={t}
+          dark={game}
           title={panelTitle(t, openPanel, game)}
           kicker={
             game && KIND[openPanel] === 'section'

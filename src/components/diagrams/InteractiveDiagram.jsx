@@ -419,7 +419,7 @@ const InteractiveDiagram = ({ spec, ns, title, headingLevel = 'h3' }) => {
                       rx='16'
                       fill='none'
                       strokeWidth='2.5'
-                      className='stroke-primary opacity-0 group-focus-visible:opacity-100'
+                      className='stroke-focus opacity-0 group-focus-visible:opacity-100'
                     />
                     <rect
                       x={n.x}

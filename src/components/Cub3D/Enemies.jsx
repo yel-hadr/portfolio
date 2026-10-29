@@ -26,7 +26,8 @@ import {
   TorusGeometry,
 } from 'three';
 
-import { readTheme, rgb } from '../../utils/themeColors';
+import { rgb } from '../../utils/themeColors';
+import { readGameTheme } from './gameTheme';
 import { frozen } from './freeze';
 import { ICON_Y, THREAT_TYPES, iconSpot } from './rooms';
 import { toColor } from './toColor';
@@ -142,7 +143,7 @@ const Effects = ({ reduced, fxRef, hitStop }) => {
   const live = useRef([]);
   const shards = useRef([]);
   const colors = useMemo(() => {
-    const c = readTheme([...Object.values(FX_COLORS), ...Object.values(THREAT_COLORS)]);
+    const c = readGameTheme([...Object.values(FX_COLORS), ...Object.values(THREAT_COLORS)]);
     return {
       ...Object.fromEntries(Object.entries(FX_COLORS).map(([k, v]) => [k, toColor(c[v])])),
       ...Object.fromEntries(Object.entries(THREAT_COLORS).map(([k, v]) => [k, toColor(c[v], 3)])),
@@ -351,7 +352,7 @@ const Entities = ({
 
   // GPU resources made here, so freed here (they are not R3F's): per threat type and crew member
   const res = useMemo(() => {
-    const colors = readTheme([
+    const colors = readGameTheme([
       'background',
       'foreground',
       ...new Set([...Object.values(THREAT_COLORS), ...npcs.current.map((n) => n.color)]),

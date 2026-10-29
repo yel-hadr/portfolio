@@ -353,7 +353,7 @@ const Terminal = ({ onClose, initialCommand = null }) => {
         // keeps focus inside the dialog and Escape and the Tab cycle keep working
         tabIndex={-1}
         onKeyDown={onDialogKeyDown}
-        className='flex h-full w-full flex-col overflow-hidden bg-glass-strong font-mono text-sm text-foreground backdrop-blur-md md:h-[min(44rem,85vh)] md:max-w-4xl md:rounded-2xl md:border md:border-line-strong md:shadow-2xl outline-none'
+        className='flex h-full w-full flex-col overflow-hidden bg-glass-strong font-mono text-sm text-foreground backdrop-blur-md md:h-[min(44rem,85vh)] md:max-w-4xl md:rounded-2xl md:border md:border-line-strong md:shadow-modal outline-none'
       >
         {/* Title bar */}
         <div className='flex items-center gap-3 border-b border-line bg-surface-raised/60 py-1.5 pl-4 pr-1.5'>
@@ -383,68 +383,72 @@ const Terminal = ({ onClose, initialCommand = null }) => {
           {t('terminal.description')}
         </p>
 
-        {/* Output: only ever appended to (or cleared on request), announced politely. The click
+        {/* The screen stays dark in either theme (scheme-dark: every token takes its dark value
+            inside); the window's frame and title bar follow the page */}
+        <div className="scheme-dark flex min-h-0 flex-1 flex-col text-foreground [:root[data-theme='light']_&]:bg-background/95">
+          {/* Output: only ever appended to (or cleared on request), announced politely. The click
             handler is a mouse convenience only; the input is always reachable by keyboard. */}
-        <div
-          ref={logRef}
-          role='log'
-          aria-live='polite'
-          onClick={onLogClick}
-          className='relative flex-1 overflow-y-auto overscroll-contain break-words px-4 py-3 leading-relaxed'
-        >
-          {entries.map(({ id, node }) => (
-            <div key={id} data-entry={id}>
-              {node}
-            </div>
-          ))}
-        </div>
-
-        {playing ? (
-          <TerminalTyping t={t} onEnd={endGame} inputRef={gameInputRef} />
-        ) : (
-          <div className='border-t border-line px-3 pb-3 pt-2'>
-            <div
-              role='group'
-              aria-label={t('terminal.suggestions')}
-              className='mb-2 flex flex-wrap gap-1'
-            >
-              {QUICK_COMMANDS.map((name) => (
-                <button
-                  key={name}
-                  type='button'
-                  onClick={() => runQuick(name)}
-                  className='rounded-lg border border-line-strong px-2 py-1 text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground'
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
-            <div className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-base outline-2 -outline-offset-2 outline-primary focus-within:outline md:text-sm'>
-              <Prompt t={t} />
-              <label htmlFor={inputId} className='sr-only'>
-                {t('terminal.inputLabel')}
-              </label>
-              <input
-                ref={inputRef}
-                id={inputId}
-                type='text'
-                value={value}
-                onChange={(e) => {
-                  setValue(e.target.value);
-                  browse.current.index = null;
-                }}
-                onKeyDown={onInputKeyDown}
-                aria-describedby={descriptionId}
-                autoComplete='off'
-                autoCapitalize='none'
-                autoCorrect='off'
-                spellCheck={false}
-                enterKeyHint='send'
-                className='min-w-0 flex-1 bg-transparent text-foreground caret-primary outline-none focus-visible:outline-none'
-              />
-            </div>
+          <div
+            ref={logRef}
+            role='log'
+            aria-live='polite'
+            onClick={onLogClick}
+            className='relative flex-1 overflow-y-auto overscroll-contain break-words px-4 py-3 leading-relaxed'
+          >
+            {entries.map(({ id, node }) => (
+              <div key={id} data-entry={id}>
+                {node}
+              </div>
+            ))}
           </div>
-        )}
+
+          {playing ? (
+            <TerminalTyping t={t} onEnd={endGame} inputRef={gameInputRef} />
+          ) : (
+            <div className='border-t border-line px-3 pb-3 pt-2'>
+              <div
+                role='group'
+                aria-label={t('terminal.suggestions')}
+                className='mb-2 flex flex-wrap gap-1'
+              >
+                {QUICK_COMMANDS.map((name) => (
+                  <button
+                    key={name}
+                    type='button'
+                    onClick={() => runQuick(name)}
+                    className='rounded-lg border border-line-strong px-2 py-1 text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground'
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+              <div className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-base outline-2 -outline-offset-2 outline-focus focus-within:outline md:text-sm'>
+                <Prompt t={t} />
+                <label htmlFor={inputId} className='sr-only'>
+                  {t('terminal.inputLabel')}
+                </label>
+                <input
+                  ref={inputRef}
+                  id={inputId}
+                  type='text'
+                  value={value}
+                  onChange={(e) => {
+                    setValue(e.target.value);
+                    browse.current.index = null;
+                  }}
+                  onKeyDown={onInputKeyDown}
+                  aria-describedby={descriptionId}
+                  autoComplete='off'
+                  autoCapitalize='none'
+                  autoCorrect='off'
+                  spellCheck={false}
+                  enterKeyHint='send'
+                  className='min-w-0 flex-1 bg-transparent text-foreground caret-primary outline-none focus-visible:outline-none'
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </motion.div>
     </motion.div>
   );

@@ -258,7 +258,7 @@ const TerminalTyping = ({ t, onEnd, inputRef }) => {
         </button>
       </div>
 
-      <div className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-base outline-2 -outline-offset-2 outline-primary focus-within:outline md:text-sm'>
+      <div className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-base outline-2 -outline-offset-2 outline-focus focus-within:outline md:text-sm'>
         <Prompt t={t} />
         <label htmlFor={inputId} className='sr-only'>
           {t('terminal.game.inputLabel')}

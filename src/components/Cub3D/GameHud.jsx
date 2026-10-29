@@ -505,7 +505,11 @@ export const MissionComplete = ({
   }, []);
 
   return createPortal(
-    <div ref={overlayRef} className='fixed inset-0 z-[70] flex bg-background/70 p-4' {...backdrop}>
+    <div
+      ref={overlayRef}
+      className='scheme-dark fixed inset-0 z-[70] flex bg-background/70 p-4'
+      {...backdrop}
+    >
       <div
         ref={panelRef}
         role='dialog'
@@ -513,7 +517,7 @@ export const MissionComplete = ({
         aria-labelledby={titleId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className='m-auto max-h-full w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-success bg-background p-6 text-center text-foreground shadow-2xl outline-none motion-safe:animate-crt-in'
+        className='m-auto max-h-full w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-success bg-background p-6 text-center text-foreground shadow-modal outline-none motion-safe:animate-crt-in'
       >
         <h2
           ref={heading}
@@ -583,7 +587,11 @@ export const PauseMenu = ({ t, onResume, onRestart, onMenu, settings }) => {
   };
 
   return createPortal(
-    <div ref={overlayRef} className='fixed inset-0 z-[70] flex bg-background/70 p-4' {...backdrop}>
+    <div
+      ref={overlayRef}
+      className='scheme-dark fixed inset-0 z-[70] flex bg-background/70 p-4'
+      {...backdrop}
+    >
       <div
         ref={panelRef}
         role='dialog'
@@ -591,7 +599,7 @@ export const PauseMenu = ({ t, onResume, onRestart, onMenu, settings }) => {
         aria-labelledby={titleId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className='card-glass m-auto max-h-full w-full max-w-md overflow-y-auto p-6 shadow-2xl outline-none'
+        className='card-glass m-auto max-h-full w-full max-w-md overflow-y-auto p-6 shadow-modal outline-none'
       >
         <h2
           id={titleId}
@@ -645,7 +653,7 @@ export const SystemFailure = ({ t, onReboot, onMenu }) => {
   }, []);
 
   return createPortal(
-    <div ref={overlayRef} className='fixed inset-0 z-[70] flex bg-background/80 p-4'>
+    <div ref={overlayRef} className='scheme-dark fixed inset-0 z-[70] flex bg-background/80 p-4'>
       <div
         ref={panelRef}
         role='alertdialog'
@@ -654,7 +662,7 @@ export const SystemFailure = ({ t, onReboot, onMenu }) => {
         aria-describedby={bodyId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className='m-auto max-h-full w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-danger bg-background p-6 text-center text-foreground shadow-2xl outline-none motion-safe:animate-crt-in'
+        className='m-auto max-h-full w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-danger bg-background p-6 text-center text-foreground shadow-modal outline-none motion-safe:animate-crt-in'
       >
         <h2
           id={titleId}
@@ -701,7 +709,16 @@ export const SystemFailure = ({ t, onReboot, onMenu }) => {
  * A wall's content, opened from the crosshair: a dialog over the game with a CRT switch-on.
  * useModalDialog makes the game inert behind it and closes it on Escape before the game sees it.
  */
-export const GameInfo = ({ t, title, kicker, detail = {}, onClose, closeLabel, children }) => {
+export const GameInfo = ({
+  t,
+  title,
+  kicker,
+  detail = {},
+  onClose,
+  closeLabel,
+  dark = false,
+  children,
+}) => {
   const titleId = useId();
   const { overlayRef, panelRef, close, onKeyDown, backdrop } = useModalDialog(onClose);
 
@@ -710,7 +727,12 @@ export const GameInfo = ({ t, title, kicker, detail = {}, onClose, closeLabel, c
   }, [panelRef]);
 
   return createPortal(
-    <div ref={overlayRef} className='fixed inset-0 z-[70] flex bg-background/60 p-4' {...backdrop}>
+    <div
+      ref={overlayRef}
+      // Game Mode's dialogs portal out of its dark island: they take it back (`dark`)
+      className={`${dark ? 'scheme-dark ' : ''}fixed inset-0 z-[70] flex bg-background/60 p-4`}
+      {...backdrop}
+    >
       <div
         ref={panelRef}
         role='dialog'
@@ -718,7 +740,7 @@ export const GameInfo = ({ t, title, kicker, detail = {}, onClose, closeLabel, c
         aria-labelledby={titleId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className='m-auto max-h-full w-full max-w-2xl overflow-y-auto rounded-2xl border-2 border-primary bg-background p-6 text-foreground shadow-2xl outline-none motion-safe:animate-crt-in'
+        className='m-auto max-h-full w-full max-w-2xl overflow-y-auto rounded-2xl border-2 border-primary bg-background p-6 text-foreground shadow-modal outline-none motion-safe:animate-crt-in'
       >
         {/* Game Mode's dossier: which section of the profile this is */}
         {kicker && (
@@ -863,7 +885,7 @@ export const MainMenu = ({
   return (
     // Scrolls on short or zoomed screens, so every button stays reachable
     <div className='absolute inset-0 z-40 flex overflow-y-auto bg-background/70 p-4 backdrop-blur-sm'>
-      <div ref={panel} className='card-glass m-auto w-full max-w-md p-6 shadow-xl'>
+      <div ref={panel} className='card-glass m-auto w-full max-w-md p-6 shadow-raised'>
         {screen === 'menu' && (
           <>
             <h3
@@ -1020,7 +1042,7 @@ export const NpcDialogue = ({ t, name, line, reduced, onClose }) => {
       aria-describedby={lineId}
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className='absolute inset-x-3 bottom-12 z-[45] mx-auto max-w-2xl rounded-2xl border-2 border-primary-400 bg-background p-4 text-foreground shadow-2xl outline-none'
+      className='absolute inset-x-3 bottom-12 z-[45] mx-auto max-w-2xl rounded-2xl border-2 border-primary-400 bg-background p-4 text-foreground shadow-modal outline-none'
     >
       <p
         id={titleId}

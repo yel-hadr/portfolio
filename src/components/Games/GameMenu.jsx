@@ -77,7 +77,7 @@ const GameMenu = ({ onClose, onPlayTerminal }) => {
         aria-describedby={playing ? undefined : descId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className={`flex h-full w-full flex-col overflow-hidden bg-glass-strong shadow-2xl backdrop-blur-xl sm:h-auto sm:max-h-full sm:rounded-3xl sm:border sm:border-line ${
+        className={`flex h-full w-full flex-col overflow-hidden bg-glass-strong shadow-modal backdrop-blur-xl sm:h-auto sm:max-h-full sm:rounded-3xl sm:border sm:border-line ${
           playing ? 'sm:max-w-4xl' : 'sm:max-w-lg'
         }`}
       >

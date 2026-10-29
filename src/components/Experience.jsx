@@ -15,7 +15,7 @@ const CARD_STYLE = {
   color: 'var(--color-foreground)',
   border: '1px solid var(--color-line)',
   borderRadius: '1.5rem',
-  boxShadow: 'none',
+  boxShadow: 'var(--shadow-card)',
   padding: '1.5rem',
 };
 
@@ -31,7 +31,7 @@ const ExperienceCard = ({ experience }) => {
       dateClassName='!text-foreground-muted !opacity-100 font-medium'
       iconStyle={{
         background: experience.iconBg,
-        boxShadow: '0 0 0 4px var(--color-background), 0 0 0 5px var(--color-line)',
+        boxShadow: '0 0 0 4px var(--color-background), 0 0 0 5px var(--color-rule)',
       }}
     >
       <h3 className='text-foreground text-xl sm:text-2xl font-bold'>{title}</h3>
@@ -61,7 +61,7 @@ const Experience = () => {
       <SectionHeader id='experience' title={t('experience.title')} lead={t('experience.lead')} />
       <div className='mt-12 flex flex-col'>
         {/* animate={false}: entries stay visible instead of popping in on scroll */}
-        <VerticalTimeline animate={false} lineColor='var(--color-line)'>
+        <VerticalTimeline animate={false} lineColor='var(--color-rule)'>
           {experiences.map((experience) => (
             <ExperienceCard key={experience.id} experience={experience} />
           ))}

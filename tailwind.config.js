@@ -1,3 +1,5 @@
+import plugin from 'tailwindcss/plugin';
+
 // A color backed by a `--c-<name>` CSS variable holding "R G B" channels, so Tailwind's opacity
 // modifiers (bg-background/80) keep working.
 const token = (name) => `rgb(var(--c-${name}) / <alpha-value>)`;
@@ -13,8 +15,9 @@ export default {
       // text/background pair meets WCAG AA in both themes (checked by script):
       //   dark:  foreground 17.8:1, muted 8.5:1, primary-400 7.3:1 on background; dark text on
       //          primary 6.8:1; line-strong >= 4:1 on surfaces.
-      //   light: foreground 16.9:1, muted 7.6:1, primary-400 5.7:1 on background; dark text on
-      //          primary 5.0:1; primary focus ring 3.4:1; line-strong >= 3.3:1 on surfaces.
+      //   light: foreground 16.0:1, muted 7.1:1, primary-400 5.7:1, secondary 5.9:1 on the warm
+      //          background (>= 4.5 on every surface, glass and the footer band); dark text on
+      //          primary 4.9:1 (hover 4.5:1); primary focus ring >= 3.0:1; line-strong >= 3.2:1.
       colors: {
         background: token('background'), // page
         surface: {
@@ -31,12 +34,14 @@ export default {
           hover: token('primary-hover'), // button fill on hover
         },
         'on-primary': token('on-primary'), // text on primary fills (dark in both themes)
-        secondary: { DEFAULT: token('secondary') }, // violet: waves mid-stop, accents
+        secondary: { DEFAULT: token('secondary') }, // violet on dark, indigo on light: accents
         tertiary: { DEFAULT: token('tertiary') }, // blue: far end of the waves; decorative
         success: token('success'), // form sent, operational status
         danger: token('danger'), // form errors, failed status
         info: token('info'), // tags
+        focus: token('focus'), // keyboard focus rings (outline and ring utilities)
         night: token('night'), // the dark background in both themes: FdF's file colors
+        ground: token('ground'), // the footer's band: a shade darker than the page in light
         // Translucent fills over the waves (used with backdrop-blur, .card-glass) and hairlines
         // carry their own alpha, so they take no opacity modifier.
         glass: {
@@ -47,6 +52,12 @@ export default {
           DEFAULT: 'var(--color-line)', // decorative hairlines
           strong: token('line-strong'), // control boundaries (non-text contrast >= 3:1)
         },
+      },
+      // Depth from tokens: none on dark cards (hairlines do it), soft warm layers in light
+      boxShadow: {
+        card: 'var(--shadow-card)',
+        raised: 'var(--shadow-raised)',
+        modal: 'var(--shadow-modal)',
       },
       fontFamily: {
         sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
@@ -74,5 +85,11 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // light: for the few element-level differences tokens cannot carry (prefer tokens)
+    // (never inside a .scheme-dark island, which stays dark)
+    plugin(({ addVariant }) =>
+      addVariant('light', ":root[data-theme='light'] &:not(.scheme-dark, .scheme-dark *)")
+    ),
+  ],
 };

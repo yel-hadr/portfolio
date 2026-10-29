@@ -49,7 +49,7 @@ const ArchitectureModal = ({ diagram, onClose }) => {
         aria-describedby={descId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className='flex h-full w-full max-w-7xl flex-col overflow-hidden bg-glass-strong shadow-2xl backdrop-blur-xl sm:[@media(min-height:30rem)]:h-auto sm:[@media(min-height:30rem)]:max-h-full sm:[@media(min-height:30rem)]:rounded-3xl sm:[@media(min-height:30rem)]:border sm:[@media(min-height:30rem)]:border-line'
+        className='flex h-full w-full max-w-7xl flex-col overflow-hidden bg-glass-strong shadow-modal backdrop-blur-xl sm:[@media(min-height:30rem)]:h-auto sm:[@media(min-height:30rem)]:max-h-full sm:[@media(min-height:30rem)]:rounded-3xl sm:[@media(min-height:30rem)]:border sm:[@media(min-height:30rem)]:border-line'
       >
         {/* Only the title row stays fixed, so short viewports keep most of the height to scroll */}
         <div className='flex items-center gap-4 border-b border-line px-4 py-2 sm:px-8 [@media(min-height:30rem)]:py-4 sm:[@media(min-height:30rem)]:py-5'>

@@ -38,7 +38,8 @@ import {
   Vector3,
 } from 'three';
 
-import { readTheme, rgb } from '../../utils/themeColors';
+import { rgb } from '../../utils/themeColors';
+import { readGameTheme } from './gameTheme';
 import Gauntlet from './Gauntlet';
 import {
   CABLES,
@@ -73,7 +74,9 @@ const TOKENS = [
   'background',
   'foreground',
   'foreground-muted',
+  'surface',
   'surface-raised',
+  'line-strong',
   'primary',
   'primary-400',
   'info',
@@ -390,8 +393,9 @@ const Terminals = memo(function Terminals({
       screen: new PlaneGeometry(...SCREEN),
       edge: new PlaneGeometry(BEZEL[0] + 0.035, BEZEL[1] + 0.035),
       // The walls' own dark paneling, a little lighter, so the bezel reads as part of the wall
+      // (in high contrast a dark frame on the light wall, its accent edge around it)
       body: flat
-        ? new MeshBasicMaterial({ color: toColor(res.c.muted, 0.55) })
+        ? new MeshBasicMaterial({ color: toColor(res.c.dark) })
         : new MeshLambertMaterial({
             color: toColor(res.c.dark).lerp(toColor(res.c.muted), 0.08),
           }),
@@ -625,7 +629,7 @@ const Facility = ({
 
   // Everything GPU-side made here (not R3F's), so freed on unmount below
   const res = useMemo(() => {
-    const t = readTheme(TOKENS);
+    const t = readGameTheme(TOKENS);
     const darkFirst = luminance(t.background) < luminance(t.foreground);
     const c = {
       dark: darkFirst ? t.background : t.foreground,
@@ -654,13 +658,15 @@ const Facility = ({
     let rack;
     let crate;
     if (flat) {
-      // High contrast: each wall side its own flat shade, so corners stay visible without light
+      // High contrast: light walls between a near-black floor and ceiling (8.5:1 and 4.4:1), each
+      // wall side its own shade so corners stay visible without light, and the rooms' accent
+      // lines along their feet (the baseboards, flat here) tracing every corridor
       const plain = (channels) => new MeshBasicMaterial({ color: toColor(channels) });
-      const side = plain(c.light);
-      const end = plain(c.muted);
+      const side = plain(c.muted);
+      const end = plain(t['line-strong']);
       wallMaterials = [end, end, hidden, hidden, side, side];
       floor = plain(c.dark);
-      ceiling = plain(t['surface-raised']);
+      ceiling = plain(t.surface);
       door = plain(t.danger);
       rack = plain(t.info);
       crate = plain(t.primary);
@@ -877,7 +883,7 @@ const Facility = ({
         dummy.scale.set(1, 0.03, 0.02);
         dummy.updateMatrix();
         strips.current.setMatrixAt(i, dummy.matrix);
-        strips.current.setColorAt(i, res.accent(room, 3.2));
+        strips.current.setColorAt(i, res.accent(room, flat ? 1 : 3.2));
       });
       strips.current.instanceMatrix.needsUpdate = true;
       strips.current.instanceColor.needsUpdate = true;
@@ -1142,7 +1148,7 @@ const Facility = ({
         <planeGeometry args={[W + 2, H + 2]} />
         <primitive object={res.ceiling} attach='material' />
       </mesh>
-      {!flat && <instancedMesh ref={strips} args={[res.box, res.strip, boards.length]} />}
+      <instancedMesh ref={strips} args={[res.box, res.strip, boards.length]} />
       <instancedMesh
         ref={rackMesh}
         args={[res.box, res.rack, RACKS.length]}

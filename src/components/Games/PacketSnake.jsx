@@ -642,7 +642,7 @@ const PacketSnake = () => {
           <canvas ref={canvasRef} aria-hidden='true' className='absolute inset-0 h-full w-full' />
           {overlay && (
             <div className='absolute inset-0 flex items-center justify-center bg-background/60 p-4 backdrop-blur-sm'>
-              <div className='flex w-full max-w-xs flex-col items-center gap-3 rounded-3xl border border-line bg-glass-strong p-6 text-center shadow-xl'>
+              <div className='flex w-full max-w-xs flex-col items-center gap-3 rounded-3xl border border-line bg-glass-strong p-6 text-center shadow-raised'>
                 <p className='text-xl font-black text-foreground'>{overlay.title}</p>
                 <div id={overlayId} className='space-y-1'>
                   {overlay.body.map((line) => (

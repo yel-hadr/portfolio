@@ -61,7 +61,7 @@ const DemoShell = ({ id, repo, onClose, children }) => {
         tabIndex={-1}
         onKeyDown={onKeyDown}
         // Phones and zoomed pages scroll the whole panel; larger screens fit it
-        className='flex h-full w-full flex-col overflow-y-auto bg-glass-strong md:overflow-hidden shadow-2xl backdrop-blur-xl md:h-[min(52rem,92vh)] md:max-w-6xl md:rounded-3xl md:border md:border-line'
+        className='flex h-full w-full flex-col overflow-y-auto bg-glass-strong md:overflow-hidden shadow-modal backdrop-blur-xl md:h-[min(52rem,92vh)] md:max-w-6xl md:rounded-3xl md:border md:border-line'
       >
         <div className='flex items-center gap-3 border-b border-line px-4 py-3 md:px-6'>
           <h2

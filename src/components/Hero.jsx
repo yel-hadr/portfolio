@@ -24,12 +24,13 @@ const Hero = ({ onEnterGame }) => {
         className={`${styles.container} grid w-full items-center gap-10 pb-16 pt-28 lg:grid-cols-[1fr_auto] lg:gap-16`}
       >
         <motion.figure variants={reveal()} className='relative w-40 sm:w-52 lg:order-last lg:w-80'>
-          {/* Soft brand glow behind the frame */}
+          {/* Soft brand glow behind the frame, dark mode only (--glow); in light the frame lifts
+              off the page on a soft shadow instead */}
           <div
             aria-hidden='true'
-            className='absolute -inset-6 rounded-full bg-primary/20 blur-3xl'
+            className='absolute -inset-6 rounded-full bg-primary/20 opacity-[var(--glow)] blur-3xl'
           />
-          <div className='card-glass relative p-2'>
+          <div className='card-glass relative p-2 light:shadow-raised'>
             <img
               // Pre-cropped to the frame's 4:5; 320w for phones, 640w for the 304px desktop frame at 2x
               src={profile640}

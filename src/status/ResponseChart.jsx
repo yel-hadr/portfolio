@@ -198,7 +198,7 @@ const ResponseChart = ({ monitor, name, samples, now }) => {
         {hover && width > 0 && (
           <div
             aria-hidden='true'
-            className='pointer-events-none absolute top-0 rounded-lg border border-line-strong bg-surface px-2.5 py-1.5 text-xs shadow-lg'
+            className='pointer-events-none absolute top-0 rounded-lg border border-line-strong bg-surface px-2.5 py-1.5 text-xs shadow-lg light:shadow-raised'
             style={{
               left: Math.min(Math.max(x(hover.t) - 70, 0), width - 140),
               width: 140,

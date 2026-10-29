@@ -11,7 +11,8 @@ const Footer = ({ onOpenGames, onEnterGame }) => {
   const links = [...navLinks, { id: 'blog' }];
 
   return (
-    <footer className='relative border-t border-line bg-background/80 backdrop-blur-md'>
+    // A grounded band: in light a shade darker than the page (ground), in dark the page itself
+    <footer className='relative border-t border-line bg-ground/80 backdrop-blur-md'>
       <div
         className={`${styles.container} grid gap-10 py-12 md:grid-cols-[1fr_auto_auto] md:gap-16`}
       >

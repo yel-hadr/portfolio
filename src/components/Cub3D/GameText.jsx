@@ -204,6 +204,7 @@ const GameText = ({ t, details, canPlay, returnTo, onRunDemo, onBack, onExit }) 
       {contact && (
         <GameInfo
           t={t}
+          dark
           title={t('demos.game.panels.contact')}
           closeLabel={t('demos.game.closeDialog')}
           onClose={closeContact}

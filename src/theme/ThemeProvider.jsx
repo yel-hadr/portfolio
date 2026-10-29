@@ -4,8 +4,6 @@ import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { ThemeContext } from './context';
 
 const STORAGE_KEY = 'theme';
-const THEME_COLOR = { dark: '#050816', light: '#f6f5fb' };
-
 // The inline script in index.html set data-theme before the first paint (saved choice, else
 // dark, the site's default look), so React starts from what is already on screen.
 const initialTheme = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
@@ -22,7 +20,14 @@ const ThemeProvider = ({ children }) => {
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = theme;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLOR[theme]);
+    // The browser's bars take the page's own background token (as the blog pages do), so no hex
+    // here can drift from the theme
+    const channels = getComputedStyle(root).getPropertyValue('--c-background').trim();
+    if (channels) {
+      document
+        .querySelector('meta[name="theme-color"]')
+        ?.setAttribute('content', `rgb(${channels.split(/\s+/).join(', ')})`);
+    }
     document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', theme);
   }, [theme]);
 
