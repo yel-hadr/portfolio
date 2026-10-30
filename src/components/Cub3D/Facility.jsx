@@ -40,6 +40,7 @@ import {
 
 import { rgb } from '../../utils/themeColors';
 import { readGameTheme } from './gameTheme';
+import { LENS } from './flashlight';
 import Viewmodel from './Viewmodel';
 import {
   CABLES,
@@ -374,10 +375,6 @@ const dummy = new Object3D();
 // Scratch color for per-instance colors (no allocation per frame)
 const tint = toColor('0 0 0');
 const NO_OFFSET = new Vector2(0, 0);
-// The flashlight sits just ahead of the eye, on the left shoulder (the player can stand 0.2 from
-// a wall, so it never ends up inside the wall faced): off the weapon's side, so its beam never
-// floods the viewmodel a few centimeters away
-const LENS = [-0.1, -0.06, -0.1];
 // Past this the fog has swallowed nearly everything: the light and its shadows stop here
 const REACH = 9;
 
@@ -1328,6 +1325,7 @@ const Facility = ({
             noFlash={noFlash}
             flat={flat}
             colors={res.c}
+            flashlight={res.flashlight}
           />
         </>,
         camera

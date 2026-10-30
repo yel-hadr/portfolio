@@ -1,7 +1,21 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { MathUtils, MeshBasicMaterial, MeshStandardMaterial, PMREMGenerator } from 'three';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import {
+  BackSide,
+  Euler,
+  MathUtils,
+  Matrix4,
+  Mesh,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  PlaneGeometry,
+  PMREMGenerator,
+  Quaternion,
+  Scene,
+  SphereGeometry,
+  Vector3,
+} from 'three';
+import { LENS } from './flashlight';
 import { toColor } from './toColor';
 
 // Game Mode's weapons as 3D viewmodels in the camera's lower right, one procedural low-poly model
@@ -14,9 +28,11 @@ import { toColor } from './toColor';
 // Drawn over the world without a depth test, and in the transparent pass at full opacity, so it
 // never sinks into a wall and nothing shows through it (sorted last by a high renderOrder).
 // All three are mounted once and only the one in hand is shown, with one material set for all:
-// a switch creates, disposes and compiles nothing. The metal reflects a small studio environment
-// map of its own (only the viewmodel uses it), so it reads as metal without one more light that
-// every lit pixel of the world would pay for.
+// a switch creates, disposes and compiles nothing. The flashlight's cone points down the view and
+// never reaches the weapon, and one more light would cost every lit pixel of the world, so the
+// metal instead reflects an environment map of its own (only the viewmodel uses it) baked from the
+// flashlight as the weapon sees it, and turned with the camera every frame so its glints stay
+// where the lens is.
 
 // In view: at 0.3 ahead the frustum spans about 0.17 to each side and 0.1 up and down
 const BASE = [0.092, -0.07, -0.27];
@@ -24,9 +40,8 @@ const SCALE = 0.5;
 // Turned in toward the crosshair and tipped a little, as a viewmodel is
 const AIM = [-0.06, 0.16, 0];
 const OVER = { depthTest: false, depthWrite: false, transparent: true, fog: false };
-// How much of the environment the metal reflects: a sheen, not a mirror, so the room lights and
-// the flashlight still make the highlights
-const ENV = 0.35;
+// How much of the flashlight environment the metal reflects
+const ENV = 0.9;
 // Each weapon's accent token (its glow) and how far its moving part travels on a shot
 const ACCENT = ['secondary', 'success', 'primary'];
 const TRAVEL = [0.06, 0.035, 0.05];
@@ -160,6 +175,37 @@ const Blaster = ({ m, moving }) => (
   </>
 );
 
+/**
+ * The flashlight as the weapon sees it, in camera space, prefiltered for the metal: the lens behind
+ * and to the left (toward LENS from the weapon), the beam's lit wall ahead, a faint fill around
+ */
+const bakeFlashlight = (gl, light) => {
+  const scene = new Scene();
+  const parts = [];
+  const add = (geometry, k, at, side) => {
+    const material = new MeshBasicMaterial({ color: light.clone().multiplyScalar(k), side });
+    const mesh = new Mesh(geometry, material);
+    if (at) mesh.position.copy(at);
+    mesh.lookAt(0, 0, 0);
+    scene.add(mesh);
+    parts.push(geometry, material);
+  };
+  add(new SphereGeometry(20, 16, 8), 0.07, null, BackSide);
+  const lens = new Vector3(LENS[0] - BASE[0], LENS[1] - BASE[1], LENS[2] - BASE[2]).normalize();
+  add(new SphereGeometry(2.2, 24, 12), 6, lens.multiplyScalar(6));
+  add(new PlaneGeometry(16, 10), 0.6, new Vector3(0, 0, -8));
+  const pmrem = new PMREMGenerator(gl);
+  const target = pmrem.fromScene(scene, 0.04);
+  pmrem.dispose();
+  parts.forEach((part) => part.dispose());
+  return target;
+};
+
+// Scratch for turning the environment with the camera (no allocation per frame)
+const turn = new Matrix4();
+const facing = new Quaternion();
+const back = new Euler();
+
 const MODELS = [Rifle, Pistol, Blaster];
 // Each model's size in hand (the blaster's wide barrel would fill the view at full size)
 const SIZE = [1, 1, 0.78];
@@ -169,24 +215,20 @@ const FLASH_AT = [-0.4, -0.16, -0.28];
  * @param weapon  the weapon in hand (index into rooms.js WEAPON_FX)
  * @param motion  Cub3DWorld's shared ref: recoil and flash (set by a shot), bob and sway (GameMotion)
  * @param colors  theme channels from Facility: { dark, muted, light, primary, success, secondary }
+ * @param flashlight  the flashlight's color (three Color), for the metal's reflections
  */
-const Viewmodel = ({ weapon, motion, reduced, noFlash, flat, colors }) => {
+const Viewmodel = ({ weapon, motion, reduced, noFlash, flat, colors, flashlight }) => {
   const gl = useThree((s) => s.gl);
   const group = useRef(null);
   const moving = useRef([]);
   const flash = useRef(null);
   const time = useRef(0);
 
-  // The studio reflections, prefiltered once (none in high contrast, which is unlit)
-  const env = useMemo(() => {
-    if (flat) return null;
-    const pmrem = new PMREMGenerator(gl);
-    const room = new RoomEnvironment();
-    const target = pmrem.fromScene(room, 0.04);
-    room.dispose();
-    pmrem.dispose();
-    return target;
-  }, [gl, flat]);
+  // The flashlight's reflections, prefiltered once (none in high contrast, which is unlit)
+  const env = useMemo(
+    () => (flat || !flashlight ? null : bakeFlashlight(gl, flashlight)),
+    [gl, flat, flashlight]
+  );
   useEffect(() => () => env?.dispose(), [env]);
 
   const materials = useMemo(() => {
@@ -202,7 +244,7 @@ const Viewmodel = ({ weapon, motion, reduced, noFlash, flat, colors }) => {
         flash: ACCENT.map((a) => new MeshBasicMaterial({ color: color(a), opacity: 0, ...OVER })),
       };
     }
-    const envMap = env.texture;
+    const envMap = env?.texture ?? null;
     return {
       // Gunmetal: dark and very metallic, so lights draw sharp highlights along its edges
       metal: new MeshStandardMaterial({
@@ -262,6 +304,15 @@ const Viewmodel = ({ weapon, motion, reduced, noFlash, flat, colors }) => {
     time.current += dt;
     const m = motion.current;
     const recoil = m.recoil ?? 0;
+    // The environment turns with the camera: its world-to-camera rotation, written so that three's
+    // own sign flip for PMREMs gives it back exactly
+    if (env) {
+      state.camera.getWorldQuaternion(facing);
+      back.setFromRotationMatrix(turn.makeRotationFromQuaternion(facing).invert(), 'XYZ');
+      for (const mat of [materials.metal, materials.matte, materials.dark]) {
+        mat.envMapRotation.set(-back.x, -back.y, -back.z, 'XYZ');
+      }
+    }
     if (reduced) {
       g.position.set(...BASE);
       g.rotation.set(...AIM);
