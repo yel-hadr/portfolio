@@ -135,13 +135,13 @@ test('the hidden field: a bot is told it worked, nothing is sent', async () => {
   assert.equal(sent.length, 0);
 });
 
-test('a Resend error is a 502, without its details', async () => {
+test('a Resend error is a 502 with its type, never its message', async () => {
   const { handler } = setup({
     error: { name: 'validation_error', message: 'You can only send to yourself' },
   });
   const res = await handler(post(valid));
   assert.equal(res.status, 502);
-  assert.deepEqual(await res.json(), { error: 'send' });
+  assert.deepEqual(await res.json(), { error: 'send', reason: 'validation_error' });
 });
 
 test('no key or no recipient: 503, nothing sent', async () => {

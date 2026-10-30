@@ -102,7 +102,9 @@ export const createContactHandler =
     });
     if (error) {
       console.error('Resend refused the message:', error.name, error.message);
-      return reply(502, { error: 'send' });
+      // Resend's error type (validation_error, invalid_api_key…) says what to fix; never its
+      // message, which can name the account's address
+      return reply(502, { error: 'send', reason: String(error.name ?? 'unknown') });
     }
     return reply(200, { ok: true });
   };
