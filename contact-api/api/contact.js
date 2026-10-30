@@ -7,6 +7,7 @@
 import { Resend } from 'resend';
 
 import { createContactHandler } from '../lib/contact.js';
+import { createRateLimiter } from '../lib/rateLimit.js';
 
 // Trimmed: a secret pasted with a trailing space or line break would otherwise be refused
 const env = (name) => process.env[name]?.trim() || undefined;
@@ -23,6 +24,8 @@ export default {
     send: resend && ((email) => resend.emails.send(email)),
     to: CONTACT_TO,
     from: CONTACT_FROM || 'Portfolio <onboarding@resend.dev>',
+    // Per client and for everyone, kept for as long as this instance lives
+    limit: createRateLimiter(),
     origins: (ALLOWED_ORIGINS || 'https://yel-hadr.github.io')
       .split(',')
       .map((origin) => origin.trim())

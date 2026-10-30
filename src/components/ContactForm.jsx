@@ -34,10 +34,9 @@ const send = async (form) => {
     });
     if (response.ok) return { type: 'success', key: 'contact.sent' };
     console.error(`Contact endpoint answered ${response.status}`);
-    return {
-      type: 'error',
-      key: response.status === 503 ? 'contact.notConfigured' : 'contact.failed',
-    };
+    const key =
+      { 503: 'contact.notConfigured', 429: 'contact.tooMany' }[response.status] ?? 'contact.failed';
+    return { type: 'error', key };
   } catch (error) {
     console.error(error);
     return { type: 'error', key: 'contact.failed' };

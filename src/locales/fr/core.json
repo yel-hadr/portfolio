@@ -138,7 +138,8 @@
     "sending": "Envoi…",
     "sent": "Message envoyé. Je vous répondrai dès que possible.",
     "notConfigured": "Message non envoyé : le formulaire de contact n’est pas encore configuré. Réessayez plus tard.",
-    "failed": "Message non envoyé. Vérifiez votre connexion et réessayez."
+    "failed": "Message non envoyé. Vérifiez votre connexion et réessayez.",
+    "tooMany": "Message non envoyé : trop de messages en peu de temps. Réessayez dans quelques minutes."
   },
   "footer": {
     "nav": "Pied de page",

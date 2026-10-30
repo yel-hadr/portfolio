@@ -22,6 +22,10 @@ export default defineConfig({
     preloadFont(),
   ],
   build: {
+    // vendor-three is three.js whole (about 690 kB minified, 178 kB gzipped): one library, loaded
+    // only when the page's 3D layer, a demo or Game Mode needs it, never on the first paint.
+    // Splitting it would not shrink what a visitor downloads, so the warning sits just above it
+    chunkSizeWarningLimit: 720,
     rollupOptions: {
       // Pages: the portfolio and the /status/ page (its own small React entry)
       input: {

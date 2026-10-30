@@ -5,12 +5,16 @@ Personal portfolio of Youssef El Hadraoui (Jebril), Software Engineer in cloud i
 **Live site:** https://yel-hadr.github.io/
 **Resume (PDF):** https://yel-hadr.github.io/Youssef_Elhadraoui_Resume.pdf. The site also has a "Download resume" button in the Hero and About sections.
 
-Built with Vite 5, React 18, React Three Fiber and drei (one shared WebGL canvas), Tailwind CSS 3 and framer-motion. The background is a 2D-canvas interactive waves effect.
+Built with Vite 6, React 19 (with the React Compiler), React Three Fiber 9 and drei 10 (one shared WebGL canvas), Tailwind CSS 4 and framer-motion 12. The background is a 2D-canvas interactive waves effect. The contact form sends through [Resend](https://resend.com/) from a small Vercel function (`contact-api/`).
 
 ## Features
 
 - **English / French.** Use the EN | FR toggle in the navbar. All text, content included, comes from JSON dictionaries in `src/locales/`.
-- **Dark / light mode.** The theme toggle in the navbar switches every color, which come from CSS variables. In light mode the glass becomes frosted white and the waves turn pastel.
+- **Dark / light mode.** The theme toggle in the navbar switches every color, which come from CSS variables. Dark is "Midnight Obsidian" (slate, amber and ice cyan); in light mode the glass becomes cream and the waves turn pastel. The color tokens are chosen for WCAG AA contrast in both.
+- **Game Mode.** "Enter Game Mode" in the Hero (or the footer) opens a first-person tour of the portfolio, built on the author's 42 cub3D raycaster: six rooms, one profile section each, threats to neutralize, crew to talk to, a radar and a mission tracker. It has a text-only mode, a pause menu, graphics, Reduce flashing and high-contrast settings, and follows reduced motion. Desktop only (phones get a message and the text version).
+- **Live demos.** The cub3D and FdF project cards have a "Run live demo" button: the original 42 raycaster map, and six FdF wireframe maps (Julia and Mandelbrot sets, a landscape…) in isometric or perspective view.
+- **Mini-games.** "Play games" in the footer: Packet Snake (keyboard, swipe or D-pad) and a terminal typing challenge, with best scores kept in the browser.
+- **Contact form.** Validated in the browser and again by the endpoint, which rate-limits senders and drops bots; messages arrive as a laid-out email you can reply to.
 - **Terminal.** Press <kbd>Ctrl</kbd>+<kbd>`</kbd> or use the terminal button, then type `help`. Commands like `whoami`, `projects`, `skills`, `experience`, `contact`, `resume`, `goto <section>`, `lang fr` and `theme light` navigate the site and read the resume in terminal format.
 - **Architecture diagrams.** The Cloud-1 and Inception-of-Things cards have a "View architecture" button that opens an interactive diagram of how the system works.
 - **System status.** The footer shows the latest CI/CD deploy (linked to its run) and recent commits, live from the GitHub API.
@@ -21,7 +25,7 @@ Built with Vite 5, React 18, React Three Fiber and drei (one shared WebGL canvas
 
 ## Run locally
 
-Requirements: Node.js 20 or newer, and npm.
+Requirements: Node.js 22 (as in CI), and npm.
 
 ```bash
 npm install
@@ -34,7 +38,9 @@ Other scripts:
 npm run build      # production build into dist/
 npm run preview    # serve dist/ locally
 npm run lint       # ESLint
-npm run format     # Prettier
+npm run format     # Prettier (format:check only checks)
+npm run compiler:report   # which components the React Compiler skips (should be none)
+(cd contact-api && npm install && npm test)   # the contact endpoint's tests
 ```
 
 ### Contact form (Resend)
@@ -51,8 +57,8 @@ Without it the site still builds, but the form tells visitors it isn't configure
 
 `.github/workflows/deploy.yml` ("CI/CD Pipeline") runs on GitHub Actions:
 
-- **Pull requests to `main`**: the `lint-and-test` job runs `npm ci`, `npm run lint`, the contact endpoint's tests and `npm run build`, and checks that the built asset paths are correct. The result appears as a PR check.
-- **Push or merge to `main`**: the same checks run. If they pass, the `deploy-to-pages` job publishes that exact build to GitHub Pages. **Merging to `main` deploys the site automatically.** If lint or the build fails, nothing is deployed.
+- **Pull requests to `main`**: `lint-and-test` runs `npm ci`, a production dependency audit, lint, `format:check`, the contact endpoint's own install, audit and tests, and the build, then checks the built asset paths. `lighthouse` then runs Lighthouse CI on that build: desktop must score 0.9 or more in performance, accessibility and best practices; mobile in accessibility and best practices (its performance only warns).
+- **Push or merge to `main`**: the same checks run. If they pass, `deploy-to-pages` publishes that exact build to GitHub Pages and `deploy-contact-api` deploys the contact endpoint to Vercel. **Merging to `main` deploys the site automatically.** If a check fails, nothing is deployed.
 
 How the site is served: https://yel-hadr.github.io/ is a GitHub Pages *user* site, so Pages serves the `main` branch of [`yel-hadr/yel-hadr.github.io`](https://github.com/yel-hadr/yel-hadr.github.io), not this repo. Vite's `base` is therefore `'/'`. The deploy job pushes `dist/` there with [`peaceiris/actions-gh-pages`](https://github.com/peaceiris/actions-gh-pages), using a write-enabled deploy key. Its private half is this repo's `ACTIONS_DEPLOY_KEY` secret.
 
@@ -61,6 +67,11 @@ Repository secrets used by the workflow:
 | Secret | Purpose |
 |---|---|
 | `ACTIONS_DEPLOY_KEY` | SSH key allowed to push to `yel-hadr/yel-hadr.github.io` (required to deploy) |
+| `VERCEL_TOKEN` | Vercel access token: deploys `contact-api/` |
+| `RESEND_API_KEY` | Resend API key, passed only to the contact function (never to the site) |
+| `CONTACT_TO` | Where contact messages go (with Resend's test sender, your Resend account's address) |
+
+And one repository **variable**, `VITE_CONTACT_ENDPOINT`: the contact function's public URL, built into the site. See [`contact-api/README.md`](contact-api/README.md).
 
 To deploy by hand, without CI: `npm run deploy`. It lints, builds and publishes `dist/` to the same repo and branch.
 

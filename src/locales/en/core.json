@@ -138,7 +138,8 @@
     "sending": "Sending…",
     "sent": "Message sent. I'll get back to you as soon as possible.",
     "notConfigured": "Message not sent: the contact form isn't configured yet. Please try again later.",
-    "failed": "Message not sent. Check your connection and try again."
+    "failed": "Message not sent. Check your connection and try again.",
+    "tooMany": "Message not sent: too many messages in a short time. Please try again in a few minutes."
   },
   "footer": {
     "nav": "Footer",
