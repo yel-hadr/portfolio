@@ -127,23 +127,31 @@ jobs:
           name: dist
           path: dist
 
-      - name: Lighthouse CI
+      - name: Lighthouse CI (desktop)
         # lighthouserc.json: `vite preview` of the tested build, the desktop preset, the median of
         # five runs, asserted against the 0.9 thresholds. Reports stay in this run's artifacts
         run: npx --yes @lhci/cli@0.15.1 autorun
+
+      - name: Lighthouse CI (mobile)
+        # lighthouserc.mobile.json: Lighthouse's emulated low-end phone, the median of three runs.
+        # Accessibility and best practices fail below 0.9; performance below 0.9 only warns, as an
+        # animated canvas and WebGL on that emulated phone stay near 0.5 (0.31 before Phase 9)
+        if: always()
+        run: npx --yes @lhci/cli@0.15.1 autorun --config=lighthouserc.mobile.json
 
       - name: Scores
         if: always()
         run: |
           node -e '
             const fs = require("fs");
-            const dir = ".lighthouseci/reports";
-            if (!fs.existsSync(`${dir}/manifest.json`)) process.exit(0);
-            const runs = JSON.parse(fs.readFileSync(`${dir}/manifest.json`, "utf8"));
-            const med = runs.find((r) => r.isRepresentativeRun) || runs[0];
             const pct = (v) => Math.round(v * 100);
-            const rows = Object.entries(med.summary).map(([k, v]) => `| ${k} | ${pct(v)} | ${runs.map((r) => pct(r.summary[k])).join(" / ")} |`);
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, ["### Lighthouse (desktop, median of " + runs.length + " runs)", "", "| Category | Median | Runs |", "| --- | --- | --- |", ...rows, ""].join("\n"));
+            for (const [label, dir] of [["desktop", ".lighthouseci/reports"], ["mobile", ".lighthouseci/mobile"]]) {
+              if (!fs.existsSync(`${dir}/manifest.json`)) continue;
+              const runs = JSON.parse(fs.readFileSync(`${dir}/manifest.json`, "utf8"));
+              const med = runs.find((r) => r.isRepresentativeRun) || runs[0];
+              const rows = Object.entries(med.summary).map(([k, v]) => `| ${k} | ${pct(v)} | ${runs.map((r) => pct(r.summary[k])).join(" / ")} |`);
+              fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, [`### Lighthouse (${label}, median of ${runs.length} runs)`, "", "| Category | Median | Runs |", "| --- | --- | --- |", ...rows, ""].join("\n"));
+            }
           '
 
       - name: Upload Lighthouse reports
@@ -151,7 +159,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse
-          path: .lighthouseci/reports
+          path: |
+            .lighthouseci/reports
+            .lighthouseci/mobile
           retention-days: 14
 
   deploy-to-pages:
