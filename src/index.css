@@ -302,6 +302,11 @@
 @layer components {
   /* Glass card: translucent surface + blur over the waves background, hairline border. */
   .card-glass {
-    @apply rounded-3xl border border-line bg-glass shadow-card backdrop-blur-md;
+    @apply rounded-3xl border border-line bg-glass backdrop-blur-md;
+    /* The card shadow set directly, not through shadow-card: v4 builds that utility from its
+       @property-registered --tw-* layers, and Chrome then rasterizes the cards' content (the
+       icons' edges) differently from v3. No card carries a ring utility; a shadow utility on a
+       card (light:shadow-raised) still replaces this one */
+    box-shadow: var(--shadow-card);
   }
 }
