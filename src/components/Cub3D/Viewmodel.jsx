@@ -17,6 +17,7 @@ import {
 } from 'three';
 import { LENS } from './flashlight';
 import { toColor } from './toColor';
+import { useLiveRef } from '../../hooks/useLiveRef';
 
 // Game Mode's weapons as 3D viewmodels in the camera's lower right, one procedural low-poly model
 // per weapon (rooms.js order), built from plain boxes and cylinders: no model files, nearly no
@@ -213,11 +214,11 @@ const FLASH_AT = [-0.4, -0.16, -0.28];
 
 /**
  * @param weapon  the weapon in hand (index into rooms.js WEAPON_FX)
- * @param motion  Cub3DWorld's shared ref: recoil and flash (set by a shot), bob and sway (GameMotion)
+ * @param motionRef  Cub3DWorld's shared ref: recoil and flash (set by a shot), bob and sway (GameMotion)
  * @param colors  theme channels from Facility: { dark, muted, light, primary, success, secondary }
  * @param flashlight  the flashlight's color (three Color), for the metal's reflections
  */
-const Viewmodel = ({ weapon, motion, reduced, noFlash, flat, colors, flashlight }) => {
+const Viewmodel = ({ weapon, motionRef, reduced, noFlash, flat, colors, flashlight }) => {
   const gl = useThree((s) => s.gl);
   const group = useRef(null);
   const moving = useRef([]);
@@ -296,20 +297,23 @@ const Viewmodel = ({ weapon, motion, reduced, noFlash, flat, colors, flashlight 
         .forEach((mat) => mat.dispose()),
     [materials]
   );
+  // The frame loop writes to the materials (the env's turn, the glow): it reaches them here
+  const materialsRef = useLiveRef(materials);
 
   useFrame((state, delta) => {
     const g = group.current;
     if (!g) return;
     const dt = Math.min(delta, 0.1);
     time.current += dt;
-    const m = motion.current;
+    const m = motionRef.current;
+    const mats = materialsRef.current;
     const recoil = m.recoil ?? 0;
     // The environment turns with the camera: its world-to-camera rotation, written so that three's
     // own sign flip for PMREMs gives it back exactly
     if (env) {
       state.camera.getWorldQuaternion(facing);
       back.setFromRotationMatrix(turn.makeRotationFromQuaternion(facing).invert(), 'XYZ');
-      for (const mat of [materials.metal, materials.matte, materials.dark]) {
+      for (const mat of [mats.metal, mats.matte, mats.dark]) {
         mat.envMapRotation.set(-back.x, -back.y, -back.z, 'XYZ');
       }
     }
@@ -347,7 +351,7 @@ const Viewmodel = ({ weapon, motion, reduced, noFlash, flat, colors, flashlight 
     }
     // The accent glows hotter with a shot (the cell pulses, the heat sink flares), steady with
     // Reduce flashing
-    if (!flat) materials.glow[weapon].emissiveIntensity = 2.2 + burst * 4;
+    if (!flat) mats.glow[weapon].emissiveIntensity = 2.2 + burst * 4;
   });
 
   return (

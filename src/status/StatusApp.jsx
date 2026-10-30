@@ -11,8 +11,10 @@ import { useStatusData } from './useStatusData';
 
 const LINK = 'rounded-sm font-medium text-primary-400 underline-offset-4 hover:underline';
 
+const MINUTE = 60 * 1000;
+
 // The clock behind every "X minutes ago" and the staleness check
-const useNow = (ms = 60 * 1000) => {
+const useNow = (ms = MINUTE) => {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), ms);

@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import {
@@ -345,32 +354,33 @@ const Cameras = ({ map, projection, reduced, actionsRef }) => {
   const span = spanOf(map);
   // Per map, not per span: julia and elem-fract share one, and each starts from its own default
   const view = useMemo(() => ({ ...viewFor(span), id: map.id }), [span, map.id]);
-  // Fitted per map: a later resize (a phone turning, the URL bar folding) keeps the user's zoom
-  const [cameras] = useState(() => ({
-    isometric: new OrthographicCamera(-1, 1, 1, -1, 0.1, 500),
-    perspective: new PerspectiveCamera(40, 1, 0.1, 500),
-    id: null,
-    isoZoom: 1,
-  }));
-  if (cameras.id !== map.id) {
-    cameras.id = map.id;
-    cameras.isoZoom = fitZoom(size, span);
+  // Made once; a ref, since the effects below move them
+  const cameras = useRef(null);
+  if (cameras.current === null) {
+    cameras.current = {
+      isometric: new OrthographicCamera(-1, 1, 1, -1, 0.1, 500),
+      perspective: new PerspectiveCamera(40, 1, 0.1, 500),
+    };
   }
-  const minZoom = cameras.isoZoom / 20;
-  const maxZoom = cameras.isoZoom * 10;
+  // Fitted per map: a later resize (a phone turning, the URL bar folding) keeps the user's zoom
+  const [fit, setFit] = useState(() => ({ id: map.id, zoom: fitZoom(size, span) }));
+  if (fit.id !== map.id) setFit({ id: map.id, zoom: fitZoom(size, span) });
+  const isoZoom = fit.zoom;
+  const minZoom = isoZoom / 20;
+  const maxZoom = isoZoom * 10;
 
+  // The size at the switch; later resizes are R3F's
+  const fitToView = useEffectEvent((camera) => fitFrustum(camera, size, view.far));
   // A projection switch or a new map starts the camera from the default view
   useLayoutEffect(() => {
-    const next = cameras[projection];
+    const next = cameras.current[projection];
     next.position.copy(projection === 'isometric' ? view.iso : view.perspective);
-    if (next.isOrthographicCamera) next.zoom = cameras.isoZoom;
+    if (next.isOrthographicCamera) next.zoom = isoZoom;
     next.lookAt(0, 0, 0);
-    fitFrustum(next, size, view.far);
+    fitToView(next);
     set({ camera: next });
     invalidate();
-    // The size at the switch; later resizes are R3F's
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projection, view, cameras, set, invalidate]);
+  }, [projection, view, isoZoom, set, invalidate]);
 
   // New controls (first mount, or a projection switch) and a new map start from the default view
   // centred on the grid, saved for Reset
@@ -601,7 +611,9 @@ const FdfViewer = ({ t }) => {
   // wins; a file that fails to load leaves the current map
   const wanted = useRef(DEFAULT_MAP.id);
   const drawn = useRef(map);
-  drawn.current = map;
+  useEffect(() => {
+    drawn.current = map;
+  }, [map]);
   const pick = useCallback(
     (id) => {
       if (id === wanted.current) return;

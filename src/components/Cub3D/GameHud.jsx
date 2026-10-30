@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useModalDialog } from '../../hooks/useModalDialog';
@@ -886,19 +886,20 @@ export const MainMenu = ({
 }) => {
   const panel = useRef(null);
   const previous = useRef(null);
+  // Only read on the first screen
+  const firstFocus = useEffectEvent(() => focusOnMount);
+  // Per screen
   useEffect(() => {
     const from = previous.current;
     previous.current = screen;
     // Not on the first render (the Game Mode dialog itself takes focus as it opens), unless the
     // menu is back from a run (Exit to main menu): then its heading, so it is read from the top
     if (from === null) {
-      if (focusOnMount) panel.current?.querySelector('h3')?.focus();
+      if (firstFocus()) panel.current?.querySelector('h3')?.focus();
       return;
     }
     const opener = screen === 'menu' && panel.current?.querySelector(`[data-screen=${from}]`);
     (opener || panel.current?.querySelector('h3'))?.focus();
-    // Per screen; focusOnMount is only read on the first one
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen]);
   const back = (
     <button
@@ -1026,21 +1027,22 @@ export const NpcDialogue = ({ t, name, line, reduced, onClose }) => {
   const lineId = useId();
   const box = useRef(null);
   const button = useRef(null);
-  const [shown, setShown] = useState(reduced ? line.length : 0);
+  // Characters typed so far, per line: a new line starts from none
+  const [typed, setTyped] = useState({ line, count: 0 });
+  let shown = 0;
+  if (reduced) shown = line.length;
+  else if (typed.line === line) shown = typed.count;
 
   useEffect(() => {
     box.current?.focus();
   }, []);
   useEffect(() => {
-    if (reduced) {
-      setShown(line.length);
-      return undefined;
-    }
-    setShown(0);
+    if (reduced) return undefined;
     const timer = window.setInterval(() => {
-      setShown((n) => {
+      setTyped((last) => {
+        const n = last.line === line ? last.count : 0;
         if (n >= line.length) window.clearInterval(timer);
-        return Math.min(n + 1, line.length);
+        return { line, count: Math.min(n + 1, line.length) };
       });
     }, 28);
     return () => window.clearInterval(timer);

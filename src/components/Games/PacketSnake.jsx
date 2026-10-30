@@ -583,13 +583,11 @@ const PacketSnake = () => {
       title: t('games.snake.title'),
       body: [t('games.snake.intro')],
       action: t('games.snake.start'),
-      onAction: () => start(),
     },
     paused: {
       title: t('games.snake.paused'),
       body: autoPaused ? [t('games.snake.autoPaused')] : [],
       action: t('games.snake.resume'),
-      onAction: resume,
     },
     over: result && {
       title: t('games.snake.over'),
@@ -599,9 +597,10 @@ const PacketSnake = () => {
         result.newBest ? t('games.snake.newBest') : null,
       ].filter(Boolean),
       action: t('games.snake.again'),
-      onAction: () => start(),
     },
   }[status];
+  // The overlay's button: Resume when paused, else Start (or Play again)
+  const onOverlayAction = () => (status === 'paused' ? resume() : start());
   const paused = status === 'paused';
 
   return (
@@ -655,7 +654,7 @@ const PacketSnake = () => {
                   ref={actionRef}
                   type='button'
                   aria-describedby={overlay.body.length ? overlayId : undefined}
-                  onClick={overlay.onAction}
+                  onClick={onOverlayAction}
                   className='mt-2 inline-flex w-full items-center justify-center rounded-xl border-2 border-transparent bg-primary px-6 py-2.5 font-bold text-on-primary transition-colors hover:bg-primary-hover'
                 >
                   {overlay.action}
