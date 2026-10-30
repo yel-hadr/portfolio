@@ -66,15 +66,21 @@ jobs:
       - name: Format
         run: npm run format:check
 
+      # The contact endpoint (deployed by Vercel, not here): its own dependencies, audit and tests
+      - name: Contact endpoint tests
+        working-directory: contact-api
+        run: |
+          npm ci
+          npm audit --omit=dev --audit-level=high
+          npm test
+
       - name: Build
         run: npm run build
         env:
-          # Public EmailJS identifiers (inlined into the client bundle by design). If the
-          # secrets are not set the build still succeeds and the contact form reports that
-          # it is not configured.
-          VITE_EMAILJS_SERVICE_ID: ${{ secrets.VITE_EMAILJS_SERVICE_ID }}
-          VITE_EMAILJS_TEMPLATE_ID: ${{ secrets.VITE_EMAILJS_TEMPLATE_ID }}
-          VITE_EMAILJS_PUBLIC_KEY: ${{ secrets.VITE_EMAILJS_PUBLIC_KEY }}
+          # The contact form's endpoint (contact-api, a Vercel function): a public URL, so a
+          # repository *variable*. The Resend key lives only in the Vercel project. Unset: the
+          # build still succeeds and the form says it is not configured.
+          VITE_CONTACT_ENDPOINT: ${{ vars.VITE_CONTACT_ENDPOINT }}
           # Optional, non-secret (repository *variables*, not secrets). Unset = feature off:
           # Umami analytics (cookieless) and the Grafana dashboard embedded on /status/.
           VITE_UMAMI_WEBSITE_ID: ${{ vars.VITE_UMAMI_WEBSITE_ID }}

@@ -102,9 +102,15 @@ export default [
       'react/no-unknown-property': ['error', { ignore: R3F_PROPS }],
     },
   },
-  // Build plugins, the status monitor and the Vite config run in Node
+  // Build plugins, the status monitor, the contact endpoint (a Vercel function) and the Vite config
+  // run in Node
   {
-    files: ['build/**/*.{js,mjs}', 'scripts/**/*.{js,mjs}', 'vite.config.js'],
+    files: [
+      'build/**/*.{js,mjs}',
+      'scripts/**/*.{js,mjs}',
+      'contact-api/**/*.{js,mjs}',
+      'vite.config.js',
+    ],
     languageOptions: { globals: globals.node },
   },
 ];

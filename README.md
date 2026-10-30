@@ -37,23 +37,21 @@ npm run lint       # ESLint
 npm run format     # Prettier
 ```
 
-### Contact form (EmailJS)
+### Contact form (Resend)
 
-The contact form sends through EmailJS. Create a `.env` file in the repo root. It is gitignored. Add:
+The contact form posts to a small Vercel function in [`contact-api/`](contact-api/README.md), which holds the Resend API key and sends the message. The site only needs the function's public URL. For local development, create a `.env` file in the repo root (it is gitignored) with:
 
 ```
-VITE_EMAILJS_SERVICE_ID=...
-VITE_EMAILJS_TEMPLATE_ID=...
-VITE_EMAILJS_PUBLIC_KEY=...
+VITE_CONTACT_ENDPOINT=https://<your-project>.vercel.app/api/contact
 ```
 
-Without these values the site still builds, but the form tells visitors it isn't configured.
+Without it the site still builds, but the form tells visitors it isn't configured. Never put the Resend key in `.env` or in the site: `VITE_*` values end up in the public JavaScript.
 
 ## CI/CD pipeline
 
 `.github/workflows/deploy.yml` ("CI/CD Pipeline") runs on GitHub Actions:
 
-- **Pull requests to `main`**: the `lint-and-test` job runs `npm ci`, `npm run lint` and `npm run build`, and checks that the built asset paths are correct. The result appears as a PR check.
+- **Pull requests to `main`**: the `lint-and-test` job runs `npm ci`, `npm run lint`, the contact endpoint's tests and `npm run build`, and checks that the built asset paths are correct. The result appears as a PR check.
 - **Push or merge to `main`**: the same checks run. If they pass, the `deploy-to-pages` job publishes that exact build to GitHub Pages. **Merging to `main` deploys the site automatically.** If lint or the build fails, nothing is deployed.
 
 How the site is served: https://yel-hadr.github.io/ is a GitHub Pages *user* site, so Pages serves the `main` branch of [`yel-hadr/yel-hadr.github.io`](https://github.com/yel-hadr/yel-hadr.github.io), not this repo. Vite's `base` is therefore `'/'`. The deploy job pushes `dist/` there with [`peaceiris/actions-gh-pages`](https://github.com/peaceiris/actions-gh-pages), using a write-enabled deploy key. Its private half is this repo's `ACTIONS_DEPLOY_KEY` secret.
@@ -63,7 +61,6 @@ Repository secrets used by the workflow:
 | Secret | Purpose |
 |---|---|
 | `ACTIONS_DEPLOY_KEY` | SSH key allowed to push to `yel-hadr/yel-hadr.github.io` (required to deploy) |
-| `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`, `VITE_EMAILJS_PUBLIC_KEY` | EmailJS values for the contact form (optional) |
 
 To deploy by hand, without CI: `npm run deploy`. It lints, builds and publishes `dist/` to the same repo and branch.
 
