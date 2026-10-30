@@ -3,6 +3,7 @@
 // lib/email.js (HTML with every typed value escaped, and a plain-text twin). The visitor's address
 // goes only in the reply-to and the body, never in a header of its own.
 import { renderContactEmail } from './email.js';
+import { clientOf } from './rateLimit.js';
 
 const LIMITS = { name: 100, email: 254, message: 5000 };
 // Larger bodies are refused: by their declared length, or as soon as reading passes it
@@ -51,9 +52,10 @@ export const readFields = (body) => {
  * @param to       the address messages go to
  * @param from     the sender, an address Resend may send from
  * @param origins  the sites allowed to post (the portfolio, and a dev server when testing)
+ * @param limit    optional (client) => { ok, retryAfter }: lib/rateLimit.js; none in some tests
  */
 export const createContactHandler =
-  ({ send, to, from, origins }) =>
+  ({ send, to, from, origins, limit }) =>
   async (request) => {
     const origin = request.headers.get('origin');
     const allowed = Boolean(origin) && origins.includes(origin);
@@ -94,6 +96,12 @@ export const createContactHandler =
     if (typeof body?.website === 'string' && body.website !== '') return reply(200, { ok: true });
     const fields = readFields(body);
     if (!fields) return reply(400, { error: 'invalid' });
+
+    // Counted only for messages that would be sent: a bot caught above or a typo spends nothing
+    const allowance = limit ? limit(clientOf(request)) : { ok: true };
+    if (!allowance.ok) {
+      return reply(429, { error: 'rate' }, { 'Retry-After': String(allowance.retryAfter) });
+    }
 
     const { subject, html, text } = renderContactEmail(fields, { site: origin });
     const { error } = await send({ from, to, replyTo: fields.email, subject, html, text });

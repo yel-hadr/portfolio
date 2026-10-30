@@ -5,7 +5,7 @@ summary: Travaillez sur un serveur dans une session tmux nommée. Si la connexio
 
 ## Le problème
 
-Vous lancez une longue migration, une sauvegarde ou une mise à jour de paquets en SSH. Le Wi-Fi décroche, l’ordinateur se met en veille ou le VPN se reconnecte, et la session SSH se termine. La commande aussi : elle dépendait de votre shell de connexion, parti avec la connexion. Reste à deviner où elle en était.
+Vous lancez une longue migration, une sauvegarde ou une mise à jour de paquets en SSH. Le Wi-Fi décroche, l’ordinateur se met en veille ou le VPN se reconnecte, et la session SSH se termine. La commande aussi : elle dépendait de votre shell de connexion, parti avec la connexion. Reste à deviner où elle en était.
 
 ## Pourquoi
 
@@ -15,7 +15,7 @@ tmux coupe ce lien. Il fait tourner sur la machine distante un processus serveur
 
 ## La solution
 
-Travaillez sur le serveur dans une session nommée, et rattachez-vous après une coupure :
+Travaillez sur le serveur dans une session nommée, et rattachez-vous après une coupure :
 
 ```shell
 tmux new -s deploy      # créer une session nommée
@@ -29,17 +29,17 @@ tmux ls                 # lister les sessions
 #   :setw synchronize-panes on  -> taper dans tous les panneaux à la fois
 ```
 
-Quelques remarques pour le quotidien :
+Quelques remarques pour le quotidien :
 
-- **Une commande pour les deux cas.** `tmux new -A -s deploy` se rattache à `deploy` si la session existe et la crée sinon : un alias tout trouvé.
-- **Se détacher volontairement.** `Ctrl-b` puis `d` laisse tout tourner ; vous pouvez vous déconnecter et revenir plus tard, y compris depuis une autre machine.
-- **Le défilement.** L’historique de votre terminal ne voit pas celui de tmux. `Ctrl-b` puis `[` ouvre le mode copie, où les flèches et Page précédente font défiler ; `q` en sort.
+- **Une commande pour les deux cas.** `tmux new -A -s deploy` se rattache à `deploy` si la session existe et la crée sinon : un alias tout trouvé.
+- **Se détacher volontairement.** `Ctrl-b` puis `d` laisse tout tourner ; vous pouvez vous déconnecter et revenir plus tard, y compris depuis une autre machine.
+- **Le défilement.** L’historique de votre terminal ne voit pas celui de tmux. `Ctrl-b` puis `[` ouvre le mode copie, où les flèches et Page précédente font défiler ; `q` en sort.
 - **Plusieurs serveurs à la fois.** Dans une fenêtre divisée, `synchronize-panes` envoie les mêmes frappes à tous les panneaux. Désactivez-le avec `:setw synchronize-panes off`.
-- **Un raccourci oublié ?** `Ctrl-b` puis `?` les liste tous.
+- **Un raccourci oublié ?** `Ctrl-b` puis `?` les liste tous.
 
 ## Les limites
 
-tmux protège d’une connexion perdue, pas d’une machine perdue : un redémarrage du serveur arrête le serveur tmux et tout ce qu’il contient. Pour un travail qui doit y survivre, passez par un vrai service ou un planificateur de tâches.
+tmux protège d’une connexion perdue, pas d’une machine perdue : un redémarrage du serveur arrête le serveur tmux et tout ce qu’il contient. Pour un travail qui doit y survivre, passez par un vrai service ou un planificateur de tâches.
 
 ## À retenir
 

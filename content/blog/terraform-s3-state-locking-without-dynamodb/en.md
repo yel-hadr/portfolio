@@ -1,6 +1,6 @@
 ---
 title: Terraform can lock S3 state without DynamoDB
-summary: Since Terraform 1.10, the S3 backend can lock state with a .tflock object next to the state file (use_lockfile = true). It is generally available since 1.11, which deprecated DynamoDB locking.
+summary: Since Terraform 1.10, the S3 backend can lock state with a .tflock object next to the state file (use_lockfile = true). It has been generally available since 1.11, which deprecated DynamoDB locking.
 ---
 
 ## The problem
@@ -13,7 +13,7 @@ Since Terraform 1.10, the S3 backend can lock state on its own. With `use_lockfi
 
 It relies on S3 conditional writes: the lock object is only created if it does not already exist. If another run holds the lock, the write fails and Terraform reports that the state is locked, as it did with DynamoDB.
 
-The feature is generally available since Terraform 1.11, which also deprecated DynamoDB-based locking. No DynamoDB table is needed any more.
+The feature has been generally available since Terraform 1.11, which also deprecated DynamoDB-based locking. No DynamoDB table is needed any more.
 
 ## The fix
 

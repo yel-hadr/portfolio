@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Youssef El Hadraoui | Portfolio",
-    "description": "Youssef El Hadraoui (Jebril), ingénieur logiciel en infrastructure cloud et DevOps : expérience, projets, formation et contact."
+    "description": "Youssef El Hadraoui (Jebril), ingénieur logiciel en infrastructure cloud et DevOps : expérience, projets, formation et contact."
   },
   "skipLink": "Aller au contenu",
   "nav": {
@@ -20,12 +20,12 @@
     "themeToLight": "Passer en mode clair",
     "themeToDark": "Passer en mode sombre",
     "openTerminal": "Ouvrir le terminal",
-    "terminalShortcut": "Raccourci : Ctrl + `",
+    "terminalShortcut": "Raccourci : Ctrl + `",
     "blog": "Blog"
   },
   "person": {
     "title": "Ingénieur logiciel | Infrastructure cloud & DevOps",
-    "summary": "Ingénieur logiciel spécialisé dans l’architecture backend multi-tenant, l’infrastructure cloud et l’automatisation DevOps. Expérience confirmée dans la conception de microservices évolutifs, la mise en place de pipelines de livraison GitOps et la gestion d’environnements conteneurisés. Passionné par l’automatisation de la configuration des serveurs, l’observabilité et l’intégration d’assistants de code IA dans les workflows de développement modernes."
+    "summary": "Ingénieur logiciel spécialisé dans l’architecture backend multi-tenant, l’infrastructure cloud et l’automatisation DevOps. Expérience confirmée dans la conception de backends SaaS multi-tenant, la mise en place de pipelines de livraison GitOps et la gestion d’environnements conteneurisés. Passionné par l’automatisation de la configuration des serveurs, l’observabilité et l’intégration d’assistants de code IA dans les workflows de développement modernes."
   },
   "hero": {
     "seeProjects": "Voir mes projets",
@@ -52,6 +52,7 @@
     "items": {
       "legaliox": {
         "title": "Lead Backend & responsable de l’infrastructure DevOps",
+        "date": "2025 – aujourd’hui",
         "points": [
           "Je dirige le backend de Legaliox, une plateforme SaaS juridique multi-tenant.",
           "Je conçois et développe l’API et sa logique métier pour chaque tenant.",
@@ -60,7 +61,19 @@
       },
       "wepartner": {
         "title": "Stagiaire ingénieur logiciel",
-        "points": ["Développement d’un agent d’IA qui analyse les CV."]
+        "date": "mai 2025 – nov. 2025",
+        "points": [
+          "Accompagnement à la digitalisation du système d’information de la Direction des Affaires Rurales (ministère de l’Intérieur) : analyse de l’existant et conception des processus cibles.",
+          "Diagnostic technique et développement de la V2 de Wefree, plateforme communautaire dédiée aux freelances."
+        ]
+      },
+      "infinitivebyte": {
+        "title": "Stagiaire ingénieur logiciel",
+        "date": "févr. 2025 – avr. 2025",
+        "points": [
+          "Système d’agrégation de données en temps réel (Python, Redis) et dashboard d’administration Django réduisant de 65 % les temps de requête.",
+          "Automatisation des déploiements via GitHub Actions et mise en place d’une stack de monitoring Grafana et Prometheus."
+        ]
       }
     }
   },
@@ -78,24 +91,24 @@
     "viewArchitectureSr": " du projet {name}",
     "items": {
       "badass": {
-        "name": "BADASS : architecture réseau",
-        "description": "Conception d’un réseau de data center : overlays VXLAN avec un plan de contrôle BGP EVPN, routés avec FRRouting."
+        "name": "BADASS : architecture réseau",
+        "description": "Conception d’un réseau de data center : overlays VXLAN avec un plan de contrôle BGP EVPN, routés avec FRRouting."
       },
       "cloud1": {
-        "name": "Cloud-1 : automatisation",
-        "description": "Déploiement automatisé d’une stack WordPress et MariaDB sur AWS : Terraform provisionne l’infrastructure et Ansible configure l’hôte."
+        "name": "Cloud-1 : automatisation",
+        "description": "Déploiement automatisé d’une stack WordPress et MariaDB sur AWS : Terraform provisionne l’infrastructure et Ansible configure l’hôte."
       },
       "iot": {
         "name": "Inception-of-Things",
-        "description": "Kubernetes de A à Z : clusters K3s sur des VM Vagrant, ingress Traefik avec routage par nom d’hôte, puis K3d avec Argo CD qui déploie depuis Git."
+        "description": "Kubernetes de A à Z : clusters K3s sur des VM Vagrant, ingress Traefik avec routage par nom d’hôte, puis K3d avec Argo CD qui déploie depuis Git."
       },
       "portfolio": {
         "name": "Portfolio 3D interactif",
-        "description": "Ce site : React avec des scènes React Three Fiber partageant un seul canvas WebGL, un fond animé de vagues et des design tokens Tailwind."
+        "description": "Ce site : React avec des scènes React Three Fiber partageant un seul canvas WebGL, un fond animé de vagues et des design tokens Tailwind."
       },
       "cub3d": {
         "name": "cub3D",
-        "description": "Un labyrinthe à la première personne dessiné par raycasting, en C avec MLX42 (projet 42 en binôme) : murs texturés par face, portes, minicarte et regard à la souris."
+        "description": "Un labyrinthe à la première personne dessiné par raycasting, en C avec MLX42 (projet 42 en binôme) : murs texturés par face, portes, minicarte et regard à la souris."
       },
       "fdf": {
         "name": "FdF",
@@ -103,9 +116,9 @@
       }
     },
     "runDemo": "Lancer la démo",
-    "runDemoAria": "Lancer la démo : {name}",
+    "runDemoAria": "Lancer la démo : {name}",
     "viewOnGithub": "Voir sur GitHub",
-    "viewOnGithubAria": "Voir sur GitHub : code source de {name} (s’ouvre dans un nouvel onglet)",
+    "viewOnGithubAria": "Voir sur GitHub : code source de {name} (s’ouvre dans un nouvel onglet)",
     "demoFailed": "La démo n’a pas pu se charger."
   },
   "education": {
@@ -120,25 +133,26 @@
         "degree": "Tronc commun",
         "date": "2022 – 2024",
         "points": [
-          "Cursus entre pairs, par projets : C et C++, processus et signaux UNIX, réseau, graphisme et conteneurs avec Docker."
+          "Cursus entre pairs, par projets : C et C++, processus et signaux UNIX, réseau, graphisme et conteneurs avec Docker."
         ]
       }
     }
   },
   "contact": {
     "title": "Me contacter.",
-    "lead": "Une question ou une opportunité ? Envoyez-moi un message.",
+    "lead": "Une question ou une opportunité ? Envoyez-moi un message.",
     "required": "Tous les champs sont obligatoires.",
     "name": "Nom",
     "email": "E-mail",
     "message": "Message",
     "emailPlaceholder": "vous@exemple.com",
-    "messagePlaceholder": "De quoi aimeriez-vous parler ?",
+    "messagePlaceholder": "De quoi aimeriez-vous parler ?",
     "send": "Envoyer le message",
     "sending": "Envoi…",
     "sent": "Message envoyé. Je vous répondrai dès que possible.",
-    "notConfigured": "Message non envoyé : le formulaire de contact n’est pas encore configuré. Réessayez plus tard.",
-    "failed": "Message non envoyé. Vérifiez votre connexion et réessayez."
+    "notConfigured": "Message non envoyé : le formulaire de contact n’est pas encore configuré. Réessayez plus tard.",
+    "failed": "Message non envoyé. Vérifiez votre connexion et réessayez.",
+    "tooMany": "Message non envoyé : trop de messages en peu de temps. Réessayez dans quelques minutes."
   },
   "footer": {
     "nav": "Pied de page",
@@ -151,7 +165,7 @@
   "webgl": {
     "title": "Les scènes 3D sont désactivées",
     "failed": "Les scènes 3D n’ont pas pu se charger sur cet appareil, des images fixes sont affichées à la place.",
-    "unsupported": "Votre navigateur ou votre appareil ne prend pas en charge WebGL 2 : le globe 3D et les icônes de technologies interactifs ne sont pas affichés.",
+    "unsupported": "Votre navigateur ou votre appareil ne prend pas en charge WebGL 2 : le globe 3D et les icônes de technologies interactifs ne sont pas affichés.",
     "rest": "Le reste de la page fonctionne normalement.",
     "howTo": "Comment les activer",
     "steps": [

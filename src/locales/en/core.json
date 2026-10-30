@@ -25,7 +25,7 @@
   },
   "person": {
     "title": "Software Engineer | Cloud Infrastructure & DevOps",
-    "summary": "Software Engineer specializing in multi-tenant backend architecture, cloud infrastructure, and DevOps automation. Proven experience in designing scalable microservices, implementing GitOps delivery pipelines, and managing containerized environments. Passionate about automating server setups, observability, and integrating AI coding assistants into modern development workflows."
+    "summary": "Software Engineer specializing in multi-tenant backend architecture, cloud infrastructure, and DevOps automation. Proven experience in designing multi-tenant SaaS backends, implementing GitOps delivery pipelines, and managing containerized environments. Passionate about automating server setups, observability, and integrating AI coding assistants into modern development workflows."
   },
   "hero": {
     "seeProjects": "See my projects",
@@ -52,6 +52,7 @@
     "items": {
       "legaliox": {
         "title": "Lead Backend Engineer & DevOps Infrastructure Lead",
+        "date": "2025 – Present",
         "points": [
           "Lead the backend of Legaliox, a multi-tenant legal SaaS platform.",
           "Design and build the API and its business logic for every tenant.",
@@ -60,7 +61,19 @@
       },
       "wepartner": {
         "title": "Software Engineering Intern",
-        "points": ["Built an AI-powered agent that analyzes resumes."]
+        "date": "May 2025 – Nov 2025",
+        "points": [
+          "Supported the digitalization of the information system of the Directorate of Rural Affairs (Ministry of the Interior): as-is analysis and target process design.",
+          "Technical assessment and development of Wefree V2, a community platform for freelancers."
+        ]
+      },
+      "infinitivebyte": {
+        "title": "Software Engineering Intern",
+        "date": "Feb 2025 – Apr 2025",
+        "points": [
+          "Built a real-time data aggregation system (Python, Redis) and a Django admin dashboard that cut query times by 65%.",
+          "Automated deployments with GitHub Actions and set up a Grafana and Prometheus monitoring stack."
+        ]
       }
     }
   },
@@ -138,7 +151,8 @@
     "sending": "Sending…",
     "sent": "Message sent. I'll get back to you as soon as possible.",
     "notConfigured": "Message not sent: the contact form isn't configured yet. Please try again later.",
-    "failed": "Message not sent. Check your connection and try again."
+    "failed": "Message not sent. Check your connection and try again.",
+    "tooMany": "Message not sent: too many messages in a short time. Please try again in a few minutes."
   },
   "footer": {
     "nav": "Footer",

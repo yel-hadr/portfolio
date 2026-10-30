@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { createContactHandler } from '../lib/contact.js';
+import { createRateLimiter } from '../lib/rateLimit.js';
 
 const SITE = 'https://yel-hadr.github.io';
 const setup = ({ error = null, send = true, to = 'me@example.com' } = {}) => {
@@ -143,6 +144,32 @@ test('a Resend error is a 502 with its type, never its message', async () => {
   const res = await handler(post(valid));
   assert.equal(res.status, 502);
   assert.deepEqual(await res.json(), { error: 'send', reason: 'validation_error' });
+});
+
+test('over the limit: 429 with Retry-After, nothing more sent', async () => {
+  const sent = [];
+  const handler = createContactHandler({
+    send: async (email) => (sent.push(email), { error: null }),
+    to: 'me@example.com',
+    from: 'Portfolio <onboarding@resend.dev>',
+    origins: [SITE],
+    limit: createRateLimiter({ perClient: 2 }),
+  });
+  const from = (ip) => {
+    const req = post(valid);
+    req.headers.set('x-forwarded-for', `${ip}, 10.0.0.1`);
+    return handler(req);
+  };
+  assert.equal((await from('1.1.1.1')).status, 200);
+  assert.equal((await from('1.1.1.1')).status, 200);
+  const third = await from('1.1.1.1');
+  assert.equal(third.status, 429);
+  assert.deepEqual(await third.json(), { error: 'rate' });
+  assert.ok(Number(third.headers.get('retry-after')) > 0);
+  assert.equal(third.headers.get('access-control-allow-origin'), SITE);
+  // Another client is not held back by the first one's limit
+  assert.equal((await from('2.2.2.2')).status, 200);
+  assert.equal(sent.length, 3);
 });
 
 test('no key or no recipient: 503, nothing sent', async () => {

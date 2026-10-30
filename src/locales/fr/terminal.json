@@ -79,7 +79,7 @@
       "description": "Fermer le terminal (ou Échap)"
     },
     "game": {
-      "description": "Jouer au défi terminal : tapez des commandes pour sauver un serveur qui plante"
+      "description": "Jouer au défi terminal : tapez des commandes pour sauver un serveur qui plante"
     }
   },
   "help": {
@@ -176,7 +176,7 @@
   "blog": {
     "title": "Blog",
     "empty": "Pas encore d’articles. Repassez bientôt.",
-    "more": "Tous les articles : {all} · Flux RSS : {rss}"
+    "more": "Tous les articles : {all} · Flux RSS : {rss}"
   },
   "lang": {
     "current": "Langue actuelle : {lang}.",
@@ -207,24 +207,24 @@
   "interrupted": "^C",
   "name": "Terminal",
   "game": {
-    "alert": "Le serveur plante !",
+    "alert": "Le serveur plante !",
     "intro": "Tapez chaque commande exactement comme affichée pour le relancer. Vous avez {seconds} secondes, et chaque commande réussie en ajoute {bonus}. Le chrono démarre à la première touche.",
     "quitHint": "Ctrl+C arrête le défi.",
     "target": "Commande à taper",
     "inputLabel": "Tapez la commande affichée au-dessus",
     "waiting": "En attente de votre première touche",
     "time": "{seconds} s restantes",
-    "fixed": "Réparées : {score}",
+    "fixed": "Réparées : {score}",
     "bonus": "+{bonus} s",
     "typo": "Corrigez les caractères barrés.",
     "timeUp": "Temps écoulé. Le serveur est tombé.",
     "stopped": "Défi arrêté.",
-    "result": "Commandes réparées : {score}. Record : {best}.",
+    "result": "Commandes réparées : {score}. Record : {best}.",
     "newBest": "Nouveau record.",
     "again": "Tapez {cmd} pour rejouer.",
     "sr": {
-      "start": "Défi prêt, {seconds} secondes. Tapez : {cmd}",
-      "next": "Réparé, plus {bonus} secondes. Suivante : {cmd}",
+      "start": "Défi prêt, {seconds} secondes. Tapez : {cmd}",
+      "next": "Réparé, plus {bonus} secondes. Suivante : {cmd}",
       "low": "Plus que {seconds} secondes.",
       "typo": "Faute au caractère {position}.",
       "left": "Correct pour l’instant, encore {count} caractères."
