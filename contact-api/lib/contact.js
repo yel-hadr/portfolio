@@ -1,6 +1,8 @@
 // The contact form's endpoint: checks where the request comes from and what it holds, then hands
-// the message to `send` (Resend in api/contact.js, a fake in the tests). The visitor's text is
-// sent as plain text, never HTML, and their address only as the reply-to.
+// the message to `send` (Resend in api/contact.js, a fake in the tests), laid out by
+// lib/email.js (HTML with every typed value escaped, and a plain-text twin). The visitor's address
+// goes only in the reply-to and the body, never in a header of its own.
+import { renderContactEmail } from './email.js';
 
 const LIMITS = { name: 100, email: 254, message: 5000 };
 // Larger bodies are refused: by their declared length, or as soon as reading passes it
@@ -93,13 +95,8 @@ export const createContactHandler =
     const fields = readFields(body);
     if (!fields) return reply(400, { error: 'invalid' });
 
-    const { error } = await send({
-      from,
-      to,
-      replyTo: fields.email,
-      subject: `Portfolio: a message from ${fields.name}`,
-      text: `${fields.message}\n\n${fields.name} <${fields.email}>\nSent from the contact form on ${origin}`,
-    });
+    const { subject, html, text } = renderContactEmail(fields, { site: origin });
+    const { error } = await send({ from, to, replyTo: fields.email, subject, html, text });
     if (error) {
       console.error('Resend refused the message:', error.name, error.message);
       // Resend's error type (validation_error, invalid_api_key…) says what to fix; never its
