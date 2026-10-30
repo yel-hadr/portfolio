@@ -1,0 +1,15 @@
+{
+  "name": "portfolio-contact-api",
+  "private": true,
+  "description": "The portfolio's contact form endpoint, a Vercel function that sends through Resend",
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "resend": "^6.35.0"
+  }
+}

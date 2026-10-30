@@ -1,6 +1,6 @@
 ---
 name: deploy
-description: Build and publish the portfolio to GitHub Pages at the root of https://yel-hadr.github.io/. Runs preflight checks (git state, base path, EmailJS env, lint, build, dist/ audit), publishes dist/ to the main branch of yel-hadr/yel-hadr.github.io after explicit confirmation, then verifies the live site with curl and Playwright.
+description: Build and publish the portfolio to GitHub Pages at the root of https://yel-hadr.github.io/. Runs preflight checks (git state, base path, contact endpoint env, lint, build, dist/ audit), publishes dist/ to the main branch of yel-hadr/yel-hadr.github.io after explicit confirmation, then verifies the live site with curl and Playwright.
 disable-model-invocation: true
 ---
 
@@ -11,7 +11,7 @@ Normally you don't need this skill: merging to `main` deploys through the CI/CD 
 Publishes `dist/` to the `main` branch of github.com/yel-hadr/yel-hadr.github.io (the GitHub Pages *user* site), served at the root https://yel-hadr.github.io/. This source repo (yel-hadr/portfolio) is not published itself.
 
 Hard rules for this whole skill:
-- Never print EmailJS values or any other secret. Print only variable names and counts. Env file contents may only be piped into `grep -c` / name-only `grep -o`, never shown (no bare `cat`, `head`, `grep` without `-c`, or Read tool on `.env*`).
+- Never print env values or any secret. Print only variable names and counts. Env file contents may only be piped into `grep -c` / name-only `grep -o`, never shown (no bare `cat`, `head`, `grep` without `-c`, or Read tool on `.env*`).
 - Never edit `dist/`, `.env*` or `package-lock.json` by hand. If a check fails, fix the source and rebuild.
 - When a step says **stop**, report what failed and wait for the user. Do not work around it.
 - Run every command from the repo root `/home/youssefelhadraoui/Desktop/portfolio`.
@@ -43,21 +43,21 @@ grep -rnE "[\"'\`(]/(planet|logo\.svg|vite\.svg)" src  # must print nothing
 
 Files in `public/` (`planet/`, `logo.svg`, `vite.svg`) must be referenced relatively (`./planet/scene.glb`, as in `canvas/Earth.jsx`) or through `import.meta.env.BASE_URL`. A leading `/` 404s in production. `index.html` uses `/src/...` paths, which is fine because Vite rewrites them. If any check fails, **stop** and show the offending lines.
 
-## 3. EmailJS env (names and counts only)
+## 3. Contact endpoint env (names and counts only)
 
 Vite's production build loads `.env`, `.env.local`, `.env.production` and `.env.production.local`.
 
 ```bash
 envcat() { cat .env .env.local .env.production .env.production.local 2>/dev/null; }
 echo "env files:" $(ls .env .env.local .env.production .env.production.local 2>/dev/null)
-for v in VITE_EMAILJS_SERVICE_ID VITE_EMAILJS_TEMPLATE_ID VITE_EMAILJS_PUBLIC_KEY; do
+for v in VITE_CONTACT_ENDPOINT; do
   n=$(envcat | grep -cE "^${v}=[\"']?[^\"'[:space:]]")
   printenv "$v" >/dev/null && s=" (also set in shell)" || s=""
   echo "$v: $n non-empty definition(s)$s"
 done
 ```
 
-If any variable has 0 definitions and is not set in the shell, warn: the contact form will answer every submission with "Message not sent: the contact form isn't configured yet" in production (see `src/components/Contact.jsx`). Ask whether to continue. Do not offer to write the `.env` (the PreToolUse hook blocks it anyway). The user adds the values themselves.
+If it has 0 definitions and is not set in the shell, warn: the contact form will answer every submission with "Message not sent: the contact form isn't configured yet" in production (see `src/components/ContactForm.jsx`; the endpoint is `contact-api/`, deployed on Vercel). Its value is a public URL, but print only the count. The Resend key must never be in any `.env` here: it lives in the Vercel project. Ask whether to continue. Do not offer to write the `.env` (the PreToolUse hook blocks it anyway). The user adds the values themselves.
 
 ## 4. Lint and build
 
@@ -94,14 +94,14 @@ find dist -type f -printf '%s\t%p\n' | sort -rn | head -10 | numfmt --field=1 --
 
 Any `src`/`href` in `dist/index.html` that does not start with `/assets/` (absolute `https://` URLs excepted): **stop**; a `/portfolio/` prefix means `base` is stale. Expected today: `index-*.js`, `index-*.css`, `logo-*.svg` and the `vendor-react` / `vendor-motion` preloads, all under `/assets/`.
 
-Secret scan. The three `VITE_EMAILJS_*` values are public by design (EmailJS public key, inlined client-side). Anything else is a leak:
+Secret scan. `VITE_CONTACT_ENDPOINT` is a public URL, inlined client-side by design. Anything else is a leak, a Resend key (`re_…`) above all:
 
 ```bash
-grep -rhoE 'import\.meta\.env\.[A-Z0-9_]+' src | sort -u     # expect only the 3 EmailJS names (+ BASE_URL)
-grep -rcE '(ghp_|gho_|github_pat_|sk_live_|sk-[A-Za-z0-9]{20}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|xox[abprs]-|-----BEGIN [A-Z ]*PRIVATE KEY)' dist | grep -v ':0$'
+grep -rhoE 'import\.meta\.env\.[A-Z0-9_]+' src | sort -u     # expect only VITE_CONTACT_ENDPOINT, VITE_GRAFANA_DASHBOARD_URL (+ BASE_URL)
+grep -rcE '(re_[A-Za-z0-9]{8}_[A-Za-z0-9]{16,}|ghp_|gho_|github_pat_|sk_live_|sk-[A-Za-z0-9]{20}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|xox[abprs]-|-----BEGIN [A-Z ]*PRIVATE KEY)' dist | grep -v ':0$'
 # values of any other VITE_* var defined in the env files: report only how many dist files contain them
 envcat() { cat .env .env.local .env.production .env.production.local 2>/dev/null; }
-for v in $(envcat | grep -oE '^VITE_[A-Z0-9_]+' | grep -v '^VITE_EMAILJS_' | sort -u); do
+for v in $(envcat | grep -oE '^VITE_[A-Z0-9_]+' | grep -v '^VITE_CONTACT_ENDPOINT$' | sort -u); do
   val=$(envcat | grep -E "^$v=" | tail -1 | cut -d= -f2- | tr -d "\"'")
   [ -n "$val" ] && echo "$v: $(grep -rlF -- "$val" dist | wc -l) file(s) in dist"
 done
@@ -167,7 +167,7 @@ Then use the `playwright` MCP server at each viewport, 390x844 (mobile) and 1440
 ## Report
 
 End with a short report:
-- Deployed commit, plus any warnings the user accepted (dirty tree, not on main, missing EmailJS env, lint skipped).
+- Deployed commit, plus any warnings the user accepted (dirty tree, not on main, missing contact endpoint env, lint skipped).
 - dist size and the 3 largest files.
 - HTTP status of the site and both gltf files.
 - Screenshot paths, plus console errors and failed requests per viewport (or "none").

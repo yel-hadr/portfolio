@@ -10,35 +10,34 @@ const FIELD =
 
 const EMPTY_FORM = { name: '', email: '', message: '' };
 
-/** Sends the message through EmailJS; resolves to the status shown under the form */
-const send = async (form) => {
-  const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-  const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-  const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+// The endpoint's limits (contact-api/lib/contact.js), so the browser stops a message it would refuse
+const MAX = { name: 100, email: 254, message: 5000 };
 
-  if (!serviceId || !templateId || !publicKey) {
+/**
+ * Posts the message to the contact endpoint (a Vercel function that sends it through Resend; its
+ * public URL is VITE_CONTACT_ENDPOINT, the Resend key never leaves the function). Resolves to the
+ * status shown under the form
+ */
+const send = async (form) => {
+  const endpoint = import.meta.env.VITE_CONTACT_ENDPOINT;
+  if (!endpoint) {
     console.error(
-      'Missing EmailJS configuration. Set VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID and VITE_EMAILJS_PUBLIC_KEY in .env.'
+      'Missing contact endpoint: set VITE_CONTACT_ENDPOINT (see contact-api/README.md).'
     );
     return { type: 'error', key: 'contact.notConfigured' };
   }
   try {
-    // Loaded on send only: the library reads localStorage at import time, which throws when
-    // the visitor blocks site data and would otherwise blank the whole page
-    const { default: emailjs } = await import('@emailjs/browser');
-    await emailjs.send(
-      serviceId,
-      templateId,
-      {
-        from_name: form.name,
-        to_name: 'Youssef El Hadraoui',
-        from_email: form.email,
-        to_email: 'youssefelhadraoui99@gmail.com',
-        message: form.message,
-      },
-      publicKey
-    );
-    return { type: 'success', key: 'contact.sent' };
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
+    if (response.ok) return { type: 'success', key: 'contact.sent' };
+    console.error(`Contact endpoint answered ${response.status}`);
+    return {
+      type: 'error',
+      key: response.status === 503 ? 'contact.notConfigured' : 'contact.failed',
+    };
   } catch (error) {
     console.error(error);
     return { type: 'error', key: 'contact.failed' };
@@ -62,7 +61,7 @@ const SubmitButton = () => {
 };
 
 /**
- * The contact form (EmailJS, keys from VITE_EMAILJS_* only), used by the Contact section and by
+ * The contact form (sent through the contact endpoint, VITE_CONTACT_ENDPOINT), used by the Contact section and by
  * Game Mode's comms room. Ids are generated, so two copies on one page never share an id. A React
  * 19 form action: useActionState holds the result, useFormStatus the button's pending state.
  */
@@ -81,7 +80,7 @@ const ContactForm = () => {
   // text, so the message follows a language switch
   const [status, sendAction, pending] = useActionState(async (previous, data) => {
     const result = await send(
-      Object.fromEntries(['name', 'email', 'message'].map((k) => [k, data.get(k)]))
+      Object.fromEntries(['name', 'email', 'message', 'website'].map((k) => [k, data.get(k) ?? '']))
     );
     if (result.type === 'success') setForm(EMPTY_FORM);
     return result;
@@ -117,6 +116,7 @@ const ContactForm = () => {
             type='text'
             name='name'
             autoComplete='name'
+            maxLength={MAX.name}
             value={form.name}
             onChange={handleChange}
             className={FIELD}
@@ -132,6 +132,7 @@ const ContactForm = () => {
             type='email'
             name='email'
             autoComplete='email'
+            maxLength={MAX.email}
             placeholder={t('contact.emailPlaceholder')}
             value={form.email}
             onChange={handleChange}
@@ -147,12 +148,19 @@ const ContactForm = () => {
             id={ids.message}
             rows={6}
             name='message'
+            maxLength={MAX.message}
             placeholder={t('contact.messagePlaceholder')}
             value={form.message}
             onChange={handleChange}
             className={`${FIELD} resize-y`}
             required
           />
+        </div>
+
+        {/* A trap for bots, which fill every field: hidden from everyone (display: none keeps it out
+            of the accessibility tree and the tab order); a message with it filled is dropped */}
+        <div hidden>
+          <input type='text' name='website' tabIndex={-1} autoComplete='off' defaultValue='' />
         </div>
 
         <div className='flex flex-wrap items-center gap-4'>
