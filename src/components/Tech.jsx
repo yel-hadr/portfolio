@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 import { SectionWrapper } from '../hoc';
 import { technologies } from '../constans';
@@ -12,7 +12,7 @@ const Tech = () => {
   return (
     <>
       <SectionHeader id='tech' title={t('tech.title')} lead={t('tech.lead')} />
-      <motion.ul
+      <m.ul
         variants={reveal()}
         className='mt-12 flex flex-wrap justify-center gap-x-6 gap-y-8 sm:gap-x-10'
       >
@@ -29,7 +29,7 @@ const Tech = () => {
             <span className='text-sm font-medium text-foreground-muted'>{tech.name}</span>
           </li>
         ))}
-      </motion.ul>
+      </m.ul>
     </>
   );
 };

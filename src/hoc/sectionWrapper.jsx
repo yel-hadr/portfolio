@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { staggerContainer } from '../utils/motion';
 import { styles } from '../styles';
 
@@ -10,7 +10,7 @@ import { styles } from '../styles';
 const SectionWrapper = (Component, idName) =>
   function HOC() {
     return (
-      <motion.section
+      <m.section
         id={idName}
         aria-labelledby={`${idName}-title`}
         variants={staggerContainer()}
@@ -20,7 +20,7 @@ const SectionWrapper = (Component, idName) =>
         className={`${styles.container} ${styles.section} relative`}
       >
         <Component />
-      </motion.section>
+      </m.section>
     );
   };
 

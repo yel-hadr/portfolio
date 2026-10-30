@@ -86,6 +86,10 @@ const CONFIG = {
 };
 const MAX_DPR = 1.5;
 const FRAME_MS = 1000 / 30;
+// Phones: the lines at the screen's CSS pixels (DPR 1) and spaced wider, so a frame costs a
+// fraction of the desktop one on a slow CPU; the faint 1 px lines look the same
+const PHONE = 640;
+const PHONE_X_GAP = 24;
 
 // Brand gradient across the viewport: orange bottom-left, violet, blue top-right. Colors come from
 // the --c-wave-* tokens in src/index.css ("R G B" channels): the brand colors on dark, pastel peach,
@@ -122,7 +126,7 @@ const WavesBackground = ({ paused = false }) => {
     const setSize = () => {
       width = window.innerWidth;
       height = window.innerHeight;
-      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+      const dpr = width < PHONE ? 1 : Math.min(window.devicePixelRatio || 1, MAX_DPR);
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -145,7 +149,7 @@ const WavesBackground = ({ paused = false }) => {
 
     const setLines = () => {
       // Wider spacing on phones: fewer points to animate and a calmer pattern
-      const xGap = width < 640 ? 16 : 12;
+      const xGap = width < PHONE ? PHONE_X_GAP : 12;
       const { yGap } = CONFIG;
       const totalLines = Math.ceil((width + 200) / xGap);
       const totalPoints = Math.ceil((height + 30) / yGap);

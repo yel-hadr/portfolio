@@ -1,6 +1,7 @@
 import { Suspense, lazy, useContext, useState } from 'react';
 
 import CanvasErrorBoundary from '../CanvasErrorBoundary';
+import { Near3DContext } from './Near3DContext';
 import { WebGLContext } from './WebGLContext';
 
 // The drei View lives in a lazy chunk with three/R3F, so first paint needs no 3D code.
@@ -28,6 +29,8 @@ const SceneView = ({
   children,
 }) => {
   const webgl = useContext(WebGLContext);
+  // The 3D half (and three.js with it) loads once the page's 3D layer mounts
+  const near = useContext(Near3DContext);
   const [failed, setFailed] = useState(false);
   const a11y = label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true };
   // The static box shows no model, so it must not announce one
@@ -38,6 +41,8 @@ const SceneView = ({
   );
 
   if (!webgl || failed) return staticSlot;
+  // Until then, the same empty box the loading state shows
+  if (!near) return <div className={className} aria-hidden='true' />;
 
   return (
     // Outer boundary catches a failed chunk load; the inner one (in SceneViewImpl) scene errors

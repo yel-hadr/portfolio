@@ -1,32 +1,30 @@
 import { Suspense, lazy, useEffect, useEffectEvent, useRef, useState } from 'react';
-import { MotionConfig } from 'framer-motion';
+import { LazyMotion, MotionConfig, domAnimation } from 'framer-motion';
 
-import {
-  About,
-  Contact,
-  Experience,
-  Hero,
-  Navbar,
-  Tech,
-  Works,
-  Education,
-  WavesBackground,
-  Scene3D,
-  ErrorBoundary,
-  CanvasErrorBoundary,
-  WebGLFallback,
-  Footer,
-  Blog,
-} from './components';
+// Direct imports, not the ./components barrel: it imports every section, which would pull the
+// lazy sections back into the first chunk
+import { Scene3D } from './components/canvas';
+import CanvasErrorBoundary from './components/CanvasErrorBoundary';
+import ErrorBoundary from './components/ErrorBoundary';
+import Hero from './components/Hero';
+import Navbar from './components/Navbar';
+import WavesBackground from './components/WavesBackground';
+import WebGLFallback from './components/WebGLFallback';
 import { loadScene3D } from './components/canvas/loadScene3D';
+import { Near3DContext } from './components/canvas/Near3DContext';
 import { PageCanvasContext } from './components/canvas/PageCanvasContext';
 import { WebGLContext } from './components/canvas/WebGLContext';
 import { useWebGL } from './hooks/useWebGL';
 import I18nProvider from './i18n/I18nProvider';
 import { useI18n } from './i18n/context';
 import ThemeProvider from './theme/ThemeProvider';
+import { afterSettle } from './utils/afterSettle';
 import { track } from './utils/analytics';
 
+// Below the hero: the sections and the footer are their own chunks, loading with the first render
+// so the first paint waits only on the navbar and the hero
+const BelowFold = lazy(() => import('./components/BelowFold'));
+const Footer = lazy(() => import('./components/Footer'));
 // The terminal overlay loads on first open
 const loadTerminal = () => import('./components/terminal/Terminal');
 const Terminal = lazy(loadTerminal);
@@ -47,22 +45,26 @@ function App() {
   const pausePageCanvas = (paused) => setPageCanvasPauses((n) => n + (paused ? 1 : -1));
 
   // reducedMotion="user": framer-motion drops transform animations (keeps opacity)
-  // when the OS asks for reduced motion.
+  // when the OS asks for reduced motion. LazyMotion with domAnimation: the m components carry only
+  // the animation, variant and in-view features the site uses (no layout projection or drag), and
+  // strict makes a full motion component an error
   return (
     <ThemeProvider>
       <I18nProvider>
-        <MotionConfig reducedMotion='user'>
-          <WebGLContext.Provider value={webgl}>
-            <PageCanvasContext.Provider value={pausePageCanvas}>
-              <AppContent
-                webgl={webgl}
-                showCanvas={webgl && pageCanvasPauses === 0}
-                supported={supported}
-                onCanvasError={() => setCanvasFailed(true)}
-              />
-            </PageCanvasContext.Provider>
-          </WebGLContext.Provider>
-        </MotionConfig>
+        <LazyMotion features={domAnimation} strict>
+          <MotionConfig reducedMotion='user'>
+            <WebGLContext.Provider value={webgl}>
+              <PageCanvasContext.Provider value={pausePageCanvas}>
+                <AppContent
+                  webgl={webgl}
+                  showCanvas={webgl && pageCanvasPauses === 0}
+                  supported={supported}
+                  onCanvasError={() => setCanvasFailed(true)}
+                />
+              </PageCanvasContext.Provider>
+            </WebGLContext.Provider>
+          </MotionConfig>
+        </LazyMotion>
       </I18nProvider>
     </ThemeProvider>
   );
@@ -120,30 +122,26 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
     requestAnimationFrame(() => terminalOpener.current?.focus?.());
   };
 
-  // Fetch the terminal chunk (~10 KB gzip) once the page is idle, so the first open is instant
-  // instead of waiting on the network. Skipped when the visitor asked to save data.
+  // Fetch the terminal chunk (~10 KB gzip) once the page has settled, so the first open is
+  // instant instead of waiting on the network. Skipped when the visitor asked to save data.
   useEffect(() => {
     if (navigator.connection?.saveData) return undefined;
-    const idle = window.requestIdleCallback ?? ((cb) => window.setTimeout(cb, 2500));
-    const cancel = window.cancelIdleCallback ?? window.clearTimeout;
-    const handle = idle(() => loadTerminal().catch(() => {}), { timeout: 5000 });
-    return () => cancel(handle);
+    return afterSettle(() => loadTerminal().catch(() => {}));
   }, []);
 
-  // The 3D layer's first scene is in the Tech section, below the hero. Its chunk is fetched at
-  // idle, and the Canvas (creating the WebGL renderer is one long task) mounts once that section
+  // The 3D layer's first scene is in the Tech section, below the hero. Its chunk is fetched once
+  // the page has settled, and the Canvas (creating the WebGL renderer is one long task) mounts once that section
   // is within a viewport of the screen, so the first paint and first input never wait on it. A
   // deep link below the hero mounts it at once; once mounted it stays
   const [near3D, setNear3D] = useState(false);
+  // The sections below the hero are a lazy chunk: #tech exists once it has rendered
+  const [sectionsReady, setSectionsReady] = useState(false);
   useEffect(() => {
     if (!webgl) return undefined;
-    const idle = window.requestIdleCallback ?? ((cb) => window.setTimeout(cb, 2500));
-    const cancel = window.cancelIdleCallback ?? window.clearTimeout;
-    const handle = idle(() => loadScene3D().catch(() => {}), { timeout: 5000 });
-    return () => cancel(handle);
+    return afterSettle(() => loadScene3D().catch(() => {}));
   }, [webgl]);
   useEffect(() => {
-    if (!webgl || near3D) return undefined;
+    if (!webgl || near3D || !sectionsReady) return undefined;
     const target = document.getElementById('tech');
     if (!target || typeof IntersectionObserver === 'undefined') {
       setNear3D(true);
@@ -155,7 +153,7 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
     );
     observer.observe(target);
     return () => observer.disconnect();
-  }, [webgl, near3D]);
+  }, [webgl, near3D, sectionsReady]);
 
   // Ctrl+` opens the terminal from anywhere. An effect event: it reads the latest state, so the
   // listener is added once
@@ -202,46 +200,26 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
       <div className='relative z-10'>
         <Navbar onOpenTerminal={openTerminal} />
 
-        <main id='main' tabIndex={-1}>
-          <ErrorBoundary sectionName='hero'>
-            <Hero onEnterGame={enterGameMode} />
-          </ErrorBoundary>
+        <Near3DContext.Provider value={near3D}>
+          <main id='main' tabIndex={-1}>
+            <ErrorBoundary sectionName='hero'>
+              <Hero onEnterGame={enterGameMode} />
+            </ErrorBoundary>
 
-          {/* A live region mounted from the start, so a late 3D failure is announced */}
-          <div role='status'>
-            {!webgl && <WebGLFallback reason={supported ? 'failed' : 'unsupported'} />}
-          </div>
+            {/* A live region mounted from the start, so a late 3D failure is announced */}
+            <div role='status'>
+              {!webgl && <WebGLFallback reason={supported ? 'failed' : 'unsupported'} />}
+            </div>
 
-          <ErrorBoundary sectionName='about'>
-            <About />
-          </ErrorBoundary>
+            <Suspense fallback={null}>
+              <BelowFold onReady={() => setSectionsReady(true)} />
+            </Suspense>
+          </main>
+        </Near3DContext.Provider>
 
-          <ErrorBoundary sectionName='experience'>
-            <Experience />
-          </ErrorBoundary>
-
-          <ErrorBoundary sectionName='tech'>
-            <Tech />
-          </ErrorBoundary>
-
-          <ErrorBoundary sectionName='works'>
-            <Works />
-          </ErrorBoundary>
-
-          <ErrorBoundary sectionName='education'>
-            <Education />
-          </ErrorBoundary>
-
-          <ErrorBoundary sectionName='blog'>
-            <Blog />
-          </ErrorBoundary>
-
-          <ErrorBoundary sectionName='contact'>
-            <Contact />
-          </ErrorBoundary>
-        </main>
-
-        <Footer onOpenGames={openGames} onEnterGame={enterGameMode} />
+        <Suspense fallback={null}>
+          <Footer onOpenGames={openGames} onEnterGame={enterGameMode} />
+        </Suspense>
       </div>
 
       {terminalOpen && (

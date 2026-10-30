@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 import { styles } from '../styles';
 import { SectionWrapper } from '../hoc';
@@ -16,16 +16,16 @@ const Contact = () => {
       <SectionHeader id='contact' title={t('contact.title')} lead={t('contact.lead')} />
 
       <div className='mt-12 grid gap-10 xl:grid-cols-2'>
-        <motion.div variants={reveal()} className={styles.card}>
+        <m.div variants={reveal()} className={styles.card}>
           <ContactForm />
-        </motion.div>
+        </m.div>
 
-        <motion.div variants={reveal(0.1)} className='h-80 md:h-96 xl:h-auto'>
+        <m.div variants={reveal(0.1)} className='h-80 md:h-96 xl:h-auto'>
           <SceneView sectionType='earth' className='h-full w-full'>
             {/* Contact's globe always mounts (About's is desktop-only), so it warms up the shaders */}
             <Earth warmUp />
           </SceneView>
-        </motion.div>
+        </m.div>
       </div>
     </>
   );

@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 import blog from './build/blog.js';
 import seo from './build/seo.js';
+import preloadFont from './build/preloadFont.js';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -18,6 +19,7 @@ export default defineConfig({
     tailwindcss(),
     blog(),
     seo(),
+    preloadFont(),
   ],
   build: {
     rollupOptions: {
