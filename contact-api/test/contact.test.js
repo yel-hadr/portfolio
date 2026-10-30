@@ -23,7 +23,7 @@ const post = (body, { origin = SITE, raw } = {}) =>
   });
 const valid = { name: 'Ada', email: 'ada@example.com', message: 'Hello there.' };
 
-test('a valid message is sent as plain text, the visitor as reply-to', async () => {
+test('a valid message is sent as HTML and plain text, the visitor as reply-to', async () => {
   const { handler, sent } = setup();
   const res = await handler(post(valid));
   assert.equal(res.status, 200);
@@ -34,8 +34,9 @@ test('a valid message is sent as plain text, the visitor as reply-to', async () 
   assert.equal(email.to, 'me@example.com');
   assert.equal(email.replyTo, 'ada@example.com');
   assert.equal(email.subject, 'Portfolio: a message from Ada');
-  assert.match(email.text, /^Hello there\.\n\nAda <ada@example\.com>/);
-  assert.equal(email.html, undefined);
+  assert.match(email.text, /From: Ada <ada@example\.com>\n\nHello there\./);
+  assert.match(email.html, /^<!doctype html>/);
+  assert.match(email.html, /Hello there\./);
 });
 
 test('the preflight is answered for the portfolio only', async () => {

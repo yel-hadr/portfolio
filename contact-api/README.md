@@ -9,7 +9,9 @@ What it does (`lib/contact.js`):
 
 - answers only the origins in `ALLOWED_ORIGINS` (CORS), and only `POST`;
 - checks the fields (name, email, message; lengths as in the form), refuses bodies over 16 KB;
-- sends the message to you as plain text, with the visitor's address as the reply-to;
+- sends the message to you laid out by `lib/email.js`: an HTML email (the site's light theme,
+  inline styles, every typed value escaped, a Reply button) with a plain-text version, and the
+  visitor's address as the reply-to;
 - drops messages that fill the form's hidden `website` field (bots), answering as if it worked.
 
 ## Deploy
@@ -38,6 +40,16 @@ Optional settings, in the Vercel project (Settings → Environment Variables):
   domain you verified in Resend to send from your own domain (and to any recipient);
 - `ALLOWED_ORIGINS`: defaults to `https://yel-hadr.github.io`; add `http://localhost:5173`
   (comma-separated) to test from the dev server.
+
+## The email's look
+
+`lib/email.js` holds the layout. Email clients ignore CSS variables and classes, so its colors are
+the site's light theme written out as hex (keep them in step with `src/index.css`), and the layout
+is tables with inline styles. To preview a change, render one to a file and open it:
+
+```bash
+node --input-type=module -e "import { writeFileSync } from 'node:fs'; import { renderContactEmail } from './lib/email.js'; writeFileSync('/tmp/email.html', renderContactEmail({ name: 'Ada', email: 'ada@example.com', message: 'Hello!' }, { site: 'https://yel-hadr.github.io' }).html)"
+```
 
 ## Test
 
