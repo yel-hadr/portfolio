@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 import { styles } from '../styles';
 import { education } from '../constans';
@@ -8,7 +8,7 @@ import SectionHeader from './SectionHeader';
 import { useI18n } from '../i18n/context';
 
 const EducationCard = ({ school, degree, date, points }) => (
-  <motion.li variants={reveal()} className={`${styles.card} flex flex-col`}>
+  <m.li variants={reveal()} className={`${styles.card} flex flex-col`}>
     <h3 className='text-2xl font-bold text-foreground'>{school}</h3>
     <p className='mt-1 font-semibold text-primary-400'>{degree}</p>
     {date && <p className='mt-1 text-sm font-medium text-foreground-muted'>{date}</p>}
@@ -21,7 +21,7 @@ const EducationCard = ({ school, degree, date, points }) => (
         ))}
       </ul>
     )}
-  </motion.li>
+  </m.li>
 );
 
 const Education = () => {

@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 // Titles and summaries come from the posts' front matter (build/blog.js); dates and tags from
 // src/constans/posts.js. The posts themselves are static pages under /blog/ and /fr/blog/.
 import { blogPath, blogPosts, feedPath } from 'virtual:blog-posts';
@@ -47,7 +47,7 @@ const PostCard = ({ slug, date, tags, title, summary }) => {
   const text = (field) => field[lang] ?? field.en;
 
   return (
-    <motion.li
+    <m.li
       variants={reveal()}
       className={`${styles.card} relative flex min-w-0 flex-col gap-4 transition-colors hover:border-line-strong`}
     >
@@ -74,7 +74,7 @@ const PostCard = ({ slug, date, tags, title, summary }) => {
           </li>
         ))}
       </ul>
-    </motion.li>
+    </m.li>
   );
 };
 
@@ -89,7 +89,7 @@ const Blog = () => {
           <PostCard key={post.slug} {...post} />
         ))}
       </ul>
-      <motion.div variants={reveal()} className='mt-10 flex flex-wrap items-center gap-x-8 gap-y-4'>
+      <m.div variants={reveal()} className='mt-10 flex flex-wrap items-center gap-x-8 gap-y-4'>
         <a href={blogPath(lang)} className={styles.buttonGhost}>
           {t('blog.allPosts')}
         </a>
@@ -101,7 +101,7 @@ const Blog = () => {
           <RssIcon />
           {t('blog.rss')}
         </a>
-      </motion.div>
+      </m.div>
     </>
   );
 };

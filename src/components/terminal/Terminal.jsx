@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import { useI18n } from '../../i18n/context';
@@ -326,7 +326,7 @@ const Terminal = ({ onClose, initialCommand = null }) => {
   const rise = reduced ? false : { opacity: 0, y: 12, scale: 0.985 };
 
   return (
-    <motion.div
+    <m.div
       initial={fade}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.15 }}
@@ -341,7 +341,7 @@ const Terminal = ({ onClose, initialCommand = null }) => {
         if (pressedBackdrop.current && e.target === e.currentTarget) onClose();
       }}
     >
-      <motion.div
+      <m.div
         ref={dialogRef}
         role='dialog'
         aria-modal='true'
@@ -449,8 +449,8 @@ const Terminal = ({ onClose, initialCommand = null }) => {
             </div>
           )}
         </div>
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   );
 };
 

@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 import { styles } from '../styles';
 import { profile320, profile640 } from '../assets';
@@ -17,13 +17,13 @@ const Hero = ({ onEnterGame }) => {
       className='relative flex min-h-screen w-full items-center'
     >
       {/* The page's one orchestrated entrance: portrait, name, headline, then the actions. */}
-      <motion.div
+      <m.div
         variants={staggerContainer(0.12, 0.1)}
         initial='hidden'
         animate='show'
         className={`${styles.container} grid w-full items-center gap-10 pb-16 pt-28 lg:grid-cols-[1fr_auto] lg:gap-16`}
       >
-        <motion.figure variants={reveal()} className='relative w-40 sm:w-52 lg:order-last lg:w-80'>
+        <m.figure variants={reveal()} className='relative w-40 sm:w-52 lg:order-last lg:w-80'>
           {/* Soft brand glow behind the frame, dark mode only (--glow); in light the frame lifts
               off the page on a soft shadow instead */}
           <div
@@ -46,20 +46,20 @@ const Hero = ({ onEnterGame }) => {
               className='aspect-[4/5] w-full rounded-[1.25rem] object-cover'
             />
           </div>
-        </motion.figure>
+        </m.figure>
 
         <div>
-          <motion.h1 id='hero-title' variants={reveal()} className={styles.heroHeadText}>
+          <m.h1 id='hero-title' variants={reveal()} className={styles.heroHeadText}>
             {person.name}{' '}
             <span className='mt-3 block text-2xl font-semibold tracking-normal text-foreground-muted sm:text-3xl'>
               ({person.alias})
             </span>
-          </motion.h1>
-          <motion.p variants={reveal()} className={`${styles.heroSubText} mt-6`}>
+          </m.h1>
+          <m.p variants={reveal()} className={`${styles.heroSubText} mt-6`}>
             {t('person.title')}
-          </motion.p>
+          </m.p>
 
-          <motion.div variants={reveal()} className='mt-10 flex flex-wrap gap-4'>
+          <m.div variants={reveal()} className='mt-10 flex flex-wrap gap-4'>
             <a href='#works' className={styles.buttonPrimary}>
               {t('hero.seeProjects')}
             </a>
@@ -77,9 +77,9 @@ const Hero = ({ onEnterGame }) => {
               <CrosshairIcon className='h-5 w-5 text-primary-400' />
               {t('gameMode')}
             </button>
-          </motion.div>
+          </m.div>
         </div>
-      </motion.div>
+      </m.div>
     </section>
   );
 };
