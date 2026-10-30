@@ -17,7 +17,13 @@ import Works from './Works';
  */
 const BelowFold = ({ onReady }) => {
   useEffect(() => {
-    const id = decodeURIComponent(window.location.hash.slice(1));
+    // A malformed escape in the hash (#%E0) must not throw here: that would unmount the page
+    let id = window.location.hash.slice(1);
+    try {
+      id = decodeURIComponent(id);
+    } catch {
+      // keep it raw
+    }
     if (id && id !== 'main' && id !== 'top') document.getElementById(id)?.scrollIntoView();
     onReady?.();
     // Once, when the sections mount
