@@ -1,7 +1,10 @@
+import { m } from 'framer-motion';
+
 import { styles } from '../styles';
 import { person } from '../constans';
 import { useI18n } from '../i18n/context';
 import { track } from '../utils/analytics';
+import { pressable } from '../utils/motion';
 
 /**
  * "Download resume" button. The download attribute saves the PDF instead of opening it in the
@@ -10,13 +13,14 @@ import { track } from '../utils/analytics';
 const ResumeLink = ({ className = '' }) => {
   const { t } = useI18n();
   return (
-    <a
+    <m.a
       href={person.resume}
       download='Youssef_Elhadraoui_Resume.pdf'
       type='application/pdf'
       aria-label={t('resume.aria')}
       onClick={() => track('resume-download')}
       className={`${styles.buttonGhost} gap-2 ${className}`}
+      {...pressable}
     >
       <svg
         aria-hidden='true'
@@ -31,7 +35,7 @@ const ResumeLink = ({ className = '' }) => {
         <path d='M10 3v10m0 0-4-4m4 4 4-4M4 16h12' />
       </svg>
       {t('resume.label')}
-    </a>
+    </m.a>
   );
 };
 

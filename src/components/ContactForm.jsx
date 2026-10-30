@@ -1,7 +1,9 @@
 import { useActionState, useId, useState } from 'react';
 import { useFormStatus } from 'react-dom';
+import { m } from 'framer-motion';
 
 import { useI18n } from '../i18n/context';
+import { pressable } from '../utils/motion';
 
 const FIELD =
   'w-full rounded-xl border border-line-strong bg-surface-raised px-5 py-4 font-medium text-foreground ' +
@@ -51,13 +53,14 @@ const SubmitButton = () => {
   const { pending } = useFormStatus();
   return (
     // aria-disabled instead of disabled: a disabled button would drop keyboard focus to <body>
-    <button
+    <m.button
       type='submit'
       aria-disabled={pending || undefined}
+      {...pressable}
       className='rounded-xl border-2 border-transparent bg-primary px-8 py-3 font-bold text-on-primary transition-colors hover:bg-primary-hover aria-disabled:cursor-wait focus:outline-hidden focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background'
     >
       {pending ? t('contact.sending') : t('contact.send')}
-    </button>
+    </m.button>
   );
 };
 

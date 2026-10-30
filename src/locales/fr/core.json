@@ -36,6 +36,15 @@
     "label": "Télécharger mon CV",
     "aria": "Télécharger mon CV en PDF"
   },
+  "eyebrows": {
+    "about": "Profil",
+    "experience": "Parcours",
+    "tech": "Stack",
+    "works": "Projets phares",
+    "education": "Études",
+    "blog": "Articles",
+    "contact": "Prendre contact"
+  },
   "about": {
     "title": "À propos.",
     "whatIDo": "Ce que je fais",
@@ -79,7 +88,34 @@
   },
   "tech": {
     "title": "Stack technique.",
-    "lead": "Le cloud, l’infrastructure et les langages avec lesquels je construis."
+    "lead": "Le cloud, l’infrastructure et les langages avec lesquels je construis.",
+    "tools": "{count} outils",
+    "groups": {
+      "cloud": {
+        "title": "Cloud et infrastructure as code",
+        "text": "Une infrastructure AWS provisionnée avec Terraform et configurée avec Ansible."
+      },
+      "platform": {
+        "title": "Kubernetes et GitOps",
+        "text": "Clusters, conteneurs et livraison depuis Git avec Argo CD."
+      },
+      "code": {
+        "title": "Langages",
+        "text": "Python pour les backends et les données, C++, et React pour ce site."
+      },
+      "linux": {
+        "title": "Linux",
+        "text": "Systèmes"
+      },
+      "nginx": {
+        "title": "Nginx",
+        "text": "Serveur web"
+      },
+      "git": {
+        "title": "Git",
+        "text": "Gestion de versions"
+      }
+    }
   },
   "works": {
     "title": "Projets.",

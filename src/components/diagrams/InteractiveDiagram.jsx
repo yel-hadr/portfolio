@@ -55,7 +55,7 @@ const edgePoints = (edge, boxes) => {
   ];
 };
 
-// Drawn rather than typed: the self-hosted Poppins subset has no arrow glyphs
+// Drawn rather than typed: the self-hosted Geist subset has no arrow glyphs
 const ARROWS = {
   to: 'M3 8h10M9 4l4 4-4 4',
   from: 'M13 8H3M7 4L3 8l4 4',

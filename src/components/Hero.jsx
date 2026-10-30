@@ -3,7 +3,8 @@ import { m } from 'framer-motion';
 import { styles } from '../styles';
 import { profile320, profile640 } from '../assets';
 import { person } from '../constans';
-import { reveal, staggerContainer } from '../utils/motion';
+import { pressable, reveal, staggerContainer } from '../utils/motion';
+import Magnetic from './Magnetic';
 import ResumeLink from './ResumeLink';
 import { CrosshairIcon } from './icons';
 import { useI18n } from '../i18n/context';
@@ -60,23 +61,30 @@ const Hero = ({ onEnterGame }) => {
           </m.p>
 
           <m.div variants={reveal()} className='mt-10 flex flex-wrap gap-4'>
-            <a href='#works' className={styles.buttonPrimary}>
-              {t('hero.seeProjects')}
-            </a>
-            <ResumeLink />
-            <a href='#contact' className={styles.buttonGhost}>
+            <Magnetic>
+              <m.a href='#works' className={styles.buttonPrimary} {...pressable}>
+                {t('hero.seeProjects')}
+              </m.a>
+            </Magnetic>
+            <Magnetic>
+              <ResumeLink />
+            </Magnetic>
+            <m.a href='#contact' className={`${styles.buttonGhost} shimmer`} {...pressable}>
               {t('hero.getInTouch')}
-            </a>
+            </m.a>
             {/* The way into Game Mode: dashed like a HUD frame, so it reads as something else */}
-            <button
-              type='button'
-              aria-haspopup='dialog'
-              onClick={onEnterGame}
-              className='inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-primary-400 bg-glass px-6 py-[0.625rem] font-bold text-foreground backdrop-blur-md transition-colors hover:bg-primary/15'
-            >
-              <CrosshairIcon className='h-5 w-5 text-primary-400' />
-              {t('gameMode')}
-            </button>
+            <Magnetic>
+              <m.button
+                type='button'
+                aria-haspopup='dialog'
+                onClick={onEnterGame}
+                {...pressable}
+                className='inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-primary-400 bg-glass px-6 py-[0.625rem] font-bold text-foreground backdrop-blur-md transition-colors hover:bg-primary/15'
+              >
+                <CrosshairIcon className='h-5 w-5 text-primary-400' />
+                {t('gameMode')}
+              </m.button>
+            </Magnetic>
           </m.div>
         </div>
       </m.div>

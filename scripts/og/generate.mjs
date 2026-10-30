@@ -49,7 +49,8 @@ const dataUrl = async (path, type) =>
 // The `:root` block of src/index.css is the dark theme, the site's default look
 const darkTokens = async () => {
   const css = await readFile(resolve(ROOT, 'src/index.css'), 'utf8');
-  const block = css.match(/:root\s*\{([^}]*)\}/)?.[1];
+  // `:root, .scheme-dark {`: the dark block also styles the dark islands
+  const block = css.match(/:root\b[^{[]*\{([^}]*)\}/)?.[1];
   if (!block) throw new Error('No :root block in src/index.css');
   return block
     .split('\n')
@@ -62,10 +63,10 @@ const fonts = async () => {
   const faces = await Promise.all(
     [500, 600, 900].map(async (weight) => {
       const src = await dataUrl(
-        `node_modules/@fontsource/poppins/files/poppins-latin-${weight}-normal.woff2`,
+        `node_modules/@fontsource/geist/files/geist-latin-${weight}-normal.woff2`,
         'font/woff2'
       );
-      return `@font-face { font-family: Poppins; font-weight: ${weight}; src: url(${src}) format('woff2'); }`;
+      return `@font-face { font-family: Geist; font-weight: ${weight}; src: url(${src}) format('woff2'); }`;
     })
   );
   return faces.join('\n');

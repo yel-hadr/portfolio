@@ -1,20 +1,21 @@
-// Shared layout and type presets. Sizes come from Tailwind's default scale, colors from the
-// tokens in the @theme of src/index.css; avoid arbitrary px values in components.
+// Shared layout and type presets. Headings take the fluid sizes (text-display, text-h2, text-h3)
+// and the rest Tailwind's default scale; colors come from the tokens in the @theme of
+// src/index.css. Avoid arbitrary px values in components.
 const styles = {
   container: 'max-w-7xl mx-auto px-6 sm:px-10 lg:px-16',
   section: 'py-20 sm:py-28',
 
-  heroHeadText:
-    'font-black text-foreground text-5xl sm:text-6xl xl:text-7xl leading-[1.05] sm:leading-none xl:leading-none tracking-tight',
+  heroHeadText: 'font-black text-foreground text-display',
   heroSubText:
     'text-primary-400 font-semibold text-lg sm:text-xl lg:text-2xl leading-snug sm:leading-7 lg:leading-8 max-w-2xl',
 
-  sectionHeadText:
-    'font-black text-foreground text-4xl sm:text-5xl lg:text-6xl leading-tight sm:leading-none lg:leading-none tracking-tight',
+  // The small uppercase label over a section heading
+  eyebrow: 'text-eyebrow font-semibold uppercase text-foreground-muted',
+  sectionHeadText: 'font-black text-foreground text-h2',
   sectionLead:
     'mt-4 text-foreground-muted text-base sm:text-lg leading-relaxed sm:leading-7 max-w-prose',
 
-  cardTitle: 'text-foreground text-xl font-bold',
+  cardTitle: 'text-foreground text-h3 font-bold',
   card: 'card-glass p-6 sm:p-8',
 
   // Primary: dark text on orange (dark 6.8:1, light 5.0:1). Ghost: glass with a strong border (>= 3:1).

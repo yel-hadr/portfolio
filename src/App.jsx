@@ -14,6 +14,7 @@ import { loadScene3D } from './components/canvas/loadScene3D';
 import { Near3DContext } from './components/canvas/Near3DContext';
 import { PageCanvasContext } from './components/canvas/PageCanvasContext';
 import { WebGLContext } from './components/canvas/WebGLContext';
+import { useSpotlight } from './hooks/useSpotlight';
 import { useWebGL } from './hooks/useWebGL';
 import I18nProvider from './i18n/I18nProvider';
 import { useI18n } from './i18n/context';
@@ -43,6 +44,8 @@ function App() {
   // count, because a demo can open from inside Game Mode, and closing it must not resume the page
   const [pageCanvasPauses, setPageCanvasPauses] = useState(0);
   const pausePageCanvas = (paused) => setPageCanvasPauses((n) => n + (paused ? 1 : -1));
+  // The cards' cursor spotlight: one listener for the page, no re-renders
+  useSpotlight();
 
   // reducedMotion="user": framer-motion drops transform animations (keeps opacity)
   // when the OS asks for reduced motion. LazyMotion with domAnimation: the m components carry only
@@ -197,9 +200,10 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
         </CanvasErrorBoundary>
       )}
 
-      <div className='relative z-10'>
-        <Navbar onOpenTerminal={openTerminal} />
+      {/* Outside the content's stacking context, so it stays above the 3D layer (z-20) */}
+      <Navbar onOpenTerminal={openTerminal} />
 
+      <div className='relative z-10'>
         <Near3DContext.Provider value={near3D}>
           <main id='main' tabIndex={-1}>
             <ErrorBoundary sectionName='hero'>

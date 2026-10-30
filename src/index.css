@@ -43,15 +43,35 @@
   --color-glass-strong: var(--color-glass-strong);
   --color-line: var(--color-line); /* decorative hairlines */
   --color-line-strong: rgb(var(--c-line-strong)); /* control boundaries (>= 3:1) */
+  --color-edge-ring: var(--color-edge-ring); /* the floating navbar's inner ring */
   /* Depth from tokens: an inner glow on dark cards, soft warm layers in light */
   --shadow-card: var(--shadow-card);
   --shadow-raised: var(--shadow-raised);
   --shadow-modal: var(--shadow-modal);
+  --shadow-track: var(--shadow-track); /* a recessed track (the navbar's links) */
 }
 
 @theme {
-  --font-sans: Poppins, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: Geist, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --breakpoint-xs: 28.125rem; /* 450px */
+
+  /* Fluid headings: they grow with the viewport between a phone and a desktop instead of
+     jumping at breakpoints. Mostly rem with a vw slope, so page zoom still enlarges them (at 200%
+     zoom about 1.5x, double by 300-400%: max/min stays under 2.5, WCAG 1.4.4); tight tracking at
+     display sizes. text-eyebrow is the small label over a section heading */
+  --text-display: clamp(2.75rem, 2.2rem + 2.6vw, 4.5rem);
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.02em;
+  --text-h2: clamp(2.25rem, 1.6rem + 2.6vw, 3.75rem);
+  --text-h2--line-height: 1.05;
+  --text-h2--letter-spacing: -0.02em;
+  --text-h3: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
+  --text-h3--line-height: 1.25;
+  --text-h3--letter-spacing: -0.01em;
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--line-height: 1rem;
+  --text-eyebrow--letter-spacing: 0.14em;
 
   /* Game Mode (src/components/Cub3D): used behind motion-safe, so reduced motion drops them */
   --animate-game-in: game-in 300ms ease-out;
@@ -180,6 +200,18 @@
     /* The keyboard focus ring: the amber on dark; on light a deeper burnt orange that holds
        >= 3.5:1 even where the frosted navbar is over a dark photo or an orange button */
     --c-focus: 249 115 22;
+    /* Film grain over the background (.grain), and the cards' cursor spotlight ([data-spotlight]):
+       on dark an amber rim light along the border with a faint fill under the content */
+    --grain-alpha: 0.045;
+    --c-spot: 251 146 60;
+    --spot-rim: 0.55;
+    --spot-fill: 0.06;
+    /* A card's machined top edge, and the floating navbar's inner ring */
+    --color-edge: rgb(255 255 255 / 0.1);
+    --color-edge-ring: rgb(255 255 255 / 0.1);
+    /* The blueprint grid behind the bento's group cards and the 42 demo cards */
+    --color-grid: rgb(255 255 255 / 0.035);
+    --shadow-track: inset 0 1px 2px rgb(0 0 0 / 0.4);
 
     /* Full colors for places that only take inline styles (the timeline library) */
     --color-background: rgb(var(--c-background));
@@ -232,6 +264,15 @@
     --shadow-modal: 0 8px 16px rgb(64 42 20 / 0.06), 0 32px 64px -12px rgb(64 42 20 / 0.2);
     --glow: 0;
     --c-focus: 168 67 0;
+    /* A fainter grain, and a soft white glare in place of the rim light */
+    --grain-alpha: 0.03;
+    --c-spot: 255 255 255;
+    --spot-rim: 0.9;
+    --spot-fill: 0.55;
+    --color-edge: rgb(255 255 255 / 0.7);
+    --color-edge-ring: rgb(26 26 46 / 0.05);
+    --color-grid: rgb(26 26 46 / 0.045);
+    --shadow-track: inset 0 1px 2px rgb(64 42 20 / 0.08);
   }
 
   /* Language switch: the page content fades out, the text swaps, then fades back in
@@ -261,9 +302,10 @@
   }
 
   /* scroll-padding-top keeps anchor targets and keyboard-focused elements clear of the
-     fixed navbar (h-[4.5rem]). Smooth scrolling only when motion is allowed. */
+     floating navbar (0.75rem from the top, about 3.25rem tall). Smooth scrolling only when motion
+     is allowed. */
   html {
-    scroll-padding-top: 5rem;
+    scroll-padding-top: 5.5rem;
   }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -308,5 +350,165 @@
        icons' edges) differently from v3. No card carries a ring utility; a shadow utility on a
        card (light:shadow-raised) still replaces this one */
     box-shadow: var(--shadow-card);
+  }
+
+  /* A machined top edge: a 1px highlight along a card's top, over its usual depth. After
+     .card-glass, so it replaces that box-shadow */
+  .card-edge {
+    box-shadow:
+      inset 0 1px 0 var(--color-edge),
+      var(--shadow-card);
+  }
+
+  /* A faint 24px blueprint grid on a card's fill */
+  .blueprint {
+    background-image:
+      linear-gradient(var(--color-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* The 42 demo cards: a scan line (ice cyan, with a soft trail) sweeps down the card once when it
+     is hovered or a control inside it has focus. The card clips it. Never on its own, never
+     under reduced motion */
+  .scanline {
+    position: absolute;
+    inset: 0;
+    z-index: -1; /* under the card's text (the card is isolated) */
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent calc(100% - 3rem),
+      rgb(var(--c-secondary) / 0.08) calc(100% - 2px),
+      rgb(var(--c-secondary) / 0.7) 100%
+    );
+    transform: translateY(-100%);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :hover > .scanline,
+    :focus-within > .scanline {
+      animation: scan 1.6s ease-in-out both;
+    }
+  }
+  @keyframes scan {
+    0% {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+    12%,
+    85% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(0);
+    }
+  }
+
+  /* Film grain: a faint noise tile over the page's background layer (WavesBackground), below
+     every card and text, so it adds texture without touching contrast. Inline, no request */
+  .grain {
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxNjAnIGhlaWdodD0nMTYwJz48ZmlsdGVyIGlkPSduJz48ZmVUdXJidWxlbmNlIHR5cGU9J2ZyYWN0YWxOb2lzZScgYmFzZUZyZXF1ZW5jeT0nMC44NScgbnVtT2N0YXZlcz0nMycgc3RpdGNoVGlsZXM9J3N0aXRjaCcvPjxmZUNvbG9yTWF0cml4IHR5cGU9J3NhdHVyYXRlJyB2YWx1ZXM9JzAnLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWx0ZXI9J3VybCgjbiknLz48L3N2Zz4=');
+    background-size: 160px;
+    opacity: var(--grain-alpha);
+  }
+  @media (forced-colors: active) {
+    .grain {
+      display: none;
+    }
+  }
+
+  /* A slow diagonal sheen across the hero's contact button: under the label (z-index -1 in its own
+     stacking context), one pass after load (under 5 s, so nothing moves on its own for long:
+     WCAG 2.2.2), then one per hover. Not under reduced motion */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(
+      115deg,
+      transparent 35%,
+      rgb(var(--c-foreground) / 0.12) 50%,
+      transparent 65%
+    );
+    transform: translateX(-120%);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .shimmer::after {
+      animation: shimmer 2.4s ease-in-out 1.5s 1;
+    }
+    .shimmer:hover::after {
+      animation: shimmer 2.4s ease-in-out 1;
+    }
+  }
+  @keyframes shimmer {
+    0%,
+    55% {
+      transform: translateX(-120%);
+    }
+    100% {
+      transform: translateX(120%);
+    }
+  }
+
+  /* The cursor spotlight on a card: a <Spotlight /> layer inside the card (useSpotlight writes
+     --mx/--my and data-lit on the card; the timeline's cards are matched by their class). Its
+     ::before is the rim, the gradient masked to the 1px border, and its ::after the fill; the
+     layer sits under the card's content. Mouse and pen only, see useSpotlight */
+  [data-spotlight],
+  .vertical-timeline-element-content {
+    isolation: isolate;
+  }
+  .spotlight {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  [data-lit] > .spotlight {
+    opacity: 1;
+  }
+  .spotlight::before,
+  .spotlight::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  .spotlight::before {
+    padding: 1px;
+    background: radial-gradient(
+      18rem circle at var(--mx, 50%) var(--my, 0),
+      rgb(var(--c-spot) / var(--spot-rim)),
+      transparent 70%
+    );
+    -webkit-mask:
+      linear-gradient(black 0 0) content-box,
+      linear-gradient(black 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+  .spotlight::after {
+    background: radial-gradient(
+      26rem circle at var(--mx, 50%) var(--my, 0),
+      rgb(var(--c-spot) / var(--spot-fill)),
+      transparent 70%
+    );
+  }
+  @media (forced-colors: active) {
+    .spotlight {
+      display: none;
+    }
   }
 }

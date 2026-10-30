@@ -10,10 +10,10 @@ const FdfViewer = lazy(() => import('./FdfViewer'));
 const REPO = projects.find((p) => p.demo === 'fdf').source_code_link;
 
 /** The FdF demo's dialog, loaded lazily from the Works section */
-const FdfModal = ({ onClose }) => {
+const FdfModal = ({ onClose, origin }) => {
   const { t } = useI18n();
   return (
-    <DemoShell id='fdf' repo={REPO} onClose={onClose}>
+    <DemoShell id='fdf' repo={REPO} onClose={onClose} origin={origin}>
       <FdfViewer t={t} />
     </DemoShell>
   );
