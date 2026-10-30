@@ -36,6 +36,15 @@
     "label": "Download resume",
     "aria": "Download resume PDF"
   },
+  "eyebrows": {
+    "about": "Profile",
+    "experience": "Career",
+    "tech": "Stack",
+    "works": "Featured projects",
+    "education": "Studies",
+    "blog": "Writing",
+    "contact": "Get in touch"
+  },
   "about": {
     "title": "About me.",
     "whatIDo": "What I do",
@@ -79,7 +88,34 @@
   },
   "tech": {
     "title": "Tech stack.",
-    "lead": "Cloud, infrastructure and the languages I build with."
+    "lead": "Cloud, infrastructure and the languages I build with.",
+    "tools": "{count} tools",
+    "groups": {
+      "cloud": {
+        "title": "Cloud & infrastructure as code",
+        "text": "AWS infrastructure provisioned with Terraform and configured with Ansible."
+      },
+      "platform": {
+        "title": "Kubernetes & GitOps",
+        "text": "Clusters, containers and delivery from Git with Argo CD."
+      },
+      "code": {
+        "title": "Languages",
+        "text": "Python for backends and data, C++, and React for this site."
+      },
+      "linux": {
+        "title": "Linux",
+        "text": "Systems"
+      },
+      "nginx": {
+        "title": "Nginx",
+        "text": "Web serving"
+      },
+      "git": {
+        "title": "Git",
+        "text": "Version control"
+      }
+    }
   },
   "works": {
     "title": "Projects.",

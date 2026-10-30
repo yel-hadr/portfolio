@@ -4,8 +4,9 @@ import { m } from 'framer-motion';
 import { styles } from '../styles';
 import { SectionWrapper } from '../hoc';
 import { projects } from '../constans';
-import { reveal } from '../utils/motion';
+import { pressable, reveal } from '../utils/motion';
 import SectionHeader from './SectionHeader';
+import Spotlight from './Spotlight';
 import { useI18n } from '../i18n/context';
 import CanvasErrorBoundary from './CanvasErrorBoundary';
 import { GithubIcon } from './icons';
@@ -41,7 +42,14 @@ const ProjectCard = ({
   const name = t(`works.items.${id}.name`);
 
   return (
-    <m.li variants={reveal()} className={`${styles.card} flex flex-col`}>
+    <m.li
+      variants={reveal()}
+      data-spotlight
+      // The two 42 demos: a blueprint grid and a scan line on hover, like a terminal's screen
+      className={`${styles.card} card-edge relative flex flex-col ${demo ? 'blueprint overflow-hidden' : ''}`}
+    >
+      <Spotlight />
+      {demo && <span aria-hidden='true' className='scanline' />}
       {image && (
         <img
           src={image}
@@ -70,25 +78,27 @@ const ProjectCard = ({
       {demo && (
         // A live demo: two buttons, the demo first
         <div className='mt-auto flex flex-wrap items-center gap-3 pt-6'>
-          <button
+          <m.button
             type='button'
             onClick={(e) => onRunDemo(demo, e.currentTarget)}
             aria-haspopup='dialog'
             aria-label={t('works.runDemoAria', { name })}
             className={styles.buttonPrimary}
+            {...pressable}
           >
             {t('works.runDemo')}
-          </button>
-          <a
+          </m.button>
+          <m.a
             href={source_code_link}
             target='_blank'
             rel='noopener noreferrer'
             aria-label={t('works.viewOnGithubAria', { name })}
             className={`${styles.buttonGhost} gap-2`}
+            {...pressable}
           >
             <GithubIcon className='h-5 w-5' />
             {t('works.viewOnGithub')}
-          </a>
+          </m.a>
         </div>
       )}
       {!demo && (diagram || source_code_link) && (
@@ -162,7 +172,10 @@ const Works = () => {
             key={project.id}
             {...project}
             onOpenDiagram={(diagram, opener) => setOpen({ diagram, opener })}
-            onRunDemo={(demo, opener) => setRunning({ demo, opener })}
+            onRunDemo={(demo, opener) =>
+              // The card's box: the demo's dialog grows out of it
+              setRunning({ demo, opener, origin: opener.closest('li')?.getBoundingClientRect() })
+            }
           />
         ))}
       </ul>
@@ -188,7 +201,7 @@ const Works = () => {
           }}
         >
           <Suspense fallback={null}>
-            <Demo onClose={closeDemo} />
+            <Demo onClose={closeDemo} origin={running.origin} />
           </Suspense>
         </CanvasErrorBoundary>
       )}

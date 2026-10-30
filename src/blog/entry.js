@@ -1,12 +1,14 @@
 // Client entry of the generated blog pages (build/blog.js). The pages are complete without it;
 // this adds the styles and fonts, the theme toggle, the saved language choice and copy buttons.
 // Plain JavaScript: no React on these pages.
-// Self-hosted Poppins, the same subset and weights as src/main.jsx
-import '@fontsource/poppins/latin-400.css';
-import '@fontsource/poppins/latin-500.css';
-import '@fontsource/poppins/latin-600.css';
-import '@fontsource/poppins/latin-700.css';
-import '@fontsource/poppins/latin-900.css';
+// Self-hosted Geist and JetBrains Mono, the same subset and weights as src/main.jsx
+import '@fontsource/geist/latin-400.css';
+import '@fontsource/geist/latin-500.css';
+import '@fontsource/geist/latin-600.css';
+import '@fontsource/geist/latin-700.css';
+import '@fontsource/geist/latin-900.css';
+import '@fontsource/jetbrains-mono/latin-400.css';
+import '@fontsource/jetbrains-mono/latin-700.css';
 import '../index.css';
 import './blog.css';
 

@@ -5,7 +5,7 @@ import { blogPath, blogPosts, feedPath } from 'virtual:blog-posts';
 
 import { styles } from '../styles';
 import { SectionWrapper } from '../hoc';
-import { reveal } from '../utils/motion';
+import { pressable, reveal } from '../utils/motion';
 import SectionHeader from './SectionHeader';
 import { useI18n } from '../i18n/context';
 
@@ -90,9 +90,9 @@ const Blog = () => {
         ))}
       </ul>
       <m.div variants={reveal()} className='mt-10 flex flex-wrap items-center gap-x-8 gap-y-4'>
-        <a href={blogPath(lang)} className={styles.buttonGhost}>
+        <m.a href={blogPath(lang)} className={styles.buttonGhost} {...pressable}>
           {t('blog.allPosts')}
-        </a>
+        </m.a>
         <a
           href={feedPath(lang)}
           type='application/rss+xml'

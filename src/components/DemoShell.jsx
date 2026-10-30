@@ -1,14 +1,17 @@
-import { Suspense, useEffect, useId } from 'react';
+import { Suspense, useEffect, useEffectEvent, useId, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { animate } from 'framer-motion';
 
 import CanvasErrorBoundary from './CanvasErrorBoundary';
 import { useDemoCanvas } from '../hooks/useDemoCanvas';
 import { useModalDialog } from '../hooks/useModalDialog';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { useI18n } from '../i18n/context';
 import { registerNamespace } from '../i18n/dictionaries';
 import en from '../locales/en/demos.json';
 import fr from '../locales/fr/demos.json';
 import { CloseIcon, GithubIcon } from './icons';
+import { SPRING } from '../utils/motion';
 
 // The demo strings ship with the lazy demo chunks (Cub3DModal and FdfModal import this shell)
 registerNamespace('demos', { en, fr });
@@ -30,8 +33,12 @@ const Notice = ({ id, role, children }) => (
  * and the demo mounts once R3F has released the page's WebGL context (useDemoCanvas): never two
  * contexts at once. Without WebGL, or if the demo fails, the dialog says so and keeps the
  * source link.
+ *
+ * Opened from a project card, the panel grows out of that card (`origin`, the card's box): it
+ * starts at the card's position and size and springs to its own, then its content fades in. The
+ * demo's canvas mounts after that. Not under reduced motion; closing is instant.
  */
-const DemoShell = ({ id, repo, onClose, children }) => {
+const DemoShell = ({ id, repo, onClose, origin, children }) => {
   const { t } = useI18n();
   const { webgl, ready } = useDemoCanvas();
   const titleId = useId();
@@ -39,6 +46,45 @@ const DemoShell = ({ id, repo, onClose, children }) => {
   const noticeId = useId();
   const { overlayRef, panelRef, close, onKeyDown, backdrop } = useModalDialog(onClose);
   const name = t(`demos.${id}.name`);
+  const reduced = usePrefersReducedMotion();
+
+  // Before the first paint: place the panel over the card, then let it spring open. Once, on
+  // open (the card's box is where it was clicked), so the values are read through an effect event
+  const growFromCard = useEffectEvent(() => {
+    const panel = panelRef.current;
+    if (!panel || !origin || reduced) return undefined;
+    const to = panel.getBoundingClientRect();
+    if (!to.width || !to.height) return undefined;
+    const x = origin.left - to.left;
+    const y = origin.top - to.top;
+    const scaleX = origin.width / to.width;
+    const scaleY = origin.height / to.height;
+    // The first frame, set now: animate() applies its first values only on the next frame
+    panel.style.setProperty('transform-origin', 'top left');
+    panel.style.setProperty('transform', `translate(${x}px, ${y}px) scale(${scaleX}, ${scaleY})`);
+    for (const child of panel.children) child.style.setProperty('opacity', '0');
+    const grow = animate(
+      panel,
+      { x: [x, 0], y: [y, 0], scaleX: [scaleX, 1], scaleY: [scaleY, 1] },
+      SPRING
+    );
+    grow.then(() => {
+      panel.style.removeProperty('transform');
+    });
+    const content = animate(
+      [...panel.children],
+      { opacity: [0, 1] },
+      { duration: 0.25, delay: 0.22 }
+    );
+    // Stopped early (an unmount, or StrictMode's second run): leave the panel as laid out
+    return () => {
+      grow.stop();
+      content.stop();
+      panel.style.removeProperty('transform');
+      for (const child of panel.children) child.style.removeProperty('opacity');
+    };
+  });
+  useLayoutEffect(() => growFromCard(), []);
 
   useEffect(() => {
     panelRef.current?.focus();

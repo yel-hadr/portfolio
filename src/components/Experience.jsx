@@ -4,6 +4,7 @@ import 'react-vertical-timeline-component/style.min.css';
 import { experiences } from '../constans';
 import { SectionWrapper } from '../hoc';
 import SectionHeader from './SectionHeader';
+import Spotlight from './Spotlight';
 import { useI18n } from '../i18n/context';
 
 // The timeline library only takes inline styles, so read the Tailwind tokens through the
@@ -35,6 +36,7 @@ const ExperienceCard = ({ experience }) => {
         boxShadow: '0 0 0 4px var(--color-background), 0 0 0 5px var(--color-rule)',
       }}
     >
+      <Spotlight />
       <h3 className='text-foreground text-xl sm:text-2xl font-bold'>{title}</h3>
       {/* The visible date renders after the card content; give screen readers it in reading order */}
       {date && <p className='sr-only'>{date}</p>}

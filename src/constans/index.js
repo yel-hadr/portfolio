@@ -58,53 +58,76 @@ const services = [
   },
 ];
 
+// The Tech section's bento: a large card, two medium ones and three single tools. Each technology
+// names its group; titles and descriptions are tech.groups.<id> in the locales
+const techGroups = [
+  { id: 'cloud', size: 'large' },
+  { id: 'platform', size: 'medium' },
+  { id: 'code', size: 'medium' },
+  { id: 'linux', size: 'small' },
+  { id: 'nginx', size: 'small' },
+  { id: 'git', size: 'small' },
+];
+
 const technologies = [
   {
     name: 'AWS',
+    group: 'cloud',
     icon: aws,
   },
   {
     name: 'Terraform',
+    group: 'cloud',
     icon: terraform,
   },
   {
     name: 'Ansible',
+    group: 'cloud',
     icon: ansible,
   },
   {
     name: 'Kubernetes',
+    group: 'platform',
     icon: kubernetes,
   },
   {
     name: 'Argo CD',
+    group: 'platform',
     icon: argocd,
   },
   {
     name: 'Docker',
+    group: 'platform',
     icon: docker,
   },
   {
     name: 'Linux',
+    group: 'linux',
     icon: linux,
   },
   {
     name: 'Nginx',
+    group: 'nginx',
     icon: nginx,
   },
   {
     name: 'Python',
+    group: 'code',
     icon: python,
   },
   {
     name: 'C++',
+    group: 'code',
     icon: cpp,
   },
   {
     name: 'Git',
+    group: 'git',
     icon: git,
   },
   {
     name: 'React',
+    group: 'code',
     icon: reactjs,
   },
 ];
@@ -270,6 +293,7 @@ const gameStorage = {
 export {
   services,
   technologies,
+  techGroups,
   experiences,
   projects,
   education,

@@ -307,6 +307,8 @@ const WavesBackground = ({ paused = false }) => {
           the bottom edge, so lines never compete with copy at full strength. */}
       <div className='absolute inset-0 bg-[radial-gradient(ellipse_at_20%_30%,theme(colors.background/70%),transparent_55%)]' />
       <div className='absolute inset-0 bg-linear-to-b/srgb from-background/40 via-transparent to-background/70' />
+      {/* Film grain over the lines and washes, still below every card and text */}
+      <div className='grain absolute inset-0' />
     </div>
   );
 };

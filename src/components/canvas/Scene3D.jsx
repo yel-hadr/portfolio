@@ -75,14 +75,17 @@ const FrameDriver = ({ reduced }) => {
 // browsers keep a plain fixed canvas: scenes lag on fast scrolls there, but nothing breaks.
 const CLIP = typeof CSS !== 'undefined' && CSS.supports?.('overflow', 'clip');
 
+// The layer is above the page's content (z-20 over its z-10) and below the navbar (z-50): the
+// scenes sit inside glass cards (the Tech bento), whose fill and backdrop blur would otherwise
+// cover them. It draws only inside each view's box and lets every pointer event through.
 const LAYER = CLIP
   ? // 125vh: a quarter screen of overscan below the viewport. drei draws any view inside the
     // canvas, so a scene scrolling up into view is already drawn when the compositor scrolls
     // ahead of the main thread (the largest lead measured was 100 px). There is no overscan
     // above: drei never draws a view whose bottom is above the viewport, so on a fast upward
     // scroll a scene entering from the top appears on the next drawn frame.
-    'pointer-events-none absolute inset-x-0 top-0 z-0 h-[125vh] will-change-transform'
-  : 'pointer-events-none fixed inset-0 z-0';
+    'pointer-events-none absolute inset-x-0 top-0 z-20 h-[125vh] will-change-transform'
+  : 'pointer-events-none fixed inset-0 z-20';
 
 const followScroll = (el) => {
   if (el && CLIP) el.style.transform = `translate3d(0, ${window.scrollY}px, 0)`;
@@ -102,7 +105,7 @@ const ScrollSync = ({ layer }) => {
 };
 
 /**
- * The 3D layer, loaded lazily: one Canvas behind the page renders every
+ * The 3D layer, loaded lazily: one Canvas over the page's content renders every
  * SceneView through <View.Port />. The layer is absolutely positioned at the top of the page
  * and follows the scroll position (ScrollSync), on its own compositor layer (will-change).
  */

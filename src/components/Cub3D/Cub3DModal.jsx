@@ -12,12 +12,12 @@ const REPO = projects.find((p) => p.demo === 'cub3d').source_code_link;
 const TECH_NAMES = technologies.map((tech) => tech.name);
 
 /** The cub3D demo's dialog, loaded lazily from the Works section */
-const Cub3DModal = ({ onClose }) => {
+const Cub3DModal = ({ onClose, origin }) => {
   const { t } = useI18n();
   const projectNames = projects.filter((p) => !p.demo).map((p) => t(`works.items.${p.id}.name`));
 
   return (
-    <DemoShell id='cub3d' repo={REPO} onClose={onClose}>
+    <DemoShell id='cub3d' repo={REPO} onClose={onClose} origin={origin}>
       <Cub3DWorld t={t} technologies={TECH_NAMES} projects={projectNames} />
     </DemoShell>
   );
