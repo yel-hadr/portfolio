@@ -23,11 +23,12 @@ const ExperienceCard = ({ experience }) => {
   const { t } = useI18n();
   const title = t(`experience.items.${experience.id}.title`);
   const points = t(`experience.items.${experience.id}.points`);
+  const date = t(`experience.items.${experience.id}.date`);
   return (
     <VerticalTimelineElement
       contentStyle={CARD_STYLE}
       contentArrowStyle={{ borderRight: '7px solid var(--color-line)' }}
-      date={experience.date ? <span aria-hidden='true'>{experience.date}</span> : undefined}
+      date={date ? <span aria-hidden='true'>{date}</span> : undefined}
       dateClassName='!text-foreground-muted !opacity-100 font-medium'
       iconStyle={{
         background: experience.iconBg,
@@ -36,7 +37,7 @@ const ExperienceCard = ({ experience }) => {
     >
       <h3 className='text-foreground text-xl sm:text-2xl font-bold'>{title}</h3>
       {/* The visible date renders after the card content; give screen readers it in reading order */}
-      {experience.date && <p className='sr-only'>{experience.date}</p>}
+      {date && <p className='sr-only'>{date}</p>}
       {experience.company_name && (
         <p className='text-primary-400 font-semibold !m-0'>{experience.company_name}</p>
       )}

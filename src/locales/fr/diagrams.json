@@ -113,7 +113,7 @@
         "facts": [
           "Image nginx:1.27-alpine, sur le réseau frontend",
           "Hôtes virtuels : youssefelhadraoui.tech, www et pma",
-          "Certificat Let’s Encrypt : un timer systemd le vérifie deux fois par jour et le renouvelle dans les 30 jours avant son expiration ; un certificat autosigné assure le premier démarrage",
+          "Certificat Let’s Encrypt : un timer systemd le vérifie deux fois par jour et le renouvelle dans les 30 jours avant son expiration ; un certificat autosigné assure le premier démarrage",
           "Résout les upstreams PHP à chaque requête via le DNS de Docker (127.0.0.11)"
         ]
       },
@@ -155,15 +155,15 @@
       "apply": "terraform apply",
       "inventory": "IP -> inventory.yaml",
       "awsApi": "API AWS",
-      "ssh": "SSH :22",
-      "visit": "HTTP :80 · HTTPS :443",
-      "sgUfw": ":80 · :443",
+      "ssh": "SSH :22",
+      "visit": "HTTP :80 · HTTPS :443",
+      "sgUfw": ":80 · :443",
       "sshUfw": ":22",
-      "ufwNginx": ":80 -> 301 · :443 TLS",
-      "fcgiWp": "FastCGI :9000",
-      "fcgiPma": "FastCGI :9000",
-      "wpDb": "MySQL :3306",
-      "pmaDb": "MySQL :3306"
+      "ufwNginx": ":80 -> 301 · :443 TLS",
+      "fcgiWp": "FastCGI :9000",
+      "fcgiPma": "FastCGI :9000",
+      "wpDb": "MySQL :3306",
+      "pmaDb": "MySQL :3306"
     }
   },
   "iot": {
@@ -221,7 +221,7 @@
         "edges": {
           "sshServer": "vagrant ssh",
           "sshAgent": "vagrant ssh",
-          "join": "jonction · HTTPS :6443 · jeton",
+          "join": "jonction · HTTPS :6443 · jeton",
           "flannel": "flannel · eth1"
         }
       },
@@ -257,7 +257,7 @@
           },
           "app1": {
             "name": "app1",
-            "role": "app1-svc :80",
+            "role": "app1-svc :80",
             "meta": ["1 réplique"],
             "description": "Un Deployment de nginxdemos/hello, une petite page qui indique quel pod a répondu, derrière le Service app1-svc.",
             "facts": [
@@ -268,7 +268,7 @@
           },
           "app2": {
             "name": "app2",
-            "role": "app2-svc :80",
+            "role": "app2-svc :80",
             "meta": ["3 répliques"],
             "description": "La même image avec trois répliques, comme l’exige le sujet ; le Service répartit les requêtes entre les trois pods.",
             "facts": [
@@ -279,7 +279,7 @@
           },
           "app3": {
             "name": "app3",
-            "role": "app3-svc :80",
+            "role": "app3-svc :80",
             "meta": ["1 réplique"],
             "description": "Le backend par défaut : tout hôte autre que app1.com ou app2.com arrive ici.",
             "facts": [
@@ -290,7 +290,7 @@
           }
         },
         "edges": {
-          "http": "HTTP :80",
+          "http": "HTTP :80",
           "toApp1": "Host: app1.com",
           "toApp2": "Host: app2.com",
           "toApp3": "règle par défaut"
@@ -362,7 +362,7 @@
           "pull": "pull · HEAD",
           "sync": "auto-sync · prune · selfHeal",
           "curl": "curl localhost:8888",
-          "svc": "playground-svc :8888"
+          "svc": "playground-svc :8888"
         }
       },
       "bonus": {
@@ -435,11 +435,11 @@
           }
         },
         "edges": {
-          "ports": ":8081 · :8888",
+          "ports": ":8081 · :8888",
           "ingress": ":80",
-          "gitea": "gitea-http :3000",
+          "gitea": "gitea-http :3000",
           "app": ":8888",
-          "pull": "git pull · :3000",
+          "pull": "git pull · :3000",
           "sync": "auto-sync"
         }
       }

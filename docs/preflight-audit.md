@@ -39,17 +39,33 @@ experience and education details.
   - Its CI section left out the audits and the Lighthouse gates, and its secrets table had one entry.
   - All are corrected from the code. `contact-api/README.md` documents the limits and the Firewall rule.
 
+## Applied after review (owner-approved batch)
+
+- **H4 (resume vs site), settled by the owner.**
+  - WePartner now uses the resume's description and dates (Software Engineering Intern, May–Nov 2025: the Directorate of Rural Affairs information system, Wefree V2).
+  - Education keeps 42 Paris (RNCP Level 7, Sept 2026).
+  - Legaliox keeps "Lead Backend Engineer & DevOps Infrastructure Lead".
+  - The PDF's "Mai 2025" is left to the owner to correct.
+- **M3:** the 3D views' focus ring now sits on a band of the page background (`viewFocusRing` in `src/styles.js`), so it keeps its contrast over any scene.
+- **M5:** French text uses a non-breaking space before `: ; ? !`. This covers 155 places in the FR locales (string values only, not keys) and 51 places in the FR blog posts (code blocks and spans left alone).
+- **M6, content:**
+  - Two blog grammar fixes.
+  - The experience timeline has dates, now in the locales (`experience.items.<id>.date`), and the timeline, terminal and Game Mode all read them.
+  - The Infinitive Byte internship (Feb–Apr 2025) is added from the resume.
+  - The unsupported "microservices" claim now reads "multi-tenant SaaS backends", in the summary and so in the JSON-LD.
+  - Stale CLAUDE.md lines are corrected.
+- **M7:** `index.html` has a `<noscript>` block with the name, title, resume, email, GitHub, LinkedIn and blog links, styled with the site's tokens.
+- **M8:** the contact request aborts after 15 s (`AbortSignal.timeout`) and says it failed.
+- **R2:** the old deploy key on `yel-hadr/yel-hadr.github.io` is removed; only the current one remains.
+- **Deferred by the owner:** M1 (bundle size accepted), M2 (canvas retention, later cleanup), M4 (the OS reduced-motion setting is enough).
+
 ## Needs the owner
 
-- **H4. The resume PDF and the site disagree.**
-  - They disagree on the description of one past role, the education entries and dates, and one current job title.
-  - The English resume also has a French month name ("Mai") in one date.
-  - Decide which is right, then update the other (`src/constans/index.js` and `src/locales/*/core.json`, or the PDF in `public/`).
-- **R1.** Add a Vercel Firewall rate-limit rule on `/api/contact` (for example 10 requests per minute per IP). It applies before the function, in every instance.
-- **R2.** Remove the old deploy key on `yel-hadr/yel-hadr.github.io` ("portfolio CI/CD (yel-hadr/portfolio Actions)"). Its private half was deleted with the old secret, so it is unused.
-- **R3.** Check Safari on a Mac or an iPhone (or a cloud browser service). WebKit could not run here.
+- **H4, what is left: the resume PDF.** The site now follows the owner's decisions (see above). The English PDF still says "Mai 2025" for "May 2025": the owner fixes it in `public/Youssef_Elhadraoui_Resume.pdf`.
+- **R1 (owner will do it).** Add a Vercel Firewall rate-limit rule on `/api/contact` (for example 10 requests per minute per IP). It applies before the function, in every instance.
+- **R3 (owner will do it).** Check Safari on a Mac or an iPhone (or a cloud browser service). WebKit could not run here.
 
-## Medium (not fixed; awaiting approval)
+## Medium, as found (M3 and M5–M8 applied above; M1, M2 and M4 deferred)
 
 - **M1. The whole bundle is 637.5 KB gzipped, over the 550 KB target.**
   - Largest chunks: three.js 177, R3F 84, React 73.5, app 36, Game Mode 28, framer-motion 27, post-processing 24, status page 19.

@@ -112,7 +112,7 @@ const GameMode = ({ onClose }) => {
         entries: experiences.map((e) => ({
           title: t(`experience.items.${e.id}.title`),
           place: e.company_name,
-          date: e.date,
+          date: t(`experience.items.${e.id}.date`),
           points: t(`experience.items.${e.id}.points`),
         })),
       },

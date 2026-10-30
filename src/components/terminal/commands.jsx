@@ -172,7 +172,7 @@ export const COMMANDS = [
                 company: exp.company_name,
               })}
             </p>
-            {exp.date && <Muted>{exp.date}</Muted>}
+            <Muted>{t(`experience.items.${exp.id}.date`)}</Muted>
             <Bullets items={arr(t(`experience.items.${exp.id}.points`))} />
           </div>
         ))}

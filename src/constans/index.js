@@ -110,19 +110,22 @@ const technologies = [
 ];
 
 // Dates are left empty until they are confirmed; the timeline hides an empty date.
-// Title and points: experience.items.<id>
+// Title, dates and points: experience.items.<id>, newest first
 const experiences = [
   {
     id: 'legaliox',
     company_name: 'Legaliox',
     iconBg: 'var(--color-primary)',
-    date: '',
   },
   {
     id: 'wepartner',
     company_name: 'WePartner Consulting',
     iconBg: 'var(--color-secondary)',
-    date: '',
+  },
+  {
+    id: 'infinitivebyte',
+    company_name: 'Infinitive Byte',
+    iconBg: 'var(--color-tertiary)',
   },
 ];
 

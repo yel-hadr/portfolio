@@ -6,24 +6,24 @@
   "cub3d": {
     "name": "cub3D",
     "title": "cub3D, dans le navigateur",
-    "description": "cub3D, projet 42 (1337) en binôme, en C avec MLX42, dessine un labyrinthe par raycasting. Voici sa carte maps/map.cub, reconstruite avec three.js : une texture par face de mur (NO, SO, WE, EA), le sol et le plafond des lignes F et C, une porte et une minicarte.",
+    "description": "cub3D, projet 42 (1337) en binôme, en C avec MLX42, dessine un labyrinthe par raycasting. Voici sa carte maps/map.cub, reconstruite avec three.js : une texture par face de mur (NO, SO, WE, EA), le sol et le plafond des lignes F et C, une porte et une minicarte.",
     "appLabel": "Labyrinthe cub3D",
-    "canvasLabel": "Vue à la première personne du labyrinthe map.cub : murs texturés, sol orange, plafond rouge",
+    "canvasLabel": "Vue à la première personne du labyrinthe map.cub : murs texturés, sol orange, plafond rouge",
     "mouseLook": "Regarder avec la souris",
     "welcome": {
       "title": "Bienvenue dans cub3D",
       "body": "Un projet 42 inspiré de Wolfenstein 3D, qui lance un rayon par colonne d’écran. La salle droit devant a des murs qui parlent de moi.",
       "keys": [
-        "Z S (W S en QWERTY) ou ↑ ↓ : marcher",
-        "Q D (A D en QWERTY) : pas de côté",
-        "← → ou la souris : tourner",
-        "Espace : ouvrir la porte devant vous",
-        "Échap : libérer la souris, Échap à nouveau pour fermer"
+        "Z S (W S en QWERTY) ou ↑ ↓ : marcher",
+        "Q D (A D en QWERTY) : pas de côté",
+        "← → ou la souris : tourner",
+        "Espace : ouvrir la porte devant vous",
+        "Échap : libérer la souris, Échap à nouveau pour fermer"
       ],
       "keysTouch": [
         "Glissez la vue pour tourner",
         "▲ ▼ marcher, ◀ ▶ pas de côté, ↺ ↻ tourner",
-        "Porte : ouvrir la porte devant vous"
+        "Porte : ouvrir la porte devant vous"
       ],
       "start": "Commencer",
       "startLook": "Commencer avec la souris"
@@ -62,10 +62,10 @@
   "fdf": {
     "name": "FdF",
     "title": "FdF, dans le navigateur",
-    "description": "FdF, projet 42 en C avec MiniLibX, dessine une carte de hauteurs en fil de fer : ici six de ses test_maps, 42.fdf en premier. L’original trace des lignes blanches en vue isométrique (grille tournée de 45°, hauteur divisée par deux), ou la couleur de chaque point quand le fichier en donne une, déplace, zoome, tourne et change la hauteur ; cette version ajoute les couleurs d’altitude et la perspective.",
+    "description": "FdF, projet 42 en C avec MiniLibX, dessine une carte de hauteurs en fil de fer : ici six de ses test_maps, 42.fdf en premier. L’original trace des lignes blanches en vue isométrique (grille tournée de 45°, hauteur divisée par deux), ou la couleur de chaque point quand le fichier en donne une, déplace, zoome, tourne et change la hauteur ; cette version ajoute les couleurs d’altitude et la perspective.",
     "viewLabel": "Fil de fer FdF",
     "canvasLabel": "Fil de fer de {file}, {width} points sur {height}, {shape}, projection {projection}",
-    "help": "Glisser : déplacer · clic droit ou deux doigts : tourner · molette ou + − : zoom · flèches : déplacer · R, Maj+R : tourner · P : projection · M, Maj+M : carte",
+    "help": "Glisser : déplacer · clic droit ou deux doigts : tourner · molette ou + − : zoom · flèches : déplacer · R, Maj+R : tourner · P : projection · M, Maj+M : carte",
     "map": "Carte",
     "maps": {
       "42": {
@@ -93,8 +93,8 @@
         "shape": "un pic en gradins d’un côté et sa fosse en miroir de l’autre"
       }
     },
-    "mapLoaded": "{name} : carte chargée, {width} points sur {height}",
-    "loadError": "Impossible de charger {name}. La carte actuelle reste affichée ; choisissez-la à nouveau pour réessayer.",
+    "mapLoaded": "{name} : carte chargée, {width} points sur {height}",
+    "loadError": "Impossible de charger {name}. La carte actuelle reste affichée ; choisissez-la à nouveau pour réessayer.",
     "zScale": "Échelle de hauteur (z)",
     "projection": "Projection",
     "projections": {
@@ -136,16 +136,16 @@
   "sourceHint": "Le lien Code source en haut de cette fenêtre montre le projet.",
   "game": {
     "title": "Mode Jeu",
-    "description": "Le portfolio en mission à la première personne, construit sur cub3D : six salles, une par section du profil, des menaces à neutraliser entre elles et des terminaux qui ouvrent les démos.",
-    "canvasLabel": "Vue à la première personne du centre de commande : six salles sombres, une par section du portfolio, reliées par des portes blindées",
+    "description": "Le portfolio en mission à la première personne, construit sur cub3D : six salles, une par section du profil, des menaces à neutraliser entre elles et des terminaux qui ouvrent les démos.",
+    "canvasLabel": "Vue à la première personne du centre de commande : six salles sombres, une par section du portfolio, reliées par des portes blindées",
     "exit": "Quitter le Mode Jeu",
     "desktopOnly": "Le Mode Jeu FPS est optimisé pour ordinateur. Sur mobile, utilisez la vue défilante standard.",
     "back": "Retour au portfolio",
     "playAnyway": "Jouer quand même",
-    "briefing": "Un centre de commande DevOps en six salles : À propos, Compétences, Projets, Expérience, Formation et Contact. Lisez le terminal de chaque salle ; neutralisez les menaces en chemin.",
-    "objective": "Votre mission : six salles, une section de mon profil dans chacune : À propos, Compétences, Projets, Expérience, Formation et Contact. Approchez-vous du terminal mural de chaque salle et appuyez sur E pour le lire. Le chemin lumineux au sol mène à la suivante.",
+    "briefing": "Un centre de commande DevOps en six salles : À propos, Compétences, Projets, Expérience, Formation et Contact. Lisez le terminal de chaque salle ; neutralisez les menaces en chemin.",
+    "objective": "Votre mission : six salles, une section de mon profil dans chacune : À propos, Compétences, Projets, Expérience, Formation et Contact. Approchez-vous du terminal mural de chaque salle et appuyez sur E pour le lire. Le chemin lumineux au sol mène à la suivante.",
     "prompt": "Appuyez sur E",
-    "aimPanel": "Terminal {name} : appuyez sur E pour ouvrir",
+    "aimPanel": "Terminal {name} : appuyez sur E pour ouvrir",
     "dossier": "Dossier · section {number} sur {total}",
     "liveDemo": "Démo en direct",
     "sections": {
@@ -158,14 +158,14 @@
     },
     "mission": {
       "label": "Mission",
-      "progress": "Mission : {count} / {total} sections",
+      "progress": "Mission : {count} / {total} sections",
       "next": "suivante",
       "nextSr": "section suivante",
       "discovered": "découverte",
       "notYet": "pas encore trouvée",
-      "found": "Section découverte : {name}, {count} sur {total}.",
+      "found": "Section découverte : {name}, {count} sur {total}.",
       "title": "Mission accomplie",
-      "body": "Vous avez trouvé les six sections : qui je suis, ce que je sais faire, ce que j’ai construit, où j’ai travaillé, où j’ai appris et comment me joindre. Merci d’avoir joué.",
+      "body": "Vous avez trouvé les six sections : qui je suis, ce que je sais faire, ce que j’ai construit, où j’ai travaillé, où j’ai appris et comment me joindre. Merci d’avoir joué.",
       "time": "Temps",
       "threats": "Menaces neutralisées",
       "contact": "Me contacter",
@@ -181,22 +181,22 @@
       "linkedin": "LinkedIn"
     },
     "keys": [
-      "Z Q S D (W A S D en QWERTY) : se déplacer · ← → : tourner",
-      "Souris : regarder autour (cliquez sur la vue pour la capturer)",
-      "Clic ou F : tirer · 1 2 3 ou A (Q en QWERTY) : changer d’arme",
-      "E : interagir avec les portes, les murs, les terminaux et l’équipe",
-      "Espace : ouvrir la porte devant vous · M : son activé ou coupé",
-      "Échap : pause",
-      "Fuite mémoire : vous ralentit · Zero-day : visible seulement dans le faisceau de votre lampe"
+      "Z Q S D (W A S D en QWERTY) : se déplacer · ← → : tourner",
+      "Souris : regarder autour (cliquez sur la vue pour la capturer)",
+      "Clic ou F : tirer · 1 2 3 ou A (Q en QWERTY) : changer d’arme",
+      "E : interagir avec les portes, les murs, les terminaux et l’équipe",
+      "Espace : ouvrir la porte devant vous · M : son activé ou coupé",
+      "Échap : pause",
+      "Fuite mémoire : vous ralentit · Zero-day : visible seulement dans le faisceau de votre lampe"
     ],
     "status": {
-      "system": "Système : en ligne",
-      "room": "Salle : {name}",
+      "system": "Système : en ligne",
+      "room": "Salle : {name}",
       "threats": "Menaces {count}/{total}",
       "sections": "Sections {count}/{total}",
       "walls": "Murs lus {count}/{total}"
     },
-    "allRead": "Objectif atteint : tous les murs sont lus.",
+    "allRead": "Objectif atteint : tous les murs sont lus.",
     "sound": "Son",
     "on": "activé",
     "off": "coupé",
@@ -213,58 +213,58 @@
     },
     "roomEntered": "Salle {name}.",
     "panels": {
-      "cub3d": "Terminal : cub3D",
-      "fdf": "Terminal : FdF",
+      "cub3d": "Terminal : cub3D",
+      "fdf": "Terminal : FdF",
       "contact": "Communications sécurisées",
       "cub3dBody": "Lance la démo cub3D.",
       "fdfBody": "Lance la démo FdF.",
-      "contactBody": "Ouvre un canal : le formulaire de contact."
+      "contactBody": "Ouvre un canal : le formulaire de contact."
     },
     "weapons": ["Kubernetes Kar98k", "Terraform Tactical", "The DevOps Defender"],
-    "weapon": "Arme : {name}",
+    "weapon": "Arme : {name}",
     "enemies": {
       "ddos": "Bot DDoS",
       "sql": "Injection SQL",
       "memleak": "Fuite mémoire",
       "zeroday": "Zero-day"
     },
-    "aimEnemy": "{name} : cliquez ou appuyez sur F pour tirer",
+    "aimEnemy": "{name} : cliquez ou appuyez sur F pour tirer",
     "facts": {
       "helm": {
-        "title": "Menace neutralisée !",
-        "body": "Le saviez-vous : j’utilise des charts Helm pour packager et déployer des applications Kubernetes complexes."
+        "title": "Menace neutralisée !",
+        "body": "Le saviez-vous : j’utilise des charts Helm pour packager et déployer des applications Kubernetes complexes."
       },
       "tenants": {
-        "title": "Injection bloquée !",
-        "body": "Le saviez-vous : mes backends Django utilisent django-tenants pour isoler chaque client dans son propre schéma, en toute sécurité."
+        "title": "Injection bloquée !",
+        "body": "Le saviez-vous : mes backends Django utilisent django-tenants pour isoler chaque client dans son propre schéma, en toute sécurité."
       },
       "argocd": {
-        "title": "DDoS atténué !",
-        "body": "Le saviez-vous : je pratique le GitOps avec Argo CD pour une gestion déclarative et auditable de l’état du cluster."
+        "title": "DDoS atténué !",
+        "body": "Le saviez-vous : je pratique le GitOps avec Argo CD pour une gestion déclarative et auditable de l’état du cluster."
       },
       "ansible": {
-        "title": "Faille corrigée !",
-        "body": "Le saviez-vous : j’écris des playbooks Ansible modulaires pour automatiser un durcissement des serveurs sûr et reproductible."
+        "title": "Faille corrigée !",
+        "body": "Le saviez-vous : j’écris des playbooks Ansible modulaires pour automatiser un durcissement des serveurs sûr et reproductible."
       },
       "observability": {
-        "title": "Intrusion évitée !",
-        "body": "Le saviez-vous : ma stack d’observabilité (Grafana, Prometheus, Loki) détecte les anomalies de l’infrastructure en temps réel."
+        "title": "Intrusion évitée !",
+        "body": "Le saviez-vous : ma stack d’observabilité (Grafana, Prometheus, Loki) détecte les anomalies de l’infrastructure en temps réel."
       },
       "terraform": {
-        "title": "Attaque repoussée !",
-        "body": "Le saviez-vous : j’utilise Terraform pour provisionner l’infrastructure AWS avec des politiques IAM strictes."
+        "title": "Attaque repoussée !",
+        "body": "Le saviez-vous : j’utilise Terraform pour provisionner l’infrastructure AWS avec des politiques IAM strictes."
       },
       "falco": {
-        "title": "Virus mis en quarantaine !",
-        "body": "Le saviez-vous : je déploie Falco sur K3s pour surveiller la sécurité à l’exécution et détecter les menaces au niveau des appels système."
+        "title": "Virus mis en quarantaine !",
+        "body": "Le saviez-vous : je déploie Falco sur K3s pour surveiller la sécurité à l’exécution et détecter les menaces au niveau des appels système."
       },
       "traefik": {
-        "title": "Menace neutralisée !",
-        "body": "Le saviez-vous : j’atténue les DDoS avec la limitation de débit de Traefik et Fail2Ban."
+        "title": "Menace neutralisée !",
+        "body": "Le saviez-vous : j’atténue les DDoS avec la limitation de débit de Traefik et Fail2Ban."
       },
       "pgbouncer": {
-        "title": "Injection bloquée !",
-        "body": "Le saviez-vous : j’utilise des requêtes paramétrées et PgBouncer pour un pool de connexions sécurisé."
+        "title": "Injection bloquée !",
+        "body": "Le saviez-vous : j’utilise des requêtes paramétrées et PgBouncer pour un pool de connexions sécurisé."
       }
     },
     "accessGranted": "Accès autorisé",
@@ -279,40 +279,40 @@
       "play": "Jouer",
       "info": "Infos / Commandes",
       "exit": "Quitter",
-      "skip": "Passer le jeu : portfolio en texte",
+      "skip": "Passer le jeu : portfolio en texte",
       "back": "Retour"
     },
     "storyTitle": "Briefing de mission",
-    "story": "Année : 2026. Rôle : Lead DevOps Engineer. Mission : parcourir l’infrastructure, neutraliser les menaces DDoS et d’injection, et sécuriser les systèmes critiques. Utilisez votre arsenal pour explorer les installations.",
+    "story": "Année : 2026. Rôle : Lead DevOps Engineer. Mission : parcourir l’infrastructure, neutraliser les menaces DDoS et d’injection, et sécuriser les systèmes critiques. Utilisez votre arsenal pour explorer les installations.",
     "settings": "Réglages",
     "contrast": "Contraste élevé",
-    "contrastOn": "Contraste élevé activé : couleurs franches, sans brouillard ni effets.",
+    "contrastOn": "Contraste élevé activé : couleurs franches, sans brouillard ni effets.",
     "contrastOff": "Contraste élevé désactivé.",
     "volume": "Volume",
     "energy": "Énergie",
     "integrity": "Intégrité",
-    "recharging": "Recharge : attendez que la barre d’énergie se remplisse.",
-    "integrityLow": "Intégrité faible : éloignez-vous des menaces.",
+    "recharging": "Recharge : attendez que la barre d’énergie se remplisse.",
+    "integrityLow": "Intégrité faible : éloignez-vous des menaces.",
     "hologram": "CENTRE DE COMMANDE",
     "crewTitle": "L’équipe",
     "npcs": {
       "sysadmin": {
         "name": "SysAdmin senior",
-        "line": "Salut ! Tu savais que j’utilise Argo CD pour tous mes pipelines GitOps ? L’état du cluster reste parfaitement synchronisé.",
-        "hint": "Lis le terminal À propos sur le mur nord, puis file à l’est par la porte blindée : le hall des compétences est la prochaine étape."
+        "line": "Salut ! Tu savais que j’utilise Argo CD pour tous mes pipelines GitOps ? L’état du cluster reste parfaitement synchronisé.",
+        "hint": "Lis le terminal À propos sur le mur nord, puis file à l’est par la porte blindée : le hall des compétences est la prochaine étape."
       },
       "architect": {
         "name": "Architecte cloud",
-        "line": "Psst : jette un œil à Cloud-1. Terraform provisionne l’infrastructure AWS, puis Ansible configure l’hôte.",
-        "hint": "Fini avec les projets ? La galerie de l’expérience est au nord, par la porte du mur nord de cette salle."
+        "line": "Psst : jette un œil à Cloud-1. Terraform provisionne l’infrastructure AWS, puis Ansible configure l’hôte.",
+        "hint": "Fini avec les projets ? La galerie de l’expérience est au nord, par la porte du mur nord de cette salle."
       },
       "network": {
         "name": "Spécialiste réseau",
         "line": "Dans BADASS, des overlays VXLAN transportent le trafic et BGP EVPN gère le plan de contrôle, routé avec FRRouting.",
-        "hint": "Plus qu’une salle, par la porte ouest : Contact, où tu peux joindre Youssef."
+        "hint": "Plus qu’une salle, par la porte ouest : Contact, où tu peux joindre Youssef."
       }
     },
-    "aimNpc": "{name} : appuyez sur E pour parler",
+    "aimNpc": "{name} : appuyez sur E pour parler",
     "dialogueClose": "E ou Échap pour fermer",
     "doorTo": {
       "about": "salle À propos",
@@ -322,8 +322,8 @@
       "education": "salle de la formation",
       "contact": "salle du contact"
     },
-    "doorLabel": "Entrer : {place}",
-    "doorNear": "Porte : {place}. Appuyez sur E pour ouvrir.",
+    "doorLabel": "Entrer : {place}",
+    "doorNear": "Porte : {place}. Appuyez sur E pour ouvrir.",
     "radar": {
       "you": "Vous",
       "threats": "Menaces",
@@ -333,9 +333,9 @@
       "leak": "Fuite mémoire"
     },
     "weaponRoles": [
-      "Fusil : un tir, longue portée",
-      "Pistolet : tir rapide, courte portée",
-      "Blaster : touche toutes les menaces dans son cône"
+      "Fusil : un tir, longue portée",
+      "Pistolet : tir rapide, courte portée",
+      "Blaster : touche toutes les menaces dans son cône"
     ],
     "pause": {
       "title": "Pause",
@@ -346,9 +346,9 @@
     "pauseButton": "Pause",
     "failure": {
       "title": "Défaillance système",
-      "body": "L’intégrité est tombée à zéro : les menaces sont passées. Redémarrez pour réapparaître dans la salle À propos avec toute votre intégrité ; votre progression est conservée.",
+      "body": "L’intégrité est tombée à zéro : les menaces sont passées. Redémarrez pour réapparaître dans la salle À propos avec toute votre intégrité ; votre progression est conservée.",
       "reboot": "Redémarrer",
-      "rebooted": "Système redémarré : retour dans la salle À propos, intégrité restaurée."
+      "rebooted": "Système redémarré : retour dans la salle À propos, intégrité restaurée."
     },
     "graphics": {
       "label": "Graphismes",
@@ -357,7 +357,7 @@
       "high": "Élevé"
     },
     "flashing": "Réduire les flashs",
-    "slowed": "Ralenti : fuite mémoire",
+    "slowed": "Ralenti : fuite mémoire",
     "slowedSay": "Une fuite mémoire vous ralentit. Éloignez-vous ou neutralisez-la."
   }
 }

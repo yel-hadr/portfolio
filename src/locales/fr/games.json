@@ -3,7 +3,7 @@
     "title": "Jouer à un jeu",
     "description": "Deux petits jeux sur l’art de garder des serveurs en ligne. Les meilleurs scores restent dans ce navigateur.",
     "close": "Fermer les jeux",
-    "best": "Meilleur score : {score}",
+    "best": "Meilleur score : {score}",
     "noBest": "Pas encore joué",
     "snake": {
       "name": "Packet Snake",

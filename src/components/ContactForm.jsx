@@ -31,6 +31,8 @@ const send = async (form) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
+      // A hung endpoint must not leave the form stuck on Sending: abort, and say it failed
+      signal: AbortSignal.timeout(15000),
     });
     if (response.ok) return { type: 'success', key: 'contact.sent' };
     console.error(`Contact endpoint answered ${response.status}`);

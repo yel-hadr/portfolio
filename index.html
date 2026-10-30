@@ -38,6 +38,62 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Without JavaScript the app cannot render: the essentials, in plain HTML, with the site's
+         tokens (its stylesheet still loads; the dark theme is the default) -->
+    <noscript>
+      <main
+        style="
+          max-width: 40rem;
+          margin: 0 auto;
+          padding: 4rem 1.25rem;
+          font-family: Poppins, system-ui, sans-serif;
+          line-height: 1.6;
+          color: rgb(var(--c-foreground));
+        "
+      >
+        <h1 style="margin: 0; font-size: 2.25rem; font-weight: 900; line-height: 1.15">
+          Youssef El Hadraoui
+        </h1>
+        <p style="margin: 0.5rem 0 0; font-size: 1.125rem; color: rgb(var(--c-primary-400))">
+          Software Engineer | Cloud Infrastructure &amp; DevOps
+        </p>
+        <p style="margin: 1.5rem 0 0; color: rgb(var(--c-foreground-muted))">
+          This site needs JavaScript for its interactive parts. Everything essential is here.
+          <span lang="fr"
+            >(Ce site utilise JavaScript pour ses parties interactives&nbsp;; l’essentiel est
+            ici.)</span
+          >
+        </p>
+        <ul style="margin: 1.5rem 0 0; padding-left: 1.25rem">
+          <li>
+            <a href="/Youssef_Elhadraoui_Resume.pdf" style="color: rgb(var(--c-primary-400))"
+              >Resume (PDF)</a
+            >
+          </li>
+          <li>
+            <a href="mailto:youssefelhadraoui99@gmail.com" style="color: rgb(var(--c-primary-400))"
+              >youssefelhadraoui99@gmail.com</a
+            >
+          </li>
+          <li>
+            <a href="https://github.com/yel-hadr" style="color: rgb(var(--c-primary-400))"
+              >GitHub: yel-hadr</a
+            >
+          </li>
+          <li>
+            <a
+              href="https://www.linkedin.com/in/youssef-el-hadraoui"
+              style="color: rgb(var(--c-primary-400))"
+              >LinkedIn</a
+            >
+          </li>
+          <li>
+            <a href="/blog/" style="color: rgb(var(--c-primary-400))">Blog</a>
+            (<a href="/fr/blog/" style="color: rgb(var(--c-primary-400))" lang="fr">français</a>)
+          </li>
+        </ul>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
