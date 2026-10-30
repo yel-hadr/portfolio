@@ -12,28 +12,32 @@ What it does (`lib/contact.js`):
 - sends the message to you as plain text, with the visitor's address as the reply-to;
 - drops messages that fill the form's hidden `website` field (bots), answering as if it worked.
 
-## Deploy (once)
+## Deploy
 
-1. In Resend, create an API key (**API Keys**, sending access). Never paste it into the site or
-   commit it.
-2. In Vercel, **Add New → Project**, import `yel-hadr/portfolio`, and set **Root Directory** to
-   `contact-api`. No framework, no build command.
-3. In the project's **Settings → Environment Variables** (Production), add:
+From GitHub Actions (the `deploy-contact-api` job in `.github/workflows/deploy.yml`), with three
+repository **secrets** (Settings → Secrets and variables → Actions):
 
-   | Name | Value |
-   | --- | --- |
-   | `RESEND_API_KEY` | the key from step 1 (mark it Sensitive) |
-   | `CONTACT_TO` | where messages go. With Resend's test sender this must be the address your Resend account uses |
-   | `CONTACT_FROM` | optional. Defaults to `Portfolio <onboarding@resend.dev>`; set it to an address on a domain you verified in Resend to send from your own domain |
-   | `ALLOWED_ORIGINS` | optional. Defaults to `https://yel-hadr.github.io`; add `http://localhost:5173` (comma-separated) to test from the dev server |
+| Secret | Value |
+| --- | --- |
+| `RESEND_API_KEY` | a Resend API key (sending access). Never paste it into the site or commit it |
+| `CONTACT_TO` | where messages go. With Resend's test sender this must be the address your Resend account uses |
+| `VERCEL_TOKEN` | a Vercel access token (vercel.com → Account Settings → Tokens) |
 
-4. Deploy. The endpoint is `https://<your-project>.vercel.app/api/contact`.
-5. In GitHub, **Settings → Secrets and variables → Actions → Variables**, add
-   `VITE_CONTACT_ENDPOINT` with that URL. The next deploy of the site uses it. For local
-   development, put the same line in the repo's `.env`.
+The job runs on every push to `main`, and on a manual run (Actions → CI/CD Pipeline → Run
+workflow, on any branch). It creates the Vercel project `yel-hadr-contact` the first time, deploys
+this folder to production with the two secrets as the function's environment, checks that the
+endpoint answers the site's preflight, and prints its URL in the run's summary.
 
-From the command line instead: `npx vercel login`, then in this folder `npx vercel link`,
-`npx vercel env add RESEND_API_KEY production` (and the others), and `npx vercel --prod`.
+Then set the repository **variable** `VITE_CONTACT_ENDPOINT` to that URL (the job warns while it
+differs). The next deploy of the site uses it. For local development, put the same line in the
+repo's `.env`, and allow the dev server's origin (below).
+
+Optional settings, in the Vercel project (Settings → Environment Variables):
+
+- `CONTACT_FROM`: defaults to `Portfolio <onboarding@resend.dev>`; set it to an address on a
+  domain you verified in Resend to send from your own domain (and to any recipient);
+- `ALLOWED_ORIGINS`: defaults to `https://yel-hadr.github.io`; add `http://localhost:5173`
+  (comma-separated) to test from the dev server.
 
 ## Test
 

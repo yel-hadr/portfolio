@@ -227,3 +227,84 @@ jobs:
           # Replaces the branch contents with dist/ and writes .nojekyll (enable_jekyll
           # defaults to false), like `npx gh-pages -d dist --nojekyll`.
           full_commit_message: Deploy yel-hadr/portfolio@${{ github.sha }}
+
+  # The contact form's endpoint (contact-api/) on Vercel, deployed from here with GitHub secrets:
+  # VERCEL_TOKEN (a Vercel access token), RESEND_API_KEY and CONTACT_TO. Runs on pushes to main and
+  # on a manual run (so a branch's endpoint can go live before it merges). Without VERCEL_TOKEN it
+  # only leaves a notice. The site reads the endpoint's URL from the VITE_CONTACT_ENDPOINT variable;
+  # this job prints that URL and warns while the variable differs.
+  deploy-contact-api:
+    name: deploy-contact-api
+    needs: lint-and-test
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      PROJECT: yel-hadr-contact
+    steps:
+      - name: Without a Vercel token
+        if: env.VERCEL_TOKEN == ''
+        run: echo "::notice::VERCEL_TOKEN is not set, so the contact endpoint was not deployed"
+
+      - uses: actions/checkout@v4
+        if: env.VERCEL_TOKEN != ''
+
+      - uses: actions/setup-node@v4
+        if: env.VERCEL_TOKEN != ''
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # Created once, by name; later runs find it
+      - name: Vercel project
+        if: env.VERCEL_TOKEN != ''
+        run: |
+          api() { curl -sS -o /tmp/vercel.json -w '%{http_code}' -H "Authorization: Bearer $VERCEL_TOKEN" -H 'Content-Type: application/json' "$@"; }
+          code=$(api "https://api.vercel.com/v9/projects/$PROJECT")
+          if [ "$code" = 404 ]; then
+            code=$(api -X POST https://api.vercel.com/v11/projects -d "{\"name\":\"$PROJECT\"}")
+            echo "Created the Vercel project $PROJECT ($code)"
+          fi
+          case "$code" in
+            200|201) ;;
+            *) echo "::error::Vercel answered $code: $(jq -r '.error.message // "no message"' /tmp/vercel.json)"; exit 1 ;;
+          esac
+
+      # The secrets reach the function as runtime environment variables; GitHub masks them in logs
+      - name: Deploy
+        if: env.VERCEL_TOKEN != ''
+        working-directory: contact-api
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CONTACT_TO: ${{ secrets.CONTACT_TO }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ] || [ -z "$CONTACT_TO" ]; then
+            echo "::error::Set the RESEND_API_KEY and CONTACT_TO secrets"; exit 1
+          fi
+          npx --yes vercel@64.3.1 deploy --prod --yes --token "$VERCEL_TOKEN" --project "$PROJECT" \
+            --env RESEND_API_KEY="$RESEND_API_KEY" --env CONTACT_TO="$CONTACT_TO" > /tmp/deployment-url.txt
+          echo "Deployed $(cat /tmp/deployment-url.txt)"
+
+      # The production domain (public; deployment URLs sit behind Vercel's protection), checked with
+      # the preflight the site's browsers send
+      - name: Check the endpoint
+        if: env.VERCEL_TOKEN != ''
+        env:
+          CONFIGURED: ${{ vars.VITE_CONTACT_ENDPOINT }}
+        run: |
+          domain=$(curl -sSf -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v9/projects/$PROJECT/domains?production=true" \
+            | jq -r '([.domains[].name | select(endswith(".vercel.app"))] + [.domains[0].name])[0]')
+          url="https://$domain/api/contact"
+          for i in 1 2 3 4 5 6; do
+            status=$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS \
+              -H 'Origin: https://yel-hadr.github.io' -H 'Access-Control-Request-Method: POST' "$url")
+            [ "$status" = 204 ] && break
+            sleep 5
+          done
+          [ "$status" = 204 ] || { echo "::error::$url answered $status to the site's preflight"; exit 1; }
+          echo "### Contact endpoint" >> "$GITHUB_STEP_SUMMARY"
+          echo "Live at \`$url\` (preflight from the site: $status)." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$CONFIGURED" != "$url" ]; then
+            echo "::warning::Set the VITE_CONTACT_ENDPOINT repository variable to $url, then redeploy the site"
+          fi
