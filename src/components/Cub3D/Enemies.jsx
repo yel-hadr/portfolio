@@ -26,10 +26,11 @@ import {
   TorusGeometry,
 } from 'three';
 
+import { useLiveRef } from '../../hooks/useLiveRef';
 import { rgb } from '../../utils/themeColors';
 import { readGameTheme } from './gameTheme';
 import { frozen } from './freeze';
-import { ICON_Y, THREAT_TYPES, iconSpot } from './rooms';
+import { ENEMIES, ICON_Y, NPCS, THREAT_TYPES, iconSpot } from './rooms';
 import { toColor } from './toColor';
 
 // Game Mode's layer inside the Canvas: the threats (low-poly "glitch" entities drifting toward
@@ -130,6 +131,37 @@ const VOXELS = 30;
 const VOXEL = new BoxGeometry(0.055, 0.055, 0.055);
 const dummy = new Object3D();
 
+// One effect's particles, in the effect's color
+const makePoints = (colors, kind, particles) => {
+  const geometry = new BufferGeometry();
+  geometry.setAttribute(
+    'position',
+    new BufferAttribute(new Float32Array(particles.flatMap((p) => p.slice(0, 3))), 3)
+  );
+  const points = new Points(
+    geometry,
+    new PointsMaterial({
+      color: colors[kind],
+      size: FX_SIZE[kind],
+      transparent: true,
+      depthWrite: false,
+    })
+  );
+  // Its particles fly out from one place: no bounding sphere to cull by
+  points.frustumCulled = false;
+  return points;
+};
+const freePoints = (scene, points) => {
+  scene.remove(points);
+  points.geometry.dispose();
+  points.material.dispose();
+};
+const freeShatter = (scene, mesh) => {
+  scene.remove(mesh);
+  mesh.material.dispose();
+  mesh.dispose();
+};
+
 /**
  * The weapons' particle effects and a kill's shatter. `fxRef.current.spawn(kind, from, to)`
  * makes one effect (THREE.Points, freed after FX_LIFE); `fxRef.current.shatter(at, type)` bursts
@@ -150,39 +182,9 @@ const Effects = ({ reduced, fxRef, hitStop }) => {
     };
   }, []);
 
-  const make = (kind, particles) => {
-    const geometry = new BufferGeometry();
-    geometry.setAttribute(
-      'position',
-      new BufferAttribute(new Float32Array(particles.flatMap((p) => p.slice(0, 3))), 3)
-    );
-    const points = new Points(
-      geometry,
-      new PointsMaterial({
-        color: colors[kind],
-        size: FX_SIZE[kind],
-        transparent: true,
-        depthWrite: false,
-      })
-    );
-    // Its particles fly out from one place: no bounding sphere to cull by
-    points.frustumCulled = false;
-    return points;
-  };
-  const free = (points) => {
-    scene.remove(points);
-    points.geometry.dispose();
-    points.material.dispose();
-  };
-  const freeShatter = (mesh) => {
-    scene.remove(mesh);
-    mesh.material.dispose();
-    mesh.dispose();
-  };
-
   useEffect(() => {
     // The program every effect uses, compiled now on a hidden copy kept until unmount
-    const warm = make('radial', PARTICLES.radial([0, 0, 0], [0, -10, 0]));
+    const warm = makePoints(colors, 'radial', PARTICLES.radial([0, 0, 0], [0, -10, 0]));
     warm.visible = false;
     scene.add(warm);
     gl.compile(scene, camera);
@@ -191,7 +193,7 @@ const Effects = ({ reduced, fxRef, hitStop }) => {
         // Reduced motion: no flying particles
         if (reduced) return;
         const particles = PARTICLES[kind](from, to);
-        const points = make(kind, particles);
+        const points = makePoints(colors, kind, particles);
         scene.add(points);
         live.current.push({
           points,
@@ -225,15 +227,14 @@ const Effects = ({ reduced, fxRef, hitStop }) => {
     const bursts = shards.current;
     return () => {
       fxRef.current = null;
-      free(warm);
-      effects.forEach(({ points }) => free(points));
+      freePoints(scene, warm);
+      effects.forEach(({ points }) => freePoints(scene, points));
       effects.length = 0;
-      bursts.forEach(({ mesh }) => freeShatter(mesh));
+      bursts.forEach(({ mesh }) => freeShatter(scene, mesh));
       bursts.length = 0;
     };
     // The effects' colors are read once; the scene, renderer and camera are the Canvas's own
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fxRef, reduced, scene, gl, camera]);
+  }, [fxRef, reduced, scene, gl, camera, colors]);
 
   useFrame((state, delta) => {
     const dt = frozen(hitStop) ? 0 : Math.min(delta, 0.1);
@@ -244,7 +245,7 @@ const Effects = ({ reduced, fxRef, hitStop }) => {
       effects.forEach((fx) => {
         fx.age += dt;
         if (fx.age >= FX_LIFE) {
-          free(fx.points);
+          freePoints(scene, fx.points);
           return;
         }
         const pos = fx.points.geometry.attributes.position;
@@ -268,7 +269,7 @@ const Effects = ({ reduced, fxRef, hitStop }) => {
       bursts.forEach((b) => {
         b.age += dt;
         if (b.age >= SHATTER_LIFE) {
-          freeShatter(b.mesh);
+          freeShatter(scene, b.mesh);
           return;
         }
         const k = 1 - b.age / SHATTER_LIFE;
@@ -342,8 +343,8 @@ const Entities = ({
   noFlash,
   paused,
   flat,
-  pressure,
-  slow,
+  pressureRef,
+  slowRef,
   hitStop,
 }) => {
   const time = useRef(0);
@@ -355,7 +356,7 @@ const Entities = ({
     const colors = readGameTheme([
       'background',
       'foreground',
-      ...new Set([...Object.values(THREAT_COLORS), ...npcs.current.map((n) => n.color)]),
+      ...new Set([...Object.values(THREAT_COLORS), ...NPCS.map((n) => n.color)]),
     ]);
     const made = { types: {}, crew: {}, textures: [] };
     const label = (color, text) => {
@@ -402,7 +403,7 @@ const Entities = ({
         });
       }
     });
-    npcs.current.forEach(({ id, color }) => {
+    NPCS.forEach(({ id, color }) => {
       const base = toColor(colors[color]);
       made.crew[id] = {
         fill: new MeshBasicMaterial({
@@ -421,7 +422,7 @@ const Entities = ({
       };
     });
     // Every threat's trail in one set of points; faded by darkening, drawn additively
-    const count = enemies.current.length * TRAIL;
+    const count = ENEMIES.length * TRAIL;
     const geometry = new BufferGeometry();
     geometry.setAttribute('position', new BufferAttribute(new Float32Array(count * 3), 3));
     geometry.setAttribute('color', new BufferAttribute(new Float32Array(count * 3), 3));
@@ -437,7 +438,6 @@ const Entities = ({
     made.ages = new Float32Array(count).fill(TRAIL_LIFE);
     return made;
     // The crew and threats are fixed (rooms.js); labels change with the language
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [labels, flat]);
   useEffect(
     () => () => {
@@ -467,10 +467,15 @@ const Entities = ({
 
   // Where each threat's trail last dropped a point, and which slot is next
   const drops = useRef({});
-  const nearest = useMemo(() => [], []);
+  // Scratch: the threats close enough to light their surroundings, this frame
+  const nearestRef = useRef([]);
+  // The frame loop writes to the trail buffers: it reaches the resources here
+  const resRef = useLiveRef(res);
   useFrame((state, delta) => {
     // A kill's freeze frame holds everything (the beam's reveal still follows the view)
     const dt = frozen(hitStop) ? 0 : Math.min(delta, 0.1);
+    const r = resRef.current;
+    const nearest = nearestRef.current;
     const { x: px, z: pz } = state.camera.position;
     const yaw = state.camera.rotation.y;
     // Its own clock: R3F's restarts at 0 whenever the frame loop mode changes
@@ -486,7 +491,10 @@ const Entities = ({
       const d = Math.hypot(px - enemy.x, pz - enemy.z);
       // Line of sight, worked out once and only when something below needs it
       let sight;
-      const seen = () => (sight ??= inSight(enemy.x, enemy.z, px, pz));
+      const seen = () => {
+        if (sight === undefined) sight = inSight(enemy.x, enemy.z, px, pz);
+        return sight;
+      };
       if (!paused.current && !reduced && d < SIGHT && d > STOP && seen()) {
         const step = (kind.speed * dt) / d;
         const nx = enemy.x + (px - enemy.x) * step;
@@ -517,7 +525,7 @@ const Entities = ({
         if (enemy.lit < 0.01) enemy.lit = 0;
         if (enemy.lit > 0.5) enemy.seen = true;
         // Written when it changes, or to a set just made (high contrast toggled)
-        const set = res.types[enemy.type];
+        const set = r.types[enemy.type];
         if (set.lit !== enemy.lit) {
           set.lit = enemy.lit;
           ['core', 'shell', 'bit', 'label'].forEach((part) => {
@@ -547,34 +555,35 @@ const Entities = ({
       }
       // The trail: a point dropped every few centimeters moved (none behind a Zero-Day)
       if (!flat && !reduced && !kind.stealth) {
-        const drop = (drops.current[enemy.id] ??= { x: enemy.x, z: enemy.z, slot: 0 });
+        if (!drops.current[enemy.id]) drops.current[enemy.id] = { x: enemy.x, z: enemy.z, slot: 0 };
+        const drop = drops.current[enemy.id];
         if (Math.hypot(enemy.x - drop.x, enemy.z - drop.z) > 0.05) {
           const k = i * TRAIL + drop.slot;
-          res.trailGeometry.attributes.position.setXYZ(k, enemy.x, y, enemy.z);
-          res.ages[k] = 0;
+          r.trailGeometry.attributes.position.setXYZ(k, enemy.x, y, enemy.z);
+          r.ages[k] = 0;
           drop.slot = (drop.slot + 1) % TRAIL;
           drop.x = enemy.x;
           drop.z = enemy.z;
         }
       }
     });
-    slow.current = paused.current ? 1 : slowest;
-    pressure.current = paused.current ? 0 : close;
+    slowRef.current = paused.current ? 1 : slowest;
+    pressureRef.current = paused.current ? 0 : close;
 
     if (!flat) {
       // The trails fade
-      const colors = res.trailGeometry.attributes.color;
+      const colors = r.trailGeometry.attributes.color;
       enemies.current.forEach((enemy, i) => {
-        const { base } = res.types[enemy.type];
+        const { base } = r.types[enemy.type];
         for (let s = 0; s < TRAIL; s += 1) {
           const k = i * TRAIL + s;
-          res.ages[k] = enemy.alive ? Math.min(TRAIL_LIFE, res.ages[k] + dt) : TRAIL_LIFE;
-          const f = (1 - res.ages[k] / TRAIL_LIFE) * 0.9;
+          r.ages[k] = enemy.alive ? Math.min(TRAIL_LIFE, r.ages[k] + dt) : TRAIL_LIFE;
+          const f = (1 - r.ages[k] / TRAIL_LIFE) * 0.9;
           colors.setXYZ(k, base.r * f, base.g * f, base.b * f);
         }
       });
       colors.needsUpdate = true;
-      res.trailGeometry.attributes.position.needsUpdate = true;
+      r.trailGeometry.attributes.position.needsUpdate = true;
       // The nearest threats light their surroundings in their color
       nearest.sort((a, b) => a[0] - b[0]);
       lights.current.forEach((light, i) => {
@@ -586,7 +595,7 @@ const Entities = ({
         }
         const [, enemy] = pick;
         light.position.set(enemy.x, 0.5, enemy.z);
-        light.color.copy(res.types[enemy.type].base);
+        light.color.copy(r.types[enemy.type].base);
         light.intensity = reduced || noFlash ? 1.4 : 1.4 + Math.sin(t * 9 + i) * 0.3;
       });
     }
@@ -700,23 +709,26 @@ const TechIcons = ({ icons, reduced, hitStop }) => {
  * Cub3DWorld: a shot sets `recoil` and `shake` (each weapon its own amount). Then
  * `onTick(camera, dt)`: the aim, the radar, energy, integrity and automatic fire
  */
-const GameMotion = ({ crosshairRef, motion, reduced, noFlash, hitStop, onTick }) => {
+const GameMotion = ({ crosshairRef, motionRef, reduced, noFlash, hitStop, onTick }) => {
   // Seeded from the camera on the first frame, so the start (or a return) is not a jolt
   const last = useRef(null);
   useFrame((state, delta) => {
     const dt = frozen(hitStop) ? 0 : Math.min(delta, 0.1);
     const { camera } = state;
-    const m = motion.current;
-    const l = (last.current ??= {
-      x: camera.position.x,
-      z: camera.position.z,
-      yaw: camera.rotation.y,
-      phase: 0,
-      amp: 0,
-      sway: 0,
-      moving: '',
-      spread: -1,
-    });
+    const m = motionRef.current;
+    if (!last.current) {
+      last.current = {
+        x: camera.position.x,
+        z: camera.position.z,
+        yaw: camera.rotation.y,
+        phase: 0,
+        amp: 0,
+        sway: 0,
+        moving: '',
+        spread: -1,
+      };
+    }
+    const l = last.current;
     const walked = Math.hypot(camera.position.x - l.x, camera.position.z - l.z);
     // The shortest way round: mouse look keeps the yaw in [-PI, PI], keys do not
     const turned =
@@ -798,8 +810,8 @@ export const GameLayer = memo(function GameLayer({
         noFlash={noFlash}
         paused={paused}
         flat={flat}
-        pressure={pressure}
-        slow={slow}
+        pressureRef={pressure}
+        slowRef={slow}
         hitStop={hitStop}
       />
       <Effects reduced={reduced} fxRef={fxRef} hitStop={hitStop} />
@@ -810,7 +822,7 @@ export const GameLayer = memo(function GameLayer({
       )}
       <GameMotion
         crosshairRef={crosshairRef}
-        motion={motion}
+        motionRef={motion}
         reduced={reduced}
         noFlash={noFlash}
         hitStop={hitStop}

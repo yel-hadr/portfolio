@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { styles } from '../../styles';
 import ContactForm from '../ContactForm';
@@ -42,10 +42,12 @@ const GameText = ({ t, details, canPlay, returnTo, onRunDemo, onBack, onExit }) 
   const [contact, setContact] = useState(false);
   const contactButton = useRef(null);
 
+  const focusStart = useEffectEvent(() =>
+    (demoButtons.current[returnTo] ?? headingRef.current)?.focus()
+  );
+  // On mount
   useEffect(() => {
-    (demoButtons.current[returnTo] ?? headingRef.current)?.focus();
-    // On mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    focusStart();
   }, []);
 
   const closeContact = () => {

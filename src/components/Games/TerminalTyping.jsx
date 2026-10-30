@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useId, useRef, useState } from 'react';
 
 import { gameStorage, typingChallenge, typingCommands } from '../../constans';
 import { Prompt } from '../terminal/output';
@@ -12,6 +12,8 @@ import { saveBest } from './storage';
 const START_MS = typingChallenge.seconds * 1000;
 const BONUS_MS = typingChallenge.bonus * 1000;
 const LOW_SECONDS = [10, 5]; // announced once each
+// The clock, read only from event handlers and effects (the compiler can't tell onChange is one)
+const clock = () => Date.now();
 
 // Easy commands first, then a growing share of harder ones
 const poolFor = (score) => {
@@ -70,18 +72,20 @@ const TerminalTyping = ({ t, onEnd, inputRef }) => {
   const say = (cmd) => spoken(cmd, symbols);
   const started = deadline !== null;
 
-  useEffect(() => {
+  const announceStart = useEffectEvent(() => {
     inputRef.current?.focus({ preventScroll: true });
-    const timer = window.setTimeout(
+    return window.setTimeout(
       () =>
         setMessage(
           t('terminal.game.sr.start', { ...typingChallenge, cmd: spoken(target, symbols) })
         ),
       150
     );
+  });
+  // Once, on mount
+  useEffect(() => {
+    const timer = announceStart();
     return () => window.clearTimeout(timer);
-    // Once, on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Re-announces a message even when it is the same as the last one
@@ -148,19 +152,19 @@ const TerminalTyping = ({ t, onEnd, inputRef }) => {
     const value = e.target.value;
     // The clock only refreshes every 200 ms (less in a background tab): a command completed after
     // the deadline does not count, and the run ends here
-    if (deadline !== null && Date.now() >= deadline) {
+    if (deadline !== null && clock() >= deadline) {
       finish('timeUp');
       return;
     }
     if (deadline === null && value) {
-      setDeadline(Date.now() + START_MS);
-      setNow(Date.now());
+      setDeadline(clock() + START_MS);
+      setNow(clock());
     }
     if (value === target) {
       const next = nextCommand(score + 1, target);
       scoreRef.current = score + 1;
       setScore(score + 1);
-      setDeadline((d) => (d ?? Date.now() + START_MS) + BONUS_MS);
+      setDeadline((d) => (d ?? clock() + START_MS) + BONUS_MS);
       setBonuses((n) => n + 1);
       setTarget(next);
       setTyped('');

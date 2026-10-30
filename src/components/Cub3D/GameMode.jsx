@@ -64,14 +64,15 @@ const GameMode = ({ onClose }) => {
   const descId = useId();
   const gateId = useId();
   const [view, setView] = useState('game');
-  const saved = useRef(null);
+  // The game's snapshot while a demo or the text-only mode replaces the world
+  const [saved, setSaved] = useState(null);
   // A fresh run (the pause menu's Restart, or back to the main menu) remounts the world: `key`
   // counts the runs, `autostart` skips the main menu
   const [run, setRun] = useState({ key: 0, autostart: false });
   // Where a demo returns to: the game or the text-only mode
-  const from = useRef('game');
+  const [from, setFrom] = useState('game');
   // The last demo opened, so its button in the text-only mode takes focus back
-  const lastDemo = useRef(null);
+  const [lastDemo, setLastDemo] = useState(null);
   // Back from a demo: the world waits for the demo's WebGL context to be released
   const [returning, setReturning] = useState(false);
   useEffect(() => {
@@ -149,19 +150,19 @@ const GameMode = ({ onClose }) => {
   const openDemo = (id, snapshot) => {
     // A terminal's timer can end after Escape started the fade out
     if (leaveTimer.current) return;
-    if (snapshot) saved.current = snapshot;
-    from.current = view;
-    lastDemo.current = id;
+    if (snapshot) setSaved(snapshot);
+    setFrom(view);
+    setLastDemo(id);
     setView(id);
   };
   const toText = (snapshot) => {
     if (leaveTimer.current) return;
-    saved.current = snapshot;
-    lastDemo.current = null;
+    setSaved(snapshot);
+    setLastDemo(null);
     setView('text');
   };
   const restart = (autostart) => {
-    saved.current = null;
+    setSaved(null);
     setRun(({ key }) => ({ key: key + 1, autostart }));
     // The old world's WebGL context goes first, as after a demo
     setReturning(true);
@@ -177,10 +178,10 @@ const GameMode = ({ onClose }) => {
     // A chunk that fails to load drops back the same way
     const returnFromDemo = () => {
       setReturning(true);
-      setView(from.current);
+      setView(from);
       // Until the world takes focus, the dialog keeps it, so Escape still works (the text-only
       // mode focuses its demo button itself)
-      if (from.current === 'game') requestAnimationFrame(() => panelRef.current?.focus());
+      if (from === 'game') requestAnimationFrame(() => panelRef.current?.focus());
     };
     content = (
       <CanvasErrorBoundary
@@ -203,7 +204,7 @@ const GameMode = ({ onClose }) => {
         t={t}
         details={details}
         canPlay={playing && webgl}
-        returnTo={lastDemo.current}
+        returnTo={lastDemo}
         onRunDemo={openDemo}
         onBack={() => setView('game')}
         onExit={close}
@@ -275,7 +276,7 @@ const GameMode = ({ onClose }) => {
             game
             details={details}
             techIcons={TECH_ICONS}
-            initialState={saved.current}
+            initialState={saved}
             onOpenDemo={openDemo}
             onTextMode={toText}
             onExit={close}

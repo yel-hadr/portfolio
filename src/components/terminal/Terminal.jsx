@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { m } from 'framer-motion';
 
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
@@ -23,7 +31,7 @@ const QUICK_COMMANDS = ['help', 'whoami', 'projects', 'skills', 'resume', 'game'
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled])';
 
 // Kept for the whole visit, so ↑ still recalls earlier commands after the terminal reopens
-let savedHistory = [];
+const saved = { history: [] };
 let nextId = 0;
 const entry = (node) => ({ id: nextId++, node });
 
@@ -61,7 +69,7 @@ const Terminal = ({ onClose, initialCommand = null }) => {
 
   const [entries, setEntries] = useState(() => [entry(<Welcome t={t} />)]);
   const [value, setValue] = useState('');
-  const [history, setHistory] = useState(savedHistory);
+  const [history, setHistory] = useState(saved.history);
   // The terminal challenge replaces the prompt line while it runs
   const [playing, setPlaying] = useState(false);
   // Position while browsing history with ↑/↓ (null: editing a new line) and the line in progress
@@ -124,8 +132,8 @@ const Terminal = ({ onClose, initialCommand = null }) => {
     }
 
     const nextHistory = history[history.length - 1] === trimmed ? history : [...history, trimmed];
-    savedHistory = nextHistory.slice(-100);
-    setHistory(savedHistory);
+    const kept = nextHistory.slice(-100);
+    setHistory(kept);
 
     const [word, ...args] = trimmed.split(/\s+/);
     const rest = trimmed.slice(word.length).trim();
@@ -153,17 +161,22 @@ const Terminal = ({ onClose, initialCommand = null }) => {
       clear();
       return;
     }
-    print(echo, command.run({ args, rest }, context()));
+    print(echo, command.run({ args, rest }, context(kept)));
   };
 
-  // What every command gets as its second argument
-  const context = () => ({
+  // Kept for the next time the terminal opens
+  useEffect(() => {
+    saved.history = history;
+  }, [history]);
+
+  // What every command gets as its second argument (`kept`: the history with this command in it)
+  const context = (kept = history) => ({
     t,
     lang,
     setLang,
     theme,
     setTheme,
-    history: savedHistory,
+    history: kept,
     close: onClose,
     reduced,
     startGame: () => setPlaying(true),
@@ -172,13 +185,14 @@ const Terminal = ({ onClose, initialCommand = null }) => {
   // The opening command runs once (StrictMode runs effects twice in development), without an
   // echo or a history entry: the visitor did not type it
   const ranInitial = useRef(false);
+  const runInitial = useEffectEvent(() => {
+    const command = initialCommand && findCommand(initialCommand);
+    if (command) print(command.run({ args: [], rest: '' }, context()));
+  });
   useEffect(() => {
     if (ranInitial.current) return;
     ranInitial.current = true;
-    const command = initialCommand && findCommand(initialCommand);
-    if (command) print(command.run({ args: [], rest: '' }, context()));
-    // Only on open
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    runInitial();
   }, []);
 
   const endGame = useCallback(

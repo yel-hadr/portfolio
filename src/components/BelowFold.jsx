@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 
 import About from './About';
 import Blog from './Blog';
@@ -9,6 +9,17 @@ import Experience from './Experience';
 import Tech from './Tech';
 import Works from './Works';
 
+// The section the location's hash names, if any. A malformed escape (#%E0) must not throw: that
+// would unmount the page; it is kept raw
+const hashTarget = () => {
+  const raw = window.location.hash.slice(1);
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+};
+
 /**
  * The sections below the hero, one lazy chunk (App): the first paint waits only on the navbar and
  * the hero, and this chunk starts loading with that first render. A link to one of these sections
@@ -16,18 +27,14 @@ import Works from './Works';
  * @param onReady  called once the sections are in the page (App's 3D layer watches #tech)
  */
 const BelowFold = ({ onReady }) => {
-  useEffect(() => {
-    // A malformed escape in the hash (#%E0) must not throw here: that would unmount the page
-    let id = window.location.hash.slice(1);
-    try {
-      id = decodeURIComponent(id);
-    } catch {
-      // keep it raw
-    }
+  const followHash = useEffectEvent(() => {
+    const id = hashTarget();
     if (id && id !== 'main' && id !== 'top') document.getElementById(id)?.scrollIntoView();
     onReady?.();
-    // Once, when the sections mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  // Once, when the sections mount
+  useEffect(() => {
+    followHash();
   }, []);
 
   return (

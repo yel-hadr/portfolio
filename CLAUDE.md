@@ -15,6 +15,7 @@ npm run deploy    # predeploy runs lint + build, then gh-pages publishes dist/ t
 npx eslint src/components/Hero.jsx   # lint a single file
 npm run format    # prettier --write . (config: .prettierrc.json; ignores *.md, .claude, public)
 npm run format:check
+npm run compiler:report   # lists any component or hook the React Compiler skips, and why (exits 1 if one is)
 ```
 
 There is no test suite. Prettier style is semicolons, single quotes in JS and JSX, and 100-character lines.
@@ -142,13 +143,21 @@ Leave `--simplify false`: simplify removes a third of the triangles to save only
 - R3F props are allowed through `react/no-unknown-property`'s `ignore` list (`R3F_PROPS`). This only applies in `src/App.jsx` and `src/components/canvas/**`.
 - It runs with no warnings. Name wrapped sections (`const AboutSection = SectionWrapper(About, 'about')`) so React Fast Refresh keeps working.
 
-- Hooks: `eslint-plugin-react-hooks` 7 with only `rules-of-hooks` and `exhaustive-deps` (both know React 19's `useEffectEvent`). Its preset's React Compiler diagnostics are off: they flag what the compiler skips anyway.
+- Hooks: `eslint-plugin-react-hooks` 7 with only `rules-of-hooks` and `exhaustive-deps` (both know React 19's `useEffectEvent`). Its preset's React Compiler diagnostics are off; `npm run compiler:report` asks the compiler itself what it skips.
 
 ESLint 9 flat config ignores `.eslintignore`. Use the `ignores` key in the config instead.
 
 ## React 19 and the React Compiler
 
-- `babel-plugin-react-compiler` (target 19, in `vite.config.js`) memoizes every component and hook it can prove pure, so those need no hand-written `useMemo`/`useCallback` (App, the theme and i18n providers, `useModalDialog`, the diagrams have none). It skips components that read refs during render or mutate values the frame loop owns (Game Mode, the demos, the terminal, Packet Snake): those keep their manual memoization, and so does every `useMemo` that keeps a three.js object alive (a clone, geometry, materials), since a memo cache is not a lifetime guarantee.
+- `babel-plugin-react-compiler` (target 19, in `vite.config.js`) memoizes every component and hook it can prove pure, so those need no hand-written `useMemo`/`useCallback` (App, the theme and i18n providers, `useModalDialog`, the diagrams have none). It compiles all of them, Game Mode, the demos, the terminal and Packet Snake included; `npm run compiler:report` must keep saying "Skipped: none" (a skipped component falls back to plain React silently). The manual memoization that remains is kept on purpose: every `useMemo` that keeps a three.js object alive (a clone, geometry, materials), since a memo cache is not a lifetime guarantee, and the stable handlers drei's controls and the memoized `Scene`/`GameLayer` need. What makes the compiler skip a component, and the way around it here:
+  - An `eslint-disable` of a `react-hooks` rule anywhere in it: read the values an effect must not re-run for through `useEffectEvent` instead.
+  - Reading or writing a ref's `current` during render: set a latest-value ref in a layout effect (`useLiveRef`, `src/hooks/useLiveRef.js`, or a dependency-free `useLayoutEffect` for a handler), and keep what render shows in state (MISSION COMPLETE takes a snapshot of the time and shots as state; `GameMode`'s demo return point is state).
+  - Assigning to a value a hook returned (a `useMemo`'d three.js material, R3F's `camera` or `scene` from `useThree`, even useFrame's `state.camera`): the frame loop reaches those through a ref (`useLiveRef(materials)`, `useLiveRef(camera)`), effects through `useThree((s) => s.get)()`. Method calls (`position.set`) are allowed; property assignments are not.
+  - A ref passed as a prop and written to: name the prop `…Ref` (`motionRef`, `postFxRef`, `slowRef`), so the compiler knows it for a ref.
+  - A value used before its declaration in a hook's callback (a ref declared below the `useCallback` that reads it): declare it first.
+  - `??=`, `||=`, a dynamic `import()`, or a conditional expression inside `try`, in a component: plain assignments, and module-level helpers (`loadSfx`, `saveSetting`).
+  - `Date.now()`/`performance.now()` in a handler the compiler cannot tell from render code: a module-level clock (`timeNow`, `clock`).
+  - A manual `useCallback` it cannot preserve (reported as "Existing memoization could not be preserved"): move the work that blocks it out of the callback (`onLockChange` sets state; an effect on `locked` does the focus).
 - The compiler turns a callback's property reads into memo dependencies it evaluates during render: inside a callback, read a property of a value that can be `null` with `?.` (`running?.opener`), or the render throws.
 - `src/main.jsx` renders the root inside `startTransition`, so the first render yields to the browser instead of running as one long task.
 - The contact form (`ContactForm.jsx`) is a form action: `useActionState` runs the EmailJS send and holds its result, `useFormStatus` gives the submit button its pending label and `aria-disabled`; the fields stay controlled (a failed send keeps them, a sent one clears them), and a submit while one is pending is ignored.

@@ -55,6 +55,7 @@ import {
   roomAt,
 } from './rooms';
 import { toColor } from './toColor';
+import { useLiveRef } from '../../hooks/useLiveRef';
 
 // Game Mode's look: map.cub's grid as a dark "DevOps facility" in lockdown. Lit PBR materials
 // (paneled walls with orange and blue accent lines, metal grating, ceiling plates), neon strips
@@ -672,7 +673,7 @@ const Guide = memo(function Guide({ guideRef, W, res, flat, reduced }) {
  * @param isFloor     (x, z) => whether a cell is floor
  * @param doorCells   the door cells; `closedDoors` their state ({ [cell]: true while closed })
  * @param weapon      the weapon in hand; `motion` the shared recoil, bob and sway
- * @param postFx      a shared ref: { aberration } (0..1), pulsed by a shot or a hit
+ * @param postFxRef   a shared ref: { aberration } (0..1), pulsed by a shot or a hit
  * @param graphics    the tier: 'low', 'medium' or 'high'; `noFlash` is Reduce flashing (no
  *                    bloom, flicker, pulses or muzzle flash)
  */
@@ -689,7 +690,7 @@ const Facility = ({
   flat,
   weapon,
   motion,
-  postFx,
+  postFxRef,
   hologramLabel,
   panels,
   discovered,
@@ -699,6 +700,8 @@ const Facility = ({
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
   const invalidate = useThree((s) => s.invalidate);
+  // R3F's live state, for the effects that set the scene's fog and background
+  const get = useThree((s) => s.get);
 
   const walls = useRef(null);
   const strips = useRef(null);
@@ -901,8 +904,7 @@ const Facility = ({
       flashlight,
     };
     // The theme is read once (the page is inert while Game Mode is open)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flat, W, H]);
+  }, [flat, W, H, hologramLabel]);
 
   useEffect(
     () => () => {
@@ -932,15 +934,16 @@ const Facility = ({
 
   // Fog and the dark background (none in high contrast)
   useEffect(() => {
-    const before = { fog: scene.fog, background: scene.background };
-    scene.fog = flat ? null : res.fog;
-    scene.background = flat ? toColor(res.c.dark) : res.background;
+    const target = get().scene;
+    const before = { fog: target.fog, background: target.background };
+    target.fog = flat ? null : res.fog;
+    target.background = flat ? toColor(res.c.dark) : res.background;
     invalidate();
     return () => {
-      scene.fog = before.fog;
-      scene.background = before.background;
+      target.fog = before.fog;
+      target.background = before.background;
     };
-  }, [scene, res, flat, invalidate]);
+  }, [get, res, flat, invalidate]);
 
   // The camera joins the scene, so the flashlight and the gauntlet can ride on it
   useEffect(() => {
@@ -1077,9 +1080,13 @@ const Facility = ({
     [scene]
   );
 
+  // The frame loop writes to the resources (lasers, LEDs, lamps): it reaches them here
+  const resRef = useLiveRef(res);
+
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.1);
     clock.current += dt;
+    const r = resRef.current;
     const time = clock.current;
     let moving = false;
 
@@ -1118,7 +1125,7 @@ const Facility = ({
           mesh.setMatrixAt(i * 2 + h, dummy.matrix);
         });
         changed = true;
-        moving ||= open !== target;
+        moving = moving || open !== target;
       });
       if (changed) mesh.instanceMatrix.needsUpdate = true;
     }
@@ -1164,17 +1171,17 @@ const Facility = ({
           const on = noFlash || Math.sin(time * 15 + i * 7) + Math.sin(time * 3.1 + i) > -1.2;
           if (lampsOn.current[i] === on) return;
           lampsOn.current[i] = on;
-          lamps.setColorAt(i, on ? res.lampOn : res.lampOff);
+          lamps.setColorAt(i, on ? r.lampOn : r.lampOff);
           changed = true;
         });
         if (changed) lamps.instanceColor.needsUpdate = true;
       }
       if (roomLight.current) roomLight.current.intensity = 2.2 + Math.sin(time * 1.7) * 0.25;
       // The racks' LEDs blink: their glow map steps along
-      const glow = res.rack.userData.glow;
+      const glow = r.rack.userData.glow;
       if (glow) glow.offset.y = Math.floor(time * 4) * 0.13;
       // The vault's lasers pulse
-      res.laser.opacity = 0.65 + Math.sin(time * 6) * 0.2;
+      r.laser.opacity = 0.65 + Math.sin(time * 6) * 0.2;
       // The hologram turns
       if (holo.current) {
         holo.current.rotation.y = time * 0.6;
@@ -1191,13 +1198,13 @@ const Facility = ({
         lit.current = { room, light };
         const [x, z] = ROOM_LIGHTS.find(([, , id]) => id === room);
         light.position.set(x, 0.85, z);
-        light.color.copy(res.accent(room, 1));
+        light.color.copy(r.accent(room, 1));
       }
     }
 
     // Chromatic aberration: a pulse from a shot or a hit, eased back
     if (aberration.current) {
-      const fx = postFx.current;
+      const fx = postFxRef.current;
       fx.aberration = MathUtils.damp(fx.aberration, 0, 6, dt);
       const k = reduced || noFlash ? 0 : fx.aberration * 0.0035;
       aberration.current.offset.set(k, k * 0.6);
@@ -1320,7 +1327,7 @@ const Facility = ({
           )}
           <Viewmodel
             weapon={weapon}
-            motion={motion}
+            motionRef={motion}
             reduced={reduced}
             noFlash={noFlash}
             flat={flat}

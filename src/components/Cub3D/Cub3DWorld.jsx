@@ -4,6 +4,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useEffectEvent,
   useId,
   useLayoutEffect,
   useMemo,
@@ -54,10 +55,13 @@ import {
   WEAPON_FX,
   roomAt,
 } from './rooms';
+import { useLiveRef } from '../../hooks/useLiveRef';
 
 // Game Mode's look (lit materials, props, flashlight, post-processing): its own chunk, so the
 // cub3D demo never loads it
 const Facility = lazy(() => import('./Facility'));
+// The sound synthesizer, loaded only once sound is turned on
+const loadSfx = () => import('./sfx');
 
 // A web homage to cub3D: the project's own map.cub as a first-person maze. The original casts
 // one ray per screen column; here three.js draws the walls as boxes, and the minimap shows the
@@ -157,6 +161,9 @@ const readTuning = () => {
 };
 // Quarter steps of DPR: each change resizes the canvas and the post-processing buffers
 const quarter = (factor) => Math.round(factor * 4) / 4;
+// The clock for timers, shots and the freeze frame, read only from handlers, effects and the frame
+// loop (the compiler cannot tell every handler from render code)
+const timeNow = () => performance.now();
 // The first seconds of play compile shaders and size the shadow map: their hitches are not a
 // slow GPU, so the frame rate is only watched after this
 const WARMUP_MS = 2500;
@@ -180,6 +187,13 @@ const tierDpr = (graphics, quality) => {
   if (graphics === 'low') return LOW_DPR;
   if (graphics === 'high') return Math.min(Math.max(window.devicePixelRatio || 1, 1), 2);
   return gameDpr(quality);
+};
+const saveTuning = (tune) => {
+  try {
+    sessionStorage.setItem(QUALITY_KEY, JSON.stringify(tune));
+  } catch {
+    // Storage blocked: the tuning holds for this world only
+  }
 };
 const readSetting = (key) => {
   try {
@@ -411,6 +425,7 @@ const DoorLabel = memo(function DoorLabel({ label }) {
 const Scene = memo(function Scene({
   world,
   input,
+  lookedRef,
   solid,
   doorCells,
   closedDoors,
@@ -440,6 +455,9 @@ const Scene = memo(function Scene({
   const gl = useThree((s) => s.gl);
   const size = useThree((s) => s.size);
   const invalidate = useThree((s) => s.invalidate);
+  // R3F's live state: effects move the camera through it (the frame loop through its own state)
+  const get = useThree((s) => s.get);
+  const eyeRef = useLiveRef(camera);
   const walls = useRef(null);
   const doorMesh = useRef(null);
   // Each door's height, eased between 1 (closed) and 0 (sunk into the floor)
@@ -502,17 +520,22 @@ const Scene = memo(function Scene({
   }, [shell]);
 
   // The player starts where map.cub puts N, facing north (or where Game Mode left off)
-  useLayoutEffect(() => {
+  const placeAtSpawn = useEffectEvent(() => {
     const { x, z, yaw } = spawn ?? world.player;
-    camera.rotation.order = 'YXZ';
-    camera.position.set(x, EYE, z);
-    camera.rotation.set(0, yaw, 0);
-    onMove(camera);
+    const eye = get().camera;
+    eye.rotation.order = 'YXZ';
+    eye.position.set(x, EYE, z);
+    eye.rotation.set(0, yaw, 0);
+    onMove(eye);
     // The first frame may already have been drawn from the default camera
     invalidate();
-    // Once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  // Once
+  useLayoutEffect(() => {
+    placeAtSpawn();
   }, []);
+  // What is left to turn (Game Mode's mouse look, below)
+  const yawPending = useRef(0);
   // Game Mode's Reboot: back where the map puts N, facing north, with no turn left to make
   useEffect(() => {
     if (!respawnRef) return undefined;
@@ -532,11 +555,12 @@ const Scene = memo(function Scene({
   // three.js takes a vertical FOV: derive it from the original's 60° horizontal one
   useEffect(() => {
     const aspect = size.width / Math.max(size.height, 1);
-    camera.fov = (2 * Math.atan(Math.tan((FOV * Math.PI) / 360) / aspect) * 180) / Math.PI;
-    camera.near = 0.05;
-    camera.updateProjectionMatrix();
+    const eye = get().camera;
+    eye.fov = (2 * Math.atan(Math.tan((FOV * Math.PI) / 360) / aspect) * 180) / Math.PI;
+    eye.near = 0.05;
+    eye.updateProjectionMatrix();
     invalidate();
-  }, [camera, size, invalidate]);
+  }, [camera, get, size, invalidate]);
 
   const blocked = (x, z) => solid(Math.floor(x), Math.floor(z));
   // Game Mode's racks and crates are in the way too
@@ -556,18 +580,17 @@ const Scene = memo(function Scene({
   // it, a little inertia (the controls themselves only capture the mouse). Instant with reduced
   // motion. It is kept as what is left to turn, not as a target angle: the controls fold the
   // camera's angle back into ±PI on every mousemove, so a target past PI would turn the long way
-  const yawPending = useRef(0);
   useEffect(() => {
     if (!facility || !lockable) return undefined;
     const onMouse = (e) => {
       if (document.pointerLockElement !== gl.domElement) return;
       yawPending.current -= e.movementX * 0.002;
-      input.looked = true;
+      lookedRef.current = true;
       invalidate();
     };
     document.addEventListener('mousemove', onMouse);
     return () => document.removeEventListener('mousemove', onMouse);
-  }, [facility, lockable, gl, camera, input, invalidate]);
+  }, [facility, lockable, gl, lookedRef, invalidate]);
 
   // Walls hide the panels: a walk along the grid from the eye to each panel, far cheaper than
   // drei's occlude (raycasts against every wall instance, every frame)
@@ -633,7 +656,7 @@ const Scene = memo(function Scene({
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
       changed = true;
-      moving ||= next !== target;
+      moving = moving || next !== target;
     });
     if (changed) mesh.instanceMatrix.needsUpdate = true;
     if (moving) state.invalidate();
@@ -643,12 +666,13 @@ const Scene = memo(function Scene({
   // frame holds the player too
   useFrame((state, delta) => {
     const held = input.current;
+    const eye = eyeRef.current;
     if (frozen(hitStop)) {
       // On demand (reduced motion) the frames must keep coming for the walk to resume
       if (held.size || yawPending.current) state.invalidate();
       return;
     }
-    if (!held.size && !input.looked && !yawPending.current) {
+    if (!held.size && !lookedRef.current && !yawPending.current) {
       moving.current = false;
       return;
     }
@@ -659,7 +683,7 @@ const Scene = memo(function Scene({
       const left = yawPending.current;
       // The same easing as MathUtils.damp, applied to what is left to turn
       const step = reduced || Math.abs(left) < 1e-4 ? left : left * (1 - Math.exp(-20 * dt));
-      camera.rotation.y += step;
+      eye.rotation.y += step;
       yawPending.current = left - step;
       if (yawPending.current) state.invalidate();
     }
@@ -676,26 +700,26 @@ const Scene = memo(function Scene({
       else if (action === 'right') strafe = 1;
     });
     // With reduced motion, turning happens in steps on key press (onKeyDown), not smoothly
-    if (turn && !reduced) camera.rotation.y += turn * TURN_SPEED * dt;
+    if (turn && !reduced) eye.rotation.y += turn * TURN_SPEED * dt;
     if (forward || strafe) {
-      const yaw = camera.rotation.y;
+      const yaw = eye.rotation.y;
       // A Memory Leak close by slows the player down (`slow`, 1 when none is)
       const step = (reduced ? MOVE_SPEED / 2 : MOVE_SPEED) * (slow?.current ?? 1) * dt;
       const dx = (-Math.sin(yaw) * forward + Math.cos(yaw) * strafe) * step;
       const dz = (-Math.cos(yaw) * forward - Math.sin(yaw) * strafe) * step;
       // Each axis on its own, so the player slides along a wall instead of stopping dead
-      if (free(camera.position.x + dx, camera.position.z)) camera.position.x += dx;
-      if (free(camera.position.x, camera.position.z + dz)) camera.position.z += dz;
+      if (free(eye.position.x + dx, eye.position.z)) eye.position.x += dx;
+      if (free(eye.position.x, eye.position.z + dz)) eye.position.z += dz;
     }
-    input.looked = false;
-    onMove(camera);
+    lookedRef.current = false;
+    onMove(eye);
     if (held.size) state.invalidate();
   }, -2);
 
   // Stable handlers: drei re-subscribes the controls whenever they change
   const onLook = useCallback(() => {
-    input.looked = true;
-  }, [input]);
+    lookedRef.current = true;
+  }, [lookedRef]);
   const onLock = useCallback(() => onLockChange(true), [onLockChange]);
   const onUnlock = useCallback(() => onLockChange(false), [onLockChange]);
 
@@ -714,7 +738,7 @@ const Scene = memo(function Scene({
             flat={flat}
             weapon={weapon}
             motion={motion}
-            postFx={postFx}
+            postFxRef={postFx}
             hologramLabel={hologramLabel}
             panels={panels}
             discovered={discovered}
@@ -1024,8 +1048,7 @@ const Cub3DWorld = ({
   // Game Mode's main menu: 'menu', 'story' (Play) or 'info'
   const [screen, setScreen] = useState('menu');
   // For the frame loop's aim: nothing is announced while the briefing covers the view
-  const startedRef = useRef(started);
-  startedRef.current = started;
+  const startedRef = useLiveRef(started);
   const [locked, setLocked] = useState(false);
   const [message, setMessage] = useState('');
   const wrapperRef = useRef(null);
@@ -1035,11 +1058,12 @@ const Cub3DWorld = ({
   const radarLayer = useRef(null);
   const radarDue = useRef(0);
   // The radar shows from the sm breakpoint
-  const radarShown = useRef(true);
   const wideEnough = useMediaQuery('(min-width: 640px)');
-  radarShown.current = wideEnough;
+  const radarShownRef = useLiveRef(wideEnough);
   const lockRef = useRef(null);
   const input = useRef(new Set());
+  // Set by mouse or drag look, so the next frame turns even with no key held
+  const looked = useRef(false);
   // Door state: React state to draw the door meshes, mirrored in a ref for the movement loop
   const doorCells = world.doors;
   const [closedDoors, setClosedDoors] = useState(initialState?.doors ?? allClosed(doorCells));
@@ -1062,27 +1086,28 @@ const Cub3DWorld = ({
   );
   const [missionDone, setMissionDone] = useState(initialState?.missionDone ?? false);
   const missionDoneRef = useRef(missionDone);
-  const [complete, setComplete] = useState(false);
-  // How the mission ended: 'sections' (all six read) or 'threats' (every one neutralized)
-  const completedBy = useRef('sections');
+  // MISSION COMPLETE, open: how it ended ('sections', all six read, or 'threats', every one
+  // neutralized), the play time and the shots, as they were then; null when closed
+  const [complete, setComplete] = useState(null);
   // The last threat is down and MISSION COMPLETE opens in a moment: no pausing in between
   const missionPending = useRef(false);
   const startAt = useRef(null);
-  const missionTime = useRef(0);
   // A section opened for the first time: announced as discovered when its dossier closes
   const foundRef = useRef(null);
   // The lit path toward the next section (Facility draws it, the radar marks its end): the cells,
   // bumped `version` on each change, and the objective's cell
   const guideRef = useRef({ cells: [], version: 0, target: null });
   const guideFrom = useRef('');
-  const enemies = useRef(
+  const [startEnemies] = useState(() =>
     ENEMIES.map((enemy) => {
       const saved = initialState?.enemies.find(({ id }) => id === enemy.id);
       const [cx, cz] = enemy.cell;
       return { ...enemy, x: cx + 0.5, z: cz + 0.5, alive: true, node: null, ...saved };
     })
   );
-  const [kills, setKills] = useState(() => enemies.current.filter((e) => !e.alive).length);
+  // Moved by the frame loop, so kept in a ref
+  const enemies = useRef(startEnemies);
+  const [kills, setKills] = useState(() => startEnemies.filter((e) => !e.alive).length);
   // The crew: fixed (rooms.js); `paused` holds the threats while a dialog, the menu or a talk is up
   const npcs = useRef(NPCS.map((npc) => ({ ...npc, x: npc.cell[0] + 0.5, z: npc.cell[1] + 0.5 })));
   const paused = useRef(false);
@@ -1095,6 +1120,8 @@ const Cub3DWorld = ({
   // The trigger: held (automatic weapons keep firing) and when the gun that last fired is ready
   const firing = useRef({ held: false, ready: -Infinity });
   const fireRef = useRef(() => {});
+  // Integrity at zero (the frame loop calls it): the latest `fail`, set after each render
+  const failRef = useRef(() => {});
   const pointerType = useRef('mouse');
   const [room, setRoom] = useState(null);
   const roomRef = useRef(null);
@@ -1146,21 +1173,14 @@ const Cub3DWorld = ({
   // per-viewer settings, remembered when the browser lets us
   const prefersContrast = useMediaQuery('(prefers-contrast: more)');
   const [contrast, setContrast] = useState(() => {
-    try {
-      const saved = localStorage.getItem(CONTRAST_KEY);
-      return saved === null ? null : saved === '1';
-    } catch {
-      return null;
-    }
+    const saved = readSetting(CONTRAST_KEY);
+    return saved === null ? null : saved === '1';
   });
   const flat = contrast ?? prefersContrast;
   const [volume, setVolume] = useState(() => {
-    try {
-      const saved = Number(localStorage.getItem(VOLUME_KEY));
-      return localStorage.getItem(VOLUME_KEY) !== null && saved >= 0 && saved <= 1 ? saved : 0.7;
-    } catch {
-      return 0.7;
-    }
+    const saved = readSetting(VOLUME_KEY);
+    const value = Number(saved);
+    return saved !== null && value >= 0 && value <= 1 ? value : 0.7;
   });
   const volumeRef = useRef(volume);
   // The graphics tier and Reduce flashing (which follows reduced motion until it is set)
@@ -1173,28 +1193,24 @@ const Cub3DWorld = ({
     return saved === null ? null : saved === '1';
   });
   const noFlash = flashSetting ?? reduced;
-  const noFlashRef = useRef(noFlash);
-  noFlashRef.current = noFlash;
-  const [tuning] = useState(readTuning);
-  const [quality, setQuality] = useState(() => quarter(tuning.factor));
-  const [settled, setSettled] = useState(() => tuning.swings >= SWINGS);
-  const retune = useCallback(
-    (dir, factor) => {
-      // A step at the top (or the bottom) changes nothing and is no swing
-      if (factor === tuning.factor) return;
-      if (tuning.dir && dir !== tuning.dir) tuning.swings += 1;
-      tuning.dir = dir;
-      tuning.factor = factor;
-      try {
-        sessionStorage.setItem(QUALITY_KEY, JSON.stringify(tuning));
-      } catch {
-        // Storage blocked: the tuning holds for this world only
-      }
-      setQuality(quarter(factor));
-      if (tuning.swings >= SWINGS) setSettled(true);
-    },
-    [tuning]
-  );
+  const noFlashRef = useLiveRef(noFlash);
+  const [initialTuning] = useState(readTuning);
+  const tuning = useRef(initialTuning);
+  // The monitor's factor: a remounted monitor (after a pause) starts from the last one
+  const [factor, setFactor] = useState(initialTuning.factor);
+  const quality = quarter(factor);
+  const [settled, setSettled] = useState(() => initialTuning.swings >= SWINGS);
+  const retune = useCallback((dir, next) => {
+    const tune = tuning.current;
+    // A step at the top (or the bottom) changes nothing and is no swing
+    if (next === tune.factor) return;
+    if (tune.dir && dir !== tune.dir) tune.swings += 1;
+    tune.dir = dir;
+    tune.factor = next;
+    saveTuning(tune);
+    setFactor(next);
+    if (tune.swings >= SWINGS) setSettled(true);
+  }, []);
   const onIncline = useCallback(({ factor }) => retune(1, factor), [retune]);
   const onDecline = useCallback(({ factor }) => retune(-1, factor), [retune]);
   const stride = useRef(null);
@@ -1520,7 +1536,7 @@ const Cub3DWorld = ({
       // About 30 times a second (every frame it is asked for under reduced motion), and not at
       // all while it is hidden on a small window
       radarDue.current -= dt;
-      if (radarShown.current && (reduced || radarDue.current <= 0)) {
+      if (radarShownRef.current && (reduced || radarDue.current <= 0)) {
         radarDue.current = 1 / 30;
         drawRadar(camera, clock.current);
       }
@@ -1531,7 +1547,7 @@ const Cub3DWorld = ({
         if (WEAPON_FX[weaponState.current].auto) invalidateRef.current();
       }
       // Energy refills shortly after the last shot
-      const now = performance.now();
+      const now = timeNow();
       const en = energy.current;
       if (now - en.at > 350 && en.value < 100) {
         en.value = Math.min(100, en.value + 40 * dt);
@@ -1617,7 +1633,7 @@ const Cub3DWorld = ({
               }
         );
         // Once per door, again only after a while
-        const now = performance.now();
+        const now = timeNow();
         if (door !== null && (key !== doorSaid.current.key || now - doorSaid.current.at > 15000)) {
           doorSaid.current = { key, at: now };
           announce(t('demos.game.doorNear', { place: name }));
@@ -1643,7 +1659,7 @@ const Cub3DWorld = ({
       const text = aimText(t, enemies.current, aimed);
       aimTimer.current = window.setTimeout(() => setAimSaid(text), 300);
     },
-    [announce, solid, t, drawRadar, doorCells, reduced, W]
+    [announce, solid, t, drawRadar, doorCells, reduced, W, noFlashRef, radarShownRef, startedRef]
   );
 
   // The lit path from the player's cell to the next section's terminal, again whenever the player
@@ -1692,7 +1708,8 @@ const Cub3DWorld = ({
         }
         updateGuide(camera);
         // A footstep every STRIDE cells walked
-        const last = (stride.current ??= { x, z, left: STRIDE });
+        if (!stride.current) stride.current = { x, z, left: STRIDE };
+        const last = stride.current;
         last.left -= Math.hypot(x - last.x, z - last.z);
         last.x = x;
         last.z = z;
@@ -1769,7 +1786,7 @@ const Cub3DWorld = ({
       doors: doors.current,
       read: readRef.current,
       missionDone: missionDoneRef.current,
-      elapsed: startAt.current === null ? 0 : performance.now() - startAt.current,
+      elapsed: startAt.current === null ? 0 : timeNow() - startAt.current,
       weapon: weaponState.current,
       sound: soundRef.current,
       shots: shots.current,
@@ -1791,7 +1808,7 @@ const Cub3DWorld = ({
     play('kill');
     // The impact: a 0.2 s freeze frame, and the hit marker (the crosshair turns red, four ticks
     // flare round it; only the color with reduced motion)
-    hitStop.current = performance.now() + HIT_STOP_MS;
+    hitStop.current = timeNow() + HIT_STOP_MS;
     const cross = crosshairRef.current;
     if (cross) cross.dataset.hit = 'true';
     later(
@@ -1825,8 +1842,7 @@ const Cub3DWorld = ({
     if (!missionDoneRef.current && enemies.current.every((e) => !e.alive)) {
       missionDoneRef.current = true;
       setMissionDone(true);
-      completedBy.current = 'threats';
-      missionTime.current = startAt.current === null ? 0 : performance.now() - startAt.current;
+      const time = startAt.current === null ? 0 : timeNow() - startAt.current;
       missionPending.current = true;
       later(
         'complete',
@@ -1834,7 +1850,7 @@ const Cub3DWorld = ({
           missionPending.current = false;
           setPauseOpen(false);
           holdView();
-          setComplete(true);
+          setComplete({ by: 'threats', time, shots: { ...shots.current } });
         },
         700
       );
@@ -1923,7 +1939,7 @@ const Cub3DWorld = ({
   // target, the pistol blocks where it lands, the blaster a burst on everything in its cone
   const fire = (press) => {
     const cfg = WEAPON_FX[weaponState.current];
-    const now = performance.now();
+    const now = timeNow();
     const camera = cameraRef.current;
     if (!camera || (!press && !cfg.auto)) return;
     // A press on a terminal or a crew member uses it, whatever the weapon's cooldown
@@ -1975,7 +1991,10 @@ const Cub3DWorld = ({
     impacts.forEach((at) => fxRef.current?.spawn(cfg.fx, muzzle, at));
     hits.forEach(neutralize);
   };
-  fireRef.current = fire;
+  // The frame loop fires the automatic weapons: the latest `fire`, after each render
+  useLayoutEffect(() => {
+    fireRef.current = fire;
+  });
   const pullTrigger = () => {
     firing.current.held = true;
     fire(true);
@@ -1993,8 +2012,8 @@ const Cub3DWorld = ({
   };
   const wheelAt = useRef(0);
   const onWheel = (e) => {
-    if (!game || !started || openPanel || talk || performance.now() - wheelAt.current < 200) return;
-    wheelAt.current = performance.now();
+    if (!game || !started || openPanel || talk || timeNow() - wheelAt.current < 200) return;
+    wheelAt.current = timeNow();
     switchWeapon(weapon + (e.deltaY > 0 ? 1 : -1));
   };
   const closePanel = () => {
@@ -2014,10 +2033,12 @@ const Cub3DWorld = ({
         // The sixth: the mission is complete (once; a later visit to a wall does not repeat it)
         if (count === SECTIONS.length && !missionDoneRef.current) {
           missionDoneRef.current = true;
-          completedBy.current = 'sections';
           setMissionDone(true);
-          missionTime.current = startAt.current === null ? 0 : performance.now() - startAt.current;
-          setComplete(true);
+          setComplete({
+            by: 'sections',
+            time: startAt.current === null ? 0 : timeNow() - startAt.current,
+            shots: { ...shots.current },
+          });
           return { completed: true, said };
         }
       }
@@ -2036,7 +2057,7 @@ const Cub3DWorld = ({
   };
 
   const closeComplete = () => {
-    setComplete(false);
+    setComplete(null);
     updateGuide(cameraRef.current, true);
     invalidateRef.current();
     requestAnimationFrame(() => wrapperRef.current?.focus({ preventScroll: true }));
@@ -2051,10 +2072,10 @@ const Cub3DWorld = ({
       sfx.current?.suspend();
       return;
     }
-    import('./sfx').then(({ createSfx }) => {
+    loadSfx().then(({ createSfx }) => {
       // The player may have muted again, or left, while the chunk loaded
       if (!soundRef.current || !wrapperRef.current) return;
-      sfx.current ??= createSfx(volumeRef.current);
+      if (!sfx.current) sfx.current = createSfx(volumeRef.current);
       sfx.current.resume();
       // The facility's low server hum, under everything
       if (game) sfx.current.hum(true);
@@ -2065,22 +2086,14 @@ const Cub3DWorld = ({
     volumeRef.current = value;
     setVolume(value);
     sfx.current?.setVolume(value);
-    try {
-      localStorage.setItem(VOLUME_KEY, String(value));
-    } catch {
-      // Not remembered: fine
-    }
+    saveSetting(VOLUME_KEY, String(value));
   };
   const toggleContrast = () => {
     const next = !flat;
     setContrast(next);
     announce(t(next ? 'demos.game.contrastOn' : 'demos.game.contrastOff'));
     invalidateRef.current();
-    try {
-      localStorage.setItem(CONTRAST_KEY, next ? '1' : '0');
-    } catch {
-      // Not remembered: fine
-    }
+    saveSetting(CONTRAST_KEY, next ? '1' : '0');
   };
   const changeGraphics = (tier) => {
     // The radio itself says what is picked: nothing more to announce
@@ -2129,8 +2142,9 @@ const Cub3DWorld = ({
     play('failure');
     setFailed(true);
   };
-  const failRef = useRef(fail);
-  failRef.current = fail;
+  useLayoutEffect(() => {
+    failRef.current = fail;
+  });
   // Reboot: back in the first room, integrity and energy full; the mission's progress is kept
   const reboot = () => {
     integrity.current = { value: 100, at: 0, pulse: 0, warned: false };
@@ -2148,31 +2162,35 @@ const Cub3DWorld = ({
   };
   // The player's own Escape, while the mouse is captured, arrives as an unlock: pause then
   const unlocked = useRef(() => {});
-  unlocked.current = () => {
-    const ours = freeing.current;
-    freeing.current = false;
-    if (ours || !game || !startedRef.current) return;
-    if (openPanel || access || talk || complete || failed || pauseOpen) return;
-    wasLocked.current = true;
-    pause();
-  };
+  useLayoutEffect(() => {
+    unlocked.current = () => {
+      const ours = freeing.current;
+      freeing.current = false;
+      if (ours || !game || !startedRef.current) return;
+      if (openPanel || access || talk || complete || failed || pauseOpen) return;
+      wasLocked.current = true;
+      pause();
+    };
+  });
 
-  useEffect(() => {
+  const onMount = useEffectEvent(() => {
     // Back from a demo or the text-only mode with sound on: the synthesizer comes back with it
     if (soundRef.current) {
-      import('./sfx').then(({ createSfx }) => {
+      loadSfx().then(({ createSfx }) => {
         if (!wrapperRef.current) return;
-        sfx.current ??= createSfx(volumeRef.current);
+        if (!sfx.current) sfx.current = createSfx(volumeRef.current);
         if (game) sfx.current.hum(true);
       });
     }
     if (initialState || autostart) wrapperRef.current?.focus({ preventScroll: true });
+  });
+  // Once
+  useEffect(() => {
+    onMount();
     return () => {
       sfx.current?.close();
       sfx.current = null;
     };
-    // Once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const press = (code) => {
@@ -2270,7 +2288,7 @@ const Cub3DWorld = ({
     if (drag.current === null || !camera) return;
     camera.rotation.y -= (e.clientX - drag.current) * 0.006;
     drag.current = e.clientX;
-    input.looked = true;
+    looked.current = true;
     invalidateRef.current();
   };
   const endDrag = () => {
@@ -2290,11 +2308,13 @@ const Cub3DWorld = ({
   };
   const onLockChange = useCallback((value) => {
     setLocked(value);
-    if (value) {
-      freeing.current = false;
-      wrapperRef.current?.focus({ preventScroll: true });
-    } else unlocked.current();
+    if (value) freeing.current = false;
+    else unlocked.current();
   }, []);
+  // The mouse captured: keys go to the game
+  useEffect(() => {
+    if (locked) wrapperRef.current?.focus({ preventScroll: true });
+  }, [locked]);
 
   // Game Mode on a touch screen: a tap on the view fires (the mouse fires from onPointerDown)
   const onClick = (e) => {
@@ -2357,7 +2377,7 @@ const Cub3DWorld = ({
 
   // Game Mode draws every frame while playing (the threats and the weapon move); paused (the
   // menu, a dialog, Access granted), or with reduced motion (nothing moves on its own), on demand
-  const stopped = !!openPanel || access || !!talk || complete || pauseOpen || failed;
+  const stopped = !!openPanel || access || !!talk || !!complete || pauseOpen || failed;
   const playing = game && started && !stopped && !reduced;
   // The threats hold still, and wear nothing down, whenever the game is not being played: the
   // menu, a wall's text or the contact form, Access granted, a crew member talking. Frames still
@@ -2366,7 +2386,7 @@ const Cub3DWorld = ({
   // The mission's clock starts with the game (or goes on from a snapshot)
   useEffect(() => {
     if (game && started && startAt.current === null) {
-      startAt.current = performance.now() - (initialState?.elapsed ?? 0);
+      startAt.current = timeNow() - (initialState?.elapsed ?? 0);
     }
   }, [game, started, initialState]);
   // The tracker's list: the sections in order, ticked once read
@@ -2383,13 +2403,14 @@ const Cub3DWorld = ({
     paused.current = held;
   }, [held]);
   const [watching, setWatching] = useState(false);
+  // Each stretch of play warms up again
   useEffect(() => {
-    if (!playing) {
-      setWatching(false);
-      return undefined;
-    }
+    if (!playing) return undefined;
     const id = setTimeout(() => setWatching(true), WARMUP_MS);
-    return () => clearTimeout(id);
+    return () => {
+      clearTimeout(id);
+      setWatching(false);
+    };
   }, [playing]);
 
   return (
@@ -2432,6 +2453,7 @@ const Cub3DWorld = ({
         <Scene
           world={world}
           input={input}
+          lookedRef={looked}
           solid={solid}
           doorCells={doorCells}
           closedDoors={closedDoors}
@@ -2482,7 +2504,7 @@ const Cub3DWorld = ({
             resolution steps down on a lasting dip and back up when there is room; after three
             changes of direction it stays where it is for the session */}
         {watching && graphics === 'medium' && !flat && !settled && (
-          <PerformanceMonitor factor={tuning.factor} onIncline={onIncline} onDecline={onDecline} />
+          <PerformanceMonitor factor={factor} onIncline={onIncline} onDecline={onDecline} />
         )}
       </Canvas>
 
@@ -2634,7 +2656,7 @@ const Cub3DWorld = ({
       {game && started && (
         <GameHud
           t={t}
-          aim={target && !KIND[target] ? aimText(t, enemies.current, target) : null}
+          aim={target && !KIND[target] ? aimText(t, ENEMIES, target) : null}
           prompt={target && KIND[target] ? panelTitle(t, target, true) : null}
           sections={sectionList}
           kills={kills}
@@ -2716,22 +2738,20 @@ const Cub3DWorld = ({
         <MissionComplete
           t={t}
           body={t(
-            completedBy.current === 'threats'
-              ? 'demos.game.mission.bodyThreats'
-              : 'demos.game.mission.body'
+            complete.by === 'threats' ? 'demos.game.mission.bodyThreats' : 'demos.game.mission.body'
           )}
-          time={minutes(missionTime.current)}
+          time={minutes(complete.time)}
           kills={kills}
           threats={ENEMIES.length}
           accuracy={
-            shots.current.fired
-              ? `${Math.round((shots.current.hit / shots.current.fired) * 100)}%`
+            complete.shots.fired
+              ? `${Math.round((complete.shots.hit / complete.shots.fired) * 100)}%`
               : t('demos.game.mission.noShots')
           }
           resume={person.resume}
           github={person.github}
           onContact={() => {
-            setComplete(false);
+            setComplete(null);
             setOpenPanel('contact');
           }}
           onClose={closeComplete}
