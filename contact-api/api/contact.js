@@ -8,7 +8,14 @@ import { Resend } from 'resend';
 
 import { createContactHandler } from '../lib/contact.js';
 
-const { RESEND_API_KEY, CONTACT_TO, CONTACT_FROM, ALLOWED_ORIGINS } = process.env;
+// Trimmed: a secret pasted with a trailing space or line break would otherwise be refused
+const env = (name) => process.env[name]?.trim() || undefined;
+const [RESEND_API_KEY, CONTACT_TO, CONTACT_FROM, ALLOWED_ORIGINS] = [
+  'RESEND_API_KEY',
+  'CONTACT_TO',
+  'CONTACT_FROM',
+  'ALLOWED_ORIGINS',
+].map(env);
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 export default {
