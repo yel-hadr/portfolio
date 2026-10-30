@@ -97,6 +97,30 @@ test('an oversized body is refused before it is parsed', async () => {
   assert.equal(sent.length, 0);
 });
 
+test('a streamed body with no declared length stops being read past the limit', async () => {
+  const { handler, sent } = setup();
+  let pulled = 0;
+  const chunk = new TextEncoder().encode('x'.repeat(4096));
+  const stream = new ReadableStream({
+    pull(controller) {
+      pulled += 1;
+      // Endless: only the size limit ends it
+      controller.enqueue(chunk);
+    },
+  });
+  const res = await handler(
+    new Request('https://contact.example/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: SITE },
+      body: stream,
+      duplex: 'half',
+    })
+  );
+  assert.equal(res.status, 413);
+  assert.ok(pulled <= 8, `read ${pulled} chunks of 4 KB`);
+  assert.equal(sent.length, 0);
+});
+
 test('line breaks in the name never reach the subject', async () => {
   const { handler, sent } = setup();
   await handler(post({ ...valid, name: 'Ada\r\nBcc: victim@example.com' }));

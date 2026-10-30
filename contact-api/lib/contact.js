@@ -3,9 +3,31 @@
 // sent as plain text, never HTML, and their address only as the reply-to.
 
 const LIMITS = { name: 100, email: 254, message: 5000 };
-// Larger bodies are refused before they are read
+// Larger bodies are refused: by their declared length, or as soon as reading passes it
 const MAX_BODY = 16 * 1024;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * The body as text, read as a stream and abandoned once it passes `max` bytes (a chunked body
+ * declares no length, so it is never held whole). Resolves to null when too large
+ */
+const readBody = async (request, max) => {
+  if (!request.body) return '';
+  const reader = request.body.getReader();
+  const chunks = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > max) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString('utf8');
+};
 
 // Line breaks and other control characters out of one-line fields (the name goes in the subject)
 const oneLine = (value) => value.replace(/\p{Cc}+/gu, ' ').trim();
@@ -60,8 +82,8 @@ export const createContactHandler =
 
     let body;
     try {
-      const raw = await request.text();
-      if (raw.length > MAX_BODY) return reply(413, { error: 'size' });
+      const raw = await readBody(request, MAX_BODY);
+      if (raw === null) return reply(413, { error: 'size' });
       body = JSON.parse(raw);
     } catch {
       return reply(400, { error: 'invalid' });
