@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 import { styles } from '../styles';
 import { reveal } from '../utils/motion';
@@ -8,12 +8,12 @@ import { reveal } from '../utils/motion';
  * aria-labelledby that SectionWrapper puts on the <section>.
  */
 const SectionHeader = ({ id, title, lead }) => (
-  <motion.header variants={reveal()}>
+  <m.header variants={reveal()}>
     <h2 id={`${id}-title`} className={styles.sectionHeadText}>
       {title}
     </h2>
     {lead && <p className={styles.sectionLead}>{lead}</p>}
-  </motion.header>
+  </m.header>
 );
 
 export default SectionHeader;

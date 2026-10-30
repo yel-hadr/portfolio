@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState } from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 import { styles } from '../styles';
 import { SectionWrapper } from '../hoc';
@@ -41,7 +41,7 @@ const ProjectCard = ({
   const name = t(`works.items.${id}.name`);
 
   return (
-    <motion.li variants={reveal()} className={`${styles.card} flex flex-col`}>
+    <m.li variants={reveal()} className={`${styles.card} flex flex-col`}>
       {image && (
         <img
           src={image}
@@ -133,7 +133,7 @@ const ProjectCard = ({
           )}
         </div>
       )}
-    </motion.li>
+    </m.li>
   );
 };
 
