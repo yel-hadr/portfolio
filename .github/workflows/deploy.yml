@@ -89,9 +89,10 @@ jobs:
 
       - name: Check asset paths
         # Every URL in index.html must start with /assets/ (base '/'); a /portfolio/ prefix
-        # would mean a stale base path and a broken live site.
+        # would mean a stale base path and a broken live site. The <noscript> fallback is
+        # skipped: its links are pages (resume, blog, mailto), not assets.
         run: |
-          bad=$(grep -oE '(src|href)="[^"]+"' dist/index.html | grep -vE '"(/assets/|https://)' || true)
+          bad=$(sed '/<noscript>/,/<\/noscript>/d' dist/index.html | grep -oE '(src|href)="[^"]+"' | grep -vE '"(/assets/|https://)' || true)
           if [ -n "$bad" ]; then echo "Unexpected asset URLs:"; echo "$bad"; exit 1; fi
 
       - name: Upload build
