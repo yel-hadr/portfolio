@@ -144,7 +144,12 @@
 .prose-blog hr {
   @apply border-line;
 }
-/* Inline code; code blocks reset it below */
+/* Inline code; code blocks reset it below. No ligatures: JetBrains Mono would draw C's "/="
+   (divide and assign) as a not-equal sign */
+.prose-blog code,
+.code-block pre {
+  font-variant-ligatures: none;
+}
 .prose-blog code {
   @apply rounded-sm bg-surface-raised px-1.5 py-0.5 font-mono text-sm text-foreground;
   overflow-wrap: anywhere;
@@ -155,6 +160,9 @@
 }
 .prose-blog table {
   @apply w-full border-collapse text-left text-base;
+}
+.prose-blog td {
+  hyphens: auto;
 }
 .prose-blog th,
 .prose-blog td {
@@ -198,4 +206,30 @@
 }
 .tok-comment {
   @apply italic text-foreground-muted;
+}
+/* C and JavaScript tokens: the text colors the tags use, AA on the code block in both themes */
+.tok-keyword {
+  @apply font-semibold text-primary-400;
+}
+.tok-string {
+  @apply text-success;
+}
+.tok-number {
+  @apply text-info;
+}
+
+/* Figures: a screenshot with its caption; its width and height come from the file */
+.post-figure {
+  @apply mt-8;
+}
+.post-figure img {
+  @apply h-auto w-full rounded-xl border border-line light:border-line-strong/40;
+}
+.post-figure figcaption {
+  @apply mt-3 text-sm leading-relaxed text-foreground-muted;
+}
+
+/* Featured posts on the index: the cover above the title */
+.post-cover {
+  @apply aspect-[16/9] h-auto w-full rounded-2xl border border-line object-cover light:border-line-strong/40;
 }

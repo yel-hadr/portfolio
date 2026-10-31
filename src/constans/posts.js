@@ -4,6 +4,22 @@
 // keep this order. date: when the post was published on the site (YYYY-MM-DD, UTC).
 // tags: not translated (product and protocol names).
 export const posts = [
+  // featured: listed first on /blog/ under "Deep dives", with `cover` (a file in public/) on the
+  // card
+  {
+    slug: 'cub3d-raycasting-from-c-to-webgl',
+    date: '2026-10-31',
+    tags: ['C', 'MLX42', 'React Three Fiber'],
+    featured: true,
+    cover: '/blog-media/cub3d-raycasting-from-c-to-webgl/cub3d-demo.webp',
+  },
+  {
+    slug: 'fdf-isometric-projection-and-memory',
+    date: '2026-10-31',
+    tags: ['C', 'MiniLibX', 'three.js'],
+    featured: true,
+    cover: '/blog-media/fdf-isometric-projection-and-memory/julia-file-colors.webp',
+  },
   {
     slug: 'pgbouncer-transaction-pooling-django-tenants',
     date: '2026-10-21',

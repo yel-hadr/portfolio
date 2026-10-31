@@ -122,7 +122,41 @@ const commentStart = (line, markers) => {
   return -1;
 };
 
+// C and JavaScript: comments, strings, numbers and keywords, from one pass over the whole block
+// (a block comment may span lines). Everything between the tokens stays plain, escaped text.
+const C_LIKE = {
+  c: 'auto bool break case char const continue default do double else enum extern false float for if inline int long NULL return short signed sizeof static struct switch true typedef union unsigned void volatile while',
+  js: 'async await break case catch class const continue default delete do else export extends false finally for from function if import in instanceof let new null of return static switch this throw true try typeof undefined var void while yield',
+};
+const C_LANGUAGE = { c: 'c', h: 'c', js: 'js', jsx: 'js', javascript: 'js', mjs: 'js' };
+const KEYWORDS = Object.fromEntries(
+  Object.entries(C_LIKE).map(([lang, words]) => [lang, new Set(words.split(' '))])
+);
+const C_TOKEN =
+  /(\/\*[\s\S]*?(?:\*\/|$))|(\/\/[^\n]*)|(^[ \t]*#[ \t]*[a-z]+)|("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`)|(\b(?:0[xX][\da-fA-F]+|\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)[fFuUlL]*\b)|([A-Za-z_$][\w$]*)/gm;
+
+const highlightCLike = (code, lang) => {
+  let html = '';
+  let last = 0;
+  const span = (kind, text) => `<span class="tok-${kind}">${escapeHtml(text)}</span>`;
+  for (const match of code.matchAll(C_TOKEN)) {
+    const [text, block, line, directive, string, number, word] = match;
+    html += escapeHtml(code.slice(last, match.index));
+    last = match.index + text.length;
+    if (block || line) html += span('comment', text);
+    else if (directive && lang === 'c') html += span('keyword', text);
+    else if (string) html += span('string', text);
+    else if (number) html += span('number', text);
+    // A property (`Int16Array.from`) is not a keyword
+    else if (word && KEYWORDS[lang].has(word) && code[match.index - 1] !== '.')
+      html += span('keyword', text);
+    else html += escapeHtml(text);
+  }
+  return html + escapeHtml(code.slice(last));
+};
+
 const highlight = (code, language) => {
+  if (C_LANGUAGE[language]) return highlightCLike(code, C_LANGUAGE[language]);
   const markers = COMMENT_MARKERS[language] ?? [];
   return code
     .split('\n')
@@ -134,12 +168,68 @@ const highlight = (code, language) => {
     .join('\n');
 };
 
-/** Markdown -> HTML with the blog's code blocks, heading anchors and scrollable tables. */
-const renderMarkdown = (markdown, strings) => {
+// ---------------------------------------------------------------------------------------------
+// Images: a root-relative path is a file in public/ (served under the base). Its width and
+// height come from the file itself, so the page keeps its layout while the image loads.
+
+const imageSize = (file) => {
+  const b = readFileSync(file);
+  if (b.toString('ascii', 1, 4) === 'PNG') {
+    return { width: b.readUInt32BE(16), height: b.readUInt32BE(20) };
+  }
+  if (b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP') {
+    const chunk = b.toString('ascii', 12, 16);
+    if (chunk === 'VP8X')
+      return { width: 1 + b.readUIntLE(24, 3), height: 1 + b.readUIntLE(27, 3) };
+    if (chunk === 'VP8 ') {
+      return { width: b.readUInt16LE(26) & 0x3fff, height: b.readUInt16LE(28) & 0x3fff };
+    }
+    if (chunk === 'VP8L') {
+      const bits = b.readUInt32LE(21);
+      return { width: (bits & 0x3fff) + 1, height: ((bits >> 14) & 0x3fff) + 1 };
+    }
+  }
+  throw new Error(`[blog] ${file}: not a PNG or WebP image`);
+};
+
+/** A local image as attributes: src under the base, its intrinsic size; the file must exist */
+const localImage = (ctx, path) => {
+  const file = resolve(ctx.root, 'public', path.replace(/^\//, ''));
+  try {
+    statSync(file);
+  } catch {
+    throw new Error(`[blog] image ${path} is not in public/`);
+  }
+  const { width, height } = imageSize(file);
+  return `src="${escapeHtml(ctx.href(path))}" width="${width}" height="${height}"`;
+};
+
+/** Markdown -> HTML with the blog's code blocks, heading anchors, figures and scrollable tables. */
+const renderMarkdown = (markdown, strings, ctx) => {
   let codeCount = 0;
+  let tableCount = 0;
+  const img = ({ href, text }) => {
+    // Every image in a post says what it shows
+    if (!text.trim()) throw new Error(`[blog] image ${href} has no alt text`);
+    const src = href.startsWith('/') ? localImage(ctx, href) : `src="${escapeHtml(href)}"`;
+    return `<img ${src} alt="${escapeHtml(text)}" loading="lazy" decoding="async" />`;
+  };
   const marked = new Marked({
     gfm: true,
     renderer: {
+      // An image alone in its paragraph is a figure; its Markdown title is the caption
+      paragraph({ tokens }) {
+        const only = tokens.filter((token) => !(token.type === 'text' && !token.raw.trim()));
+        if (only.length === 1 && only[0].type === 'image') {
+          const { title } = only[0];
+          const caption = title ? `<figcaption>${escapeHtml(title)}</figcaption>` : '';
+          return `<figure class="post-figure">${img(only[0])}${caption}</figure>\n`;
+        }
+        return `<p>${this.parser.parseInline(tokens)}</p>\n`;
+      },
+      image(token) {
+        return img(token);
+      },
       heading({ tokens, depth }) {
         const html = this.parser.parseInline(tokens);
         // h1 is the page title; Markdown headings start at h2
@@ -161,8 +251,11 @@ const renderMarkdown = (markdown, strings) => {
         );
       },
       table(token) {
-        // Default rendering, inside a wrapper that scrolls on narrow screens
-        return `<div class="table-wrap">${this.constructor.prototype.table.call(this, token)}</div>\n`;
+        // Default rendering, inside a wrapper that scrolls on narrow screens: focusable and named,
+        // like a code block, so keyboard users can scroll it too
+        tableCount += 1;
+        const label = fill(strings.tableLabel, { n: tableCount });
+        return `<div class="table-wrap" tabindex="0" role="region" aria-label="${escapeHtml(label)}">${this.constructor.prototype.table.call(this, token)}</div>\n`;
       },
     },
   });
@@ -395,16 +488,48 @@ const indexPage = (ctx, lang) => {
   });
 
   const rssLink = `<a href="${ctx.href(feedPath(lang))}" class="text-link" type="application/rss+xml">${escapeHtml(s.rssFeed)}</a>`;
-  const cards = ctx.posts
-    .map(
-      (post) => `        <li class="card-glass post-card">
-          <h2 class="text-xl font-bold text-foreground sm:text-2xl"><a href="${ctx.href(postPath(lang, post.slug))}" class="stretched-link">${escapeHtml(post.langs[lang].title)}</a></h2>
+  // Featured posts (`featured` in posts.js) lead the page under their own heading, with their
+  // cover; the rest follow under a second one. Without any, the list is as it always was (h2s)
+  const featured = ctx.posts.filter((post) => post.featured);
+  const others = ctx.posts.filter((post) => !post.featured);
+  const level = featured.length ? 3 : 2;
+  const card = (post) => {
+    // The cover is decorative: the title says what the post is
+    const cover =
+      post.featured && post.cover
+        ? `<img ${localImage(ctx, post.cover)} alt="" decoding="async" class="post-cover" />\n          `
+        : '';
+    return `        <li class="card-glass post-card${post.featured ? ' post-card-featured' : ''}">
+          ${cover}<h${level} class="text-xl font-bold text-foreground sm:text-2xl"><a href="${ctx.href(postPath(lang, post.slug))}" class="stretched-link">${escapeHtml(post.langs[lang].title)}</a></h${level}>
           ${postMeta(post, lang, s)}
           <p class="text-base leading-relaxed text-foreground-muted">${escapeHtml(post.langs[lang].summary)}</p>
           ${tagList(post.tags, s.topics)}
-        </li>`
-    )
-    .join('\n');
+        </li>`;
+  };
+  const cards = (list) => list.map(card).join('\n');
+  const sectionHeading = (id, text) =>
+    `<h2 id="${id}" class="text-2xl font-bold text-foreground sm:text-3xl">${escapeHtml(text)}</h2>`;
+  const lists = featured.length
+    ? `        <section class="mt-12" aria-labelledby="featured-posts">
+          ${sectionHeading('featured-posts', s.featured)}
+          <p class="mt-2 max-w-prose text-base leading-relaxed text-foreground-muted">${escapeHtml(s.featuredLead)}</p>
+          <ul class="mt-6 grid gap-6 md:grid-cols-2">
+${cards(featured)}
+          </ul>
+        </section>${
+          others.length
+            ? `
+        <section class="mt-14" aria-labelledby="more-posts">
+          ${sectionHeading('more-posts', s.morePosts)}
+          <ul class="mt-6 grid gap-6">
+${cards(others)}
+          </ul>
+        </section>`
+            : ''
+        }`
+    : `        <ul class="mt-10 grid gap-6">
+${cards(others)}
+        </ul>`;
 
   const main = `      <div class="mx-auto max-w-3xl">
         <header>
@@ -412,9 +537,7 @@ const indexPage = (ctx, lang) => {
           <p class="mt-4 max-w-prose text-base leading-relaxed sm:leading-7 text-foreground-muted sm:text-lg">${escapeHtml(s.indexDescription)}</p>
           <p class="mt-3 flex items-center gap-2 text-sm text-foreground-muted"><span class="text-primary-400">${ICONS.rss}</span><span>${fill(escapeHtml(s.subscribe), { rss: rssLink })}</span></p>
         </header>
-        <ul class="mt-10 grid gap-6">
-${cards}
-        </ul>
+${lists}
       </div>`;
 
   return renderPage(ctx, {
@@ -487,7 +610,7 @@ const postPage = (ctx, lang, index) => {
         </header>
         <div class="card-glass mt-10 p-5 sm:p-10">
           <div class="prose-blog">
-${renderMarkdown(body, s)}
+${renderMarkdown(body, s, ctx)}
           </div>
         </div>
       </article>
