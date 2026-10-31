@@ -1,0 +1,220 @@
+% Youssef El Hadraoui: resume, English on page 1 and French on page 2.
+% Rebuilt from the published PDF (public/Youssef_Elhadraoui_Resume.pdf): Utopia for the
+% text, Nimbus Sans (helvet) for the subtitle and section titles, A4 with 1.45 cm side margins and 1 cm at the top.
+%
+% Build (any TeX Live or MiKTeX; or Overleaf with the pdfLaTeX compiler):
+%   pdflatex Youssef_Elhadraoui_Resume.tex
+%   cp Youssef_Elhadraoui_Resume.pdf ../public/
+% or, without a TeX installation: tectonic Youssef_Elhadraoui_Resume.tex
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french,english]{babel}
+\frenchsetup{StandardLists=true} % keep the bullets in French lists (babel-french uses dashes)
+\renewcommand{\rmdefault}{put} % Adobe Utopia (psnfss), as in the published PDF
+\usepackage[scaled=0.92]{helvet}
+\usepackage[a4paper,hmargin=1.45cm,top=1cm,bottom=1.45cm]{geometry}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={Youssef El Hadraoui - Resume}, pdfauthor={Youssef El Hadraoui}}
+
+% Colors of the published PDF
+\definecolor{accent}{RGB}{31,58,95}   % name, section titles, roles
+\definecolor{ink}{RGB}{26,26,26}      % body text
+\definecolor{muted}{RGB}{78,78,78}    % dates, places, subtitle, contacts
+\definecolor{faint}{RGB}{175,175,175} % rules, separators, bullets
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\AtBeginDocument{\color{ink}}
+
+\setlist[itemize]{
+  leftmargin=1.15em, labelsep=0.45em, itemsep=1pt, parsep=0pt, topsep=2pt, partopsep=0pt,
+  label={\color{faint}\small$\bullet$}
+}
+
+% ---------------------------------------------------------------- building blocks
+\newcommand{\dotsep}{\enspace\textbullet\enspace}
+\newcommand{\contactsep}{\enspace{\color{faint}\textbf{|}}\enspace}
+
+% #1: the subtitle under the name
+\newcommand{\Header}[1]{%
+  % \centering, not the center environment: its list spacing would push the page down
+  {\centering
+    {\fontsize{24.8}{28}\selectfont\bfseries\color{accent}Youssef El Hadraoui}\par
+    \vspace{4pt}
+    {\sffamily\fontsize{8.25}{10}\selectfont\color{muted}#1}\par
+    \vspace{9pt}
+    {\footnotesize\color{muted}%
+      \href{tel:+212620081450}{+212 620 081 450}\contactsep
+      \href{mailto:youssefelhadraoui99@gmail.com}{youssefelhadraoui99@gmail.com}\contactsep
+      \href{https://linkedin.com/in/youssef-el-hadraoui}{linkedin.com/in/youssef-el-hadraoui}\contactsep
+      \href{https://github.com/yel-hadr}{github.com/yel-hadr}\contactsep
+      \href{https://yel-hadr.github.io}{yel-hadr.github.io}}\par}
+  \vspace{4pt}}
+
+% #1: the title, set in capitals in small bold sans, over a hairline
+\newcommand{\Section}[1]{%
+  \par\vspace{7pt}
+  {\sffamily\bfseries\fontsize{7.33}{9}\selectfont\color{accent}\MakeUppercase{#1}}\par
+  \vspace{1pt}{\color{faint}\hrule height 0.4pt}\vspace{5pt}}
+
+% #1 organization, #2 dates, #3 role (italic), #4 place
+\newcommand{\Entry}[4]{%
+  \par\vspace{3pt}
+  {\bfseries #1}\hfill{\small\color{muted}#2}\par
+  \vspace{1pt}
+  {\small\itshape\color{accent}#3}\hfill{\small\color{muted}#4}\par}
+
+% Skills: bold label, then the list
+\newenvironment{Skills}{%
+  \small\renewcommand{\arraystretch}{1.12}%
+  \tabularx{\linewidth}{@{}>{\bfseries}p{2.75cm}X@{}}}{\endtabularx}
+
+% ================================================================ English
+\begin{document}
+\selectlanguage{english}
+
+\Header{Backend \& DevOps Engineer\dotsep Python / Django / Kubernetes}
+
+\Section{Profile}
+Software engineer focused on backend and infrastructure (UM6P-1337, 42 Network). I design multi-tenant
+SaaS platforms in Django/Python and operate them end to end: application architecture, Kubernetes
+(k3s), GitOps and observability. Experience coordinating a team on a product running in production.
+
+\Section{Professional experience}
+\Entry{Legaliox --- Regulatory Compliance SaaS Platform}{2025 --- present}
+  {Project Manager \& Backend / DevOps Engineer\dotsep Team of 6 (freelance)}{Morocco}
+\begin{itemize}
+  \item Dual role: product scoping, work breakdown and coordination of a 6-person team, alongside
+    hands-on backend development.
+  \item \textbf{Multi-tenant architecture with PostgreSQL schema isolation} (\texttt{django-tenants})
+    and REST APIs in Django 5 / Django Ninja / Pydantic v2, layered as routes--schemas--services.
+  \item Domain modules: regulatory watch, compliance evaluations, risk scoring, audits, and
+    rule-engine-driven notifications; asynchronous processing with \textbf{Celery + Redis}.
+  \item Security: JWT, 2FA, RBAC and object-level permissions --- full audit of the authorization
+    layer and remediation of \textit{fail-open} decorators.
+  \item Infrastructure: migration from Docker Compose to a \textbf{k3s} cluster deployed via
+    \textbf{GitOps with ArgoCD}, structured JSON logging pipeline feeding a \textbf{Loki / Grafana}
+    stack, GitHub Actions CI and a pytest test suite.
+\end{itemize}
+
+\Entry{WePartner}{May 2025 --- Nov 2025}{Software Engineering Intern}{Morocco}
+\begin{itemize}
+  \item Supported the digitalization of the information system of the \textbf{Directorate of Rural
+    Affairs} (Ministry of the Interior): as-is analysis and target process design.
+  \item Technical assessment and development of \textbf{Wefree V2}, a community platform for
+    freelancers.
+\end{itemize}
+
+\Entry{Infinitive Byte}{Feb 2025 --- Apr 2025}{Software Engineering Intern}{Tétouan, Morocco}
+\begin{itemize}
+  \item Real-time data aggregation system (Python, Redis) and a Django admin dashboard that cut query
+    times by 65~\%.
+  \item Deployment automation with GitHub Actions and a Grafana / Prometheus monitoring stack.
+\end{itemize}
+
+\Section{Technical skills}
+\begin{Skills}
+  Programming   & Python, C/C++, JavaScript, Bash, SQL \\
+  Backend       & Django, Django Ninja, Pydantic, FastAPI, Celery, REST APIs\dotsep PostgreSQL, Redis, MariaDB \\
+  DevOps        & Docker, Kubernetes (k3s), ArgoCD / GitOps, GitHub Actions, NGINX, Gunicorn, AWS, DigitalOcean \\
+  Observability & Grafana, Loki, Promtail / Alloy, Prometheus, structured JSON logging \\
+  Quality       & pytest, factory-boy, coverage, Black, flake8, Git, GDB \\
+  Languages     & Arabic (native)\dotsep French (fluent)\dotsep English (professional) \\
+\end{Skills}
+
+\Section{Academic projects}
+\begin{itemize}
+  \item \textbf{Inception-of-Things} --- multi-node \textbf{K3s} cluster provisioned with Vagrant,
+    continuous deployment via GitOps (ArgoCD, self-hosted Gitea).
+  \item \textbf{Transcendence} --- full-stack Django/JS application: real-time multiplayer game
+    (WebSockets), tournaments, chat, fully containerized stack.
+  \item \textbf{Cub3D} --- real-time 3D rendering engine in C using raycasting (textures, map parsing,
+    Valgrind-verified memory management).
+\end{itemize}
+
+\Section{Education}
+\Entry{UM6P --- 1337 Coding School (42 Network)}{2022 --- 2027}
+  {RNCP Level 7 Certification --- Software Engineering\dotsep Coordinated 3 agile teams (5--7 people)}
+  {Tétouan, Morocco}
+
+% ================================================================ Français
+\newpage
+\selectlanguage{french}
+
+\Header{Ingénieur Backend \& DevOps\dotsep Python / Django / Kubernetes}
+
+\Section{Profil}
+Ingénieur logiciel orienté backend et infrastructure (UM6P-1337, réseau 42). Je conçois des
+plateformes SaaS multi-tenant en Django/Python et les exploite de bout en bout : architecture
+applicative, Kubernetes (k3s), GitOps et observabilité. Expérience de coordination d'équipe sur un
+produit en production.
+
+\Section{Expérience professionnelle}
+\Entry{Legaliox --- Plateforme SaaS de conformité réglementaire}{2025 --- présent}
+  {Chef de projet \& Ingénieur Backend / DevOps\dotsep Équipe de 6 (freelance)}{Maroc}
+\begin{itemize}
+  \item Double rôle : cadrage produit, découpage des lots et coordination d'une équipe de 6, en
+    parallèle du développement du backend.
+  \item Architecture \textbf{multi-tenant à isolation par schéma PostgreSQL}
+    (\texttt{django-tenants}) et APIs REST Django 5 / Django Ninja / Pydantic v2, structurées en
+    couches routes--schémas--services.
+  \item Modules métier : veille réglementaire, évaluations de conformité, scoring de risques, audits
+    et notifications pilotées par un moteur de règles ; traitements asynchrones via
+    \textbf{Celery + Redis}.
+  \item Sécurité : JWT, 2FA, RBAC et permissions au niveau objet --- audit complet de la couche
+    d'autorisation et correction des décorateurs en \textit{fail-open}.
+  \item Infrastructure : migration de Docker Compose vers un cluster \textbf{k3s} déployé en
+    \textbf{GitOps avec ArgoCD}, pipeline de logs JSON structurés intégré à une stack
+    \textbf{Loki / Grafana}, CI GitHub Actions et suite de tests pytest.
+\end{itemize}
+
+\Entry{WePartner}{Mai 2025 --- Nov 2025}{Stagiaire Ingénieur Logiciel}{Maroc}
+\begin{itemize}
+  \item Accompagnement à la digitalisation du système d'information de la \textbf{Direction des
+    Affaires Rurales} (Ministère de l'Intérieur) : analyse de l'existant et conception des processus
+    cibles.
+  \item Diagnostic technique et développement de la \textbf{V2 de Wefree}, plateforme digitale
+    communautaire dédiée aux freelances.
+\end{itemize}
+
+\Entry{Infinitive Byte}{Fév 2025 --- Avr 2025}{Stagiaire Ingénieur Logiciel}{Tétouan, Maroc}
+\begin{itemize}
+  \item Système d'agrégation de données temps réel (Python, Redis) et dashboard d'administration
+    Django réduisant de 65~\% les temps de requête.
+  \item Automatisation des déploiements via GitHub Actions et mise en place d'une stack de monitoring
+    Grafana / Prometheus.
+\end{itemize}
+
+\Section{Compétences techniques}
+\begin{Skills}
+  Langages      & Python, C/C++, JavaScript, Bash, SQL \\
+  Backend       & Django, Django Ninja, Pydantic, FastAPI, Celery, API REST\dotsep PostgreSQL, Redis, MariaDB \\
+  DevOps        & Docker, Kubernetes (k3s), ArgoCD / GitOps, GitHub Actions, NGINX, Gunicorn, AWS, DigitalOcean \\
+  Observabilité & Grafana, Loki, Promtail / Alloy, Prometheus, logs JSON structurés \\
+  Qualité       & pytest, factory-boy, coverage, Black, flake8, Git, GDB \\
+  Langues       & Arabe (natif)\dotsep Français (courant)\dotsep Anglais (professionnel) \\
+\end{Skills}
+
+\Section{Projets académiques}
+\begin{itemize}
+  \item \textbf{Inception-of-Things} --- cluster \textbf{K3s} multi-nœuds provisionné par Vagrant,
+    déploiement continu en GitOps (ArgoCD, Gitea auto-hébergé).
+  \item \textbf{Transcendence} --- application full-stack Django/JS : jeu multijoueur temps réel
+    (WebSockets), tournois, chat, stack conteneurisée.
+  \item \textbf{Cub3D} --- moteur de rendu 3D temps réel en C par raycasting (textures, parsing de
+    cartes, mémoire validée Valgrind).
+\end{itemize}
+
+\Section{Formation}
+\Entry{UM6P --- 1337 Coding School (réseau 42)}{2022 --- 2027}
+  {Certification RNCP Niveau 7 --- Génie Logiciel\dotsep Coordination de 3 équipes agiles (5--7 pers.)}
+  {Tétouan, Maroc}
+
+\end{document}
