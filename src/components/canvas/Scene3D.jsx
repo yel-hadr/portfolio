@@ -59,6 +59,30 @@ const FrameDriver = ({ reduced }) => {
     };
   }, [invalidate, reduced, inSight]);
 
+  // A card lifting on hover (index.css: `translate`, light theme) moves the 3D views inside it:
+  // redraw every frame for a short window after such a transition starts (longer than its
+  // 0.35 s), so a ball stays in its box even with the ambient ticks off (paused, or no motion).
+  // A window rather than counting starts and ends: a transition on an element that leaves the
+  // page never ends, and a counter would then keep drawing forever. Events bubble to the document
+  useEffect(() => {
+    let until = 0;
+    let raf = 0;
+    const follow = (t) => {
+      invalidate();
+      raf = t < until ? requestAnimationFrame(follow) : 0;
+    };
+    const onRun = (e) => {
+      if (e.propertyName !== 'translate') return;
+      until = performance.now() + 500;
+      if (!raf) raf = requestAnimationFrame(follow);
+    };
+    document.addEventListener('transitionrun', onRun);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener('transitionrun', onRun);
+    };
+  }, [invalidate]);
+
   return null;
 };
 

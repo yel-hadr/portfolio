@@ -116,8 +116,7 @@ const SceneView = ({
 
   // The outer box keeps one element through every state, for the observers above
   return (
-    // data-scene: a card holding a 3D view does not lift on hover (index.css)
-    <div ref={box} className={className} data-scene=''>
+    <div ref={box} className={className}>
       {content}
     </div>
   );

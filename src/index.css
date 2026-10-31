@@ -222,9 +222,10 @@
     /* A primary button's machined top edge: light catching the top of the orange, so it reads as
        a raised key rather than a flat swatch */
     --shadow-button: inset 0 1px 0 rgb(255 255 255 / 0.2);
-    /* Hover depth and lift: dark cards keep their edge light and stay put (the hairline brightens) */
+    /* Hover depth and lift: dark cards keep their edge light and stay put (the hairline brightens);
+       `none`, the resting value, so hovering starts no translate transition (and no 3D redraws) */
     --shadow-card-hover: inset 0 1px 0 rgb(255 255 255 / 0.06);
-    --card-lift: 0 0;
+    --card-lift: none;
     --grain-blend: soft-light;
 
     /* Full colors for places that only take inline styles (the timeline library) */
@@ -395,7 +396,7 @@
   /* Under the pointer the hairline brightens (white 7% to 14% on dark, ink 7% to 11% on light)
      and the shadow deepens (--shadow-card-hover), eased, never snapped. On light the card also
      lifts 2px (--card-lift), through `translate`, which framer's inline `transform` does not
-     override; not a card holding a 3D view ([data-scene]), whose scene would trail its box */
+     override; the 3D layer redraws while it eases (FrameDriver), so a bento ball keeps to its box */
   @media (hover: hover) {
     .card-glass:hover {
       border-color: var(--color-line-hover);
@@ -408,7 +409,7 @@
     }
   }
   @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-    .card-glass:not(:has([data-scene])):hover,
+    .card-glass:hover,
     .vertical-timeline-element-content:hover {
       translate: var(--card-lift);
     }
