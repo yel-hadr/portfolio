@@ -90,7 +90,13 @@ const Block = ({ material, at, size, turn }) => (
  * transparent pass, ordered just before its parts (renderOrder 19). The world's depth is gone by
  * then, so the weapon never sinks into a wall, and its parts still hide one another
  */
-const clearDepth = (gl) => gl.clearDepth();
+// The depth mask goes on first, through three's state cache: three's clear() leaves it as the last
+// draw set it, and after a part that writes no depth (the flashlight's beam) a depth clear would do
+// nothing, so a near wall would still cut the weapon
+const clearDepth = (gl) => {
+  gl.state.buffers.depth.setMask(true);
+  gl.clearDepth();
+};
 const DepthClear = ({ material, geometry }) => {
   const speck = useRef(null);
   useLayoutEffect(() => {
