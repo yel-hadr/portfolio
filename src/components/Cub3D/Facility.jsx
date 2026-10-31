@@ -456,7 +456,7 @@ const paintScreen = (canvas, panel, read, c, accent, flat) => {
   ctx.fillStyle = rgb(c.light, 0.85);
   ctx.fillText(panel.kicker.toUpperCase(), 36, 60, w - 72 - stateWidth - 20);
   ctx.fillStyle = rgb(c.light);
-  ctx.font = '800 66px Geist, ui-sans-serif, sans-serif';
+  ctx.font = "800 66px 'Geist Variable', ui-sans-serif, sans-serif";
   ctx.fillText(panel.title, 36, 150, w - 72);
   // A row of status lights along the bottom, in the accent
   ctx.fillStyle = rgb(accent, 0.55);

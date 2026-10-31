@@ -22,7 +22,7 @@ const BALL = {
   medium: 'h-20 w-20 sm:h-24 sm:w-24',
   small: 'h-16 w-16 sm:h-20 sm:w-20',
 };
-const CARD = 'card-glass card-edge relative flex';
+const CARD = 'card-glass relative flex';
 
 const TechBall = ({ tech, size, warmUp }) => (
   // The visible name labels the ball, so the 3D view itself is decorative
@@ -84,7 +84,7 @@ const Tech = () => {
                 <h3 className='text-h3 font-bold text-foreground'>{title}</h3>
                 <p className='mt-2 max-w-md text-foreground-muted leading-relaxed'>{text}</p>
                 <ul
-                  className={`flex list-none flex-wrap gap-x-6 gap-y-4 pt-8 ${large ? 'mt-auto justify-between sm:justify-start sm:gap-x-10' : ''}`}
+                  className={`flex list-none flex-wrap gap-x-6 gap-y-4 pt-8 ${large ? 'my-auto justify-between sm:justify-start sm:gap-x-10' : ''}`}
                 >
                   {tools.map((tech) => (
                     <li key={tech.name} className='flex flex-col items-center gap-2'>

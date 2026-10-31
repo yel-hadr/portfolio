@@ -52,7 +52,7 @@
 }
 
 @theme {
-  --font-sans: Geist, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --breakpoint-xs: 28.125rem; /* 450px */
 
@@ -348,13 +348,8 @@
     /* The card shadow set directly, not through shadow-card: v4 builds that utility from its
        @property-registered --tw-* layers, and Chrome then rasterizes the cards' content (the
        icons' edges) differently from v3. No card carries a ring utility; a shadow utility on a
-       card (light:shadow-raised) still replaces this one */
-    box-shadow: var(--shadow-card);
-  }
-
-  /* A machined top edge: a 1px highlight along a card's top, over its usual depth. After
-     .card-glass, so it replaces that box-shadow */
-  .card-edge {
+       card (light:shadow-raised) still replaces this one. Every glass card has the same machined
+       top edge (a 1px highlight, --color-edge) over its depth */
     box-shadow:
       inset 0 1px 0 var(--color-edge),
       var(--shadow-card);

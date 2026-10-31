@@ -1,6 +1,5 @@
 import { Suspense, useEffect, useEffectEvent, useId, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { animate } from 'framer-motion';
 
 import CanvasErrorBoundary from './CanvasErrorBoundary';
 import { useDemoCanvas } from '../hooks/useDemoCanvas';
@@ -15,6 +14,33 @@ import { SPRING } from '../utils/motion';
 
 // The demo strings ship with the lazy demo chunks (Cub3DModal and FdfModal import this shell)
 registerNamespace('demos', { en, fr });
+
+// The panel's opening spring (the buttons' SPRING) as a CSS linear() easing, sampled once from
+// the spring's motion. The Web Animations API runs it, so framer's animate() stays out of the
+// first-paint chunk (vendor-motion). Browsers without linear() get an ease-out of the same length
+const GROW = (() => {
+  const { stiffness, damping, mass } = SPRING;
+  const dt = 1 / 120;
+  let x = 0;
+  let v = 0;
+  const points = [];
+  while (points.length < 240) {
+    v += ((stiffness * (1 - x) - damping * v) / mass) * dt;
+    x += v * dt;
+    points.push(x);
+    if (Math.abs(1 - x) < 0.001 && Math.abs(v) < 0.01) break;
+  }
+  const step = Math.ceil(points.length / 40);
+  const stops = points.filter((_, i) => i % step === 0).map((p) => +p.toFixed(4));
+  const spring = `linear(0, ${stops.join(', ')}, 1)`;
+  return {
+    duration: Math.round(points.length * dt * 1000),
+    easing:
+      typeof CSS !== 'undefined' && CSS.supports('transition-timing-function', spring)
+        ? spring
+        : 'cubic-bezier(0.22, 1, 0.36, 1)',
+  };
+})();
 
 /** A message in place of the demo: loading, no WebGL, or a failure */
 const Notice = ({ id, role, children }) => (
@@ -59,29 +85,26 @@ const DemoShell = ({ id, repo, onClose, origin, children }) => {
     const y = origin.top - to.top;
     const scaleX = origin.width / to.width;
     const scaleY = origin.height / to.height;
-    // The first frame, set now: animate() applies its first values only on the next frame
     panel.style.setProperty('transform-origin', 'top left');
-    panel.style.setProperty('transform', `translate(${x}px, ${y}px) scale(${scaleX}, ${scaleY})`);
-    for (const child of panel.children) child.style.setProperty('opacity', '0');
-    const grow = animate(
-      panel,
-      { x: [x, 0], y: [y, 0], scaleX: [scaleX, 1], scaleY: [scaleY, 1] },
-      SPRING
+    const grow = panel.animate(
+      [
+        { transform: `translate(${x}px, ${y}px) scale(${scaleX}, ${scaleY})` },
+        { transform: 'none' },
+      ],
+      GROW
     );
-    grow.then(() => {
-      panel.style.removeProperty('transform');
-    });
-    const content = animate(
-      [...panel.children],
-      { opacity: [0, 1] },
-      { duration: 0.25, delay: 0.22 }
+    // The content fades in once the panel has nearly settled (backwards: hidden until then)
+    const content = [...panel.children].map((child) =>
+      child.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: 250,
+        delay: 220,
+        fill: 'backwards',
+      })
     );
-    // Stopped early (an unmount, or StrictMode's second run): leave the panel as laid out
+    // Stopped early (an unmount, or StrictMode's second run): the panel as laid out
     return () => {
-      grow.stop();
-      content.stop();
-      panel.style.removeProperty('transform');
-      for (const child of panel.children) child.style.removeProperty('opacity');
+      grow.cancel();
+      for (const fade of content) fade.cancel();
     };
   });
   useLayoutEffect(() => growFromCard(), []);

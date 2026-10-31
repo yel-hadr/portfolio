@@ -7,14 +7,17 @@ const CARDS = '[data-spotlight], .vertical-timeline-element-content';
 /**
  * The cards' cursor spotlight (the .spotlight layer in index.css). One pointermove listener for the
  * whole page writes the pointer's position inside the card under it as --mx/--my, at most once a
- * frame, and marks that card data-lit. No React state, so moving the pointer re-renders nothing.
+ * frame, and marks that card data-lit; a scroll does the same, since the cards move under a still
+ * pointer. No React state, so moving the pointer re-renders nothing.
  * Only for a mouse or pen that can hover: a touch has no pointer to follow.
  */
 export function useSpotlight() {
   useEffect(() => {
     const hover = window.matchMedia('(hover: hover) and (pointer: fine)');
     let lit = null;
-    let last = null;
+    // The pointer's last position, in the viewport
+    let px = -1;
+    let py = -1;
     let frame = 0;
 
     const light = (card) => {
@@ -25,19 +28,27 @@ export function useSpotlight() {
     };
     const draw = () => {
       frame = 0;
-      const card = last.target instanceof Element ? last.target.closest(CARDS) : null;
+      // What is under the pointer now (the 3D layer and the grain let the pointer through)
+      const card = document.elementFromPoint(px, py)?.closest(CARDS) ?? null;
       light(card);
       if (!card) return;
       const box = card.getBoundingClientRect();
-      card.style.setProperty('--mx', `${last.clientX - box.left}px`);
-      card.style.setProperty('--my', `${last.clientY - box.top}px`);
+      card.style.setProperty('--mx', `${px - box.left}px`);
+      card.style.setProperty('--my', `${py - box.top}px`);
+    };
+    const schedule = () => {
+      if (px >= 0 && !frame) frame = requestAnimationFrame(draw);
     };
     const onMove = (e) => {
       if (e.pointerType === 'touch') return;
-      last = e;
-      if (!frame) frame = requestAnimationFrame(draw);
+      px = e.clientX;
+      py = e.clientY;
+      schedule();
     };
-    const onLeave = () => light(null);
+    const onLeave = () => {
+      px = -1;
+      light(null);
+    };
 
     let on = false;
     const sync = () => {
@@ -45,9 +56,11 @@ export function useSpotlight() {
       on = hover.matches;
       if (on) {
         document.addEventListener('pointermove', onMove, { passive: true });
+        window.addEventListener('scroll', schedule, { passive: true });
         document.documentElement.addEventListener('pointerleave', onLeave);
       } else {
         document.removeEventListener('pointermove', onMove);
+        window.removeEventListener('scroll', schedule);
         document.documentElement.removeEventListener('pointerleave', onLeave);
         onLeave();
       }
@@ -57,6 +70,7 @@ export function useSpotlight() {
     return () => {
       hover.removeEventListener('change', sync);
       document.removeEventListener('pointermove', onMove);
+      window.removeEventListener('scroll', schedule);
       document.documentElement.removeEventListener('pointerleave', onLeave);
       if (frame) cancelAnimationFrame(frame);
       onLeave();
