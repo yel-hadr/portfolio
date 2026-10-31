@@ -45,12 +45,19 @@ import { useLiveRef } from '../../hooks/useLiveRef';
 // so nothing recompiles) and the rifle's bolt and the pistol's slide throw a brass shell, drawn
 // in the world from a fixed pool.
 
-// In view: at 0.3 ahead the frustum spans about 0.17 to each side and 0.1 up and down
-const BASE = [0.092, -0.07, -0.27];
+// In view: at 0.3 ahead the frustum spans about 0.17 to each side and 0.1 up and down. Held in
+// from the corner, so the HUD's weapon card (bottom right) does not cover it
+const BASE = [0.074, -0.062, -0.27];
 const SCALE = 0.5;
 // Turned in toward the crosshair and tipped a little, as a viewmodel is
 const AIM = [-0.06, 0.16, 0];
-const OVER = { depthTest: false, depthWrite: false, transparent: true, fog: false };
+// The weapon's own depth: the depth buffer is cleared just before it (DepthClear), so it is tested
+// against itself only, never the world. Parts hide one another as solids do, whatever order they
+// draw in (without a depth test, a far-side part painted over a near one: the scope's front lens
+// glowed through the tube, the pistol's far blocks through its slide)
+const OVER = { depthTest: true, depthWrite: true, transparent: true, fog: false };
+// The muzzle flash still draws over everything
+const ON_TOP = { depthTest: false, depthWrite: false, transparent: true, fog: false };
 // How much of the flashlight environment the metal reflects
 const ENV = 1;
 // The muzzle light at a full flash (it lights the walls a few cells around), in camera space just
@@ -62,55 +69,131 @@ const MUZZLE_AT = [0.06, -0.04, -0.75];
 const ACCENT = ['secondary', 'success', 'primary'];
 const TRAVEL = [0.06, 0.035, 0.05];
 
-/** A part of the model: drawn after the world, in its own order inside the model */
-const Part = ({ order = 0, ...props }) => <mesh renderOrder={20 + order} {...props} />;
+/** A part of the model: drawn after the world (the weapon's own depth is cleared first) */
+const Part = (props) => <mesh renderOrder={20} {...props} />;
+
+// Cylinders lie along the barrel (z): `back` is the radius toward the player, `front` away
+const ALONG = [Math.PI / 2, 0, 0];
+const Tube = ({ material, at, front, back = front, length, sides = 16, turn = ALONG }) => (
+  <Part material={material} position={at} rotation={turn}>
+    <cylinderGeometry args={[back, front, length, sides]} />
+  </Part>
+);
+const Block = ({ material, at, size, turn }) => (
+  <Part material={material} position={at} rotation={turn}>
+    <boxGeometry args={size} />
+  </Part>
+);
+
+/**
+ * Clears the depth buffer just before the weapon draws: an invisible speck in the same
+ * transparent pass, ordered just before its parts (renderOrder 19). The world's depth is gone by
+ * then, so the weapon never sinks into a wall, and its parts still hide one another
+ */
+const clearDepth = (gl) => gl.clearDepth();
+const DepthClear = ({ material, geometry }) => {
+  const speck = useRef(null);
+  useLayoutEffect(() => {
+    const mesh = speck.current;
+    if (mesh) mesh.onBeforeRender = clearDepth;
+  }, []);
+  return (
+    <mesh
+      ref={speck}
+      renderOrder={19}
+      frustumCulled={false}
+      material={material}
+      geometry={geometry}
+    />
+  );
+};
 
 const Rifle = ({ m, moving }) => (
   <>
-    {/* Receiver, long barrel in its shroud, a stock behind */}
-    <Part material={m.metal} position={[0, 0, 0.02]}>
-      <boxGeometry args={[0.05, 0.06, 0.24]} />
-    </Part>
-    <Part material={m.metal} position={[0, 0.004, -0.24]} rotation={[Math.PI / 2, 0, 0]} order={1}>
-      <cylinderGeometry args={[0.011, 0.011, 0.3, 10]} />
-    </Part>
-    <Part material={m.dark} position={[0, 0.004, -0.15]} rotation={[Math.PI / 2, 0, 0]} order={2}>
-      <cylinderGeometry args={[0.02, 0.02, 0.12, 8]} />
-    </Part>
-    <Part material={m.dark} position={[0, -0.012, 0.18]}>
-      <boxGeometry args={[0.04, 0.07, 0.1]} />
-    </Part>
-    <Part material={m.grip} position={[0, -0.06, 0.06]} rotation={[0.3, 0, 0]}>
-      <boxGeometry args={[0.035, 0.08, 0.04]} />
-    </Part>
-    {/* The scope: a tube on two mounts, its lens in the accent */}
-    <Part material={m.dark} position={[0, 0.058, 0]} rotation={[Math.PI / 2, 0, 0]} order={2}>
-      <cylinderGeometry args={[0.016, 0.016, 0.14, 12]} />
-    </Part>
-    <Part material={m.glow} position={[0, 0.058, -0.071]} rotation={[Math.PI / 2, 0, 0]} order={3}>
-      <cylinderGeometry args={[0.012, 0.012, 0.004, 12]} />
-    </Part>
-    {[-0.04, 0.04].map((z) => (
-      <Part key={z} material={m.metal} position={[0, 0.038, z]} order={1}>
-        <boxGeometry args={[0.012, 0.02, 0.012]} />
-      </Part>
+    {/* Receiver, a rail on top, and the barrel out of a slim handguard to a muzzle brake */}
+    <Block material={m.metal} at={[0, 0, 0]} size={[0.044, 0.05, 0.2]} />
+    <Block material={m.dark} at={[0, 0.029, -0.005]} size={[0.026, 0.008, 0.21]} />
+    <Block material={m.matte} at={[0, -0.006, -0.19]} size={[0.042, 0.04, 0.18]} />
+    <Block material={m.matte} at={[0, -0.03, -0.18]} size={[0.03, 0.012, 0.15]} />
+    <Tube material={m.metal} at={[0, 0.004, -0.36]} front={0.009} length={0.16} />
+    <Tube material={m.dark} at={[0, 0.004, -0.45]} front={0.015} length={0.04} />
+    {[-0.44, -0.455].map((z) => (
+      <Block key={z} material={m.metal} at={[0, 0.004, z]} size={[0.032, 0.006, 0.006]} />
     ))}
-    {/* The energy cell along its side, pulsing on a shot */}
-    <Part material={m.glow} position={[0.03, -0.005, 0.03]} order={3}>
-      <boxGeometry args={[0.012, 0.024, 0.11]} />
-    </Part>
-    {/* The bolt: slides back on a shot */}
-    <group ref={moving}>
-      <Part material={m.metal} position={[0.03, 0.022, 0.07]} order={3}>
-        <boxGeometry args={[0.014, 0.014, 0.05]} />
-      </Part>
-      <Part
+    {/* Magazine, trigger guard and trigger, the pistol grip and the start of the stock (the rest
+        is behind the eye) */}
+    <Block
+      material={m.dark}
+      at={[0, -0.052, -0.035]}
+      size={[0.03, 0.06, 0.05]}
+      turn={[-0.12, 0, 0]}
+    />
+    <Block material={m.dark} at={[0, -0.052, 0.045]} size={[0.008, 0.005, 0.06]} />
+    <Block material={m.dark} at={[0, -0.04, 0.015]} size={[0.008, 0.026, 0.005]} />
+    <Block
+      material={m.dark}
+      at={[0, -0.036, 0.042]}
+      size={[0.005, 0.02, 0.006]}
+      turn={[0.3, 0, 0]}
+    />
+    <Block
+      material={m.grip}
+      at={[0, -0.065, 0.095]}
+      size={[0.034, 0.08, 0.04]}
+      turn={[0.32, 0, 0]}
+    />
+    <Block
+      material={m.matte}
+      at={[0, -0.016, 0.16]}
+      size={[0.034, 0.048, 0.1]}
+      turn={[-0.08, 0, 0]}
+    />
+    {/* The scope: a tube with flared ends in two rings, turrets, and lenses in the accent (the
+        eyepiece's faces the player) */}
+    <Tube material={m.dark} at={[0, 0.062, -0.005]} front={0.0135} length={0.15} />
+    <Tube material={m.dark} at={[0, 0.062, -0.1]} front={0.021} back={0.0135} length={0.045} />
+    <Tube material={m.dark} at={[0, 0.062, 0.085]} front={0.0135} back={0.017} length={0.03} />
+    <Tube material={m.glow} at={[0, 0.062, -0.123]} front={0.018} length={0.002} />
+    <Tube material={m.glow} at={[0, 0.062, 0.1]} front={0.012} length={0.002} />
+    {[-0.05, 0.045].map((z) => (
+      <group key={z}>
+        <Tube material={m.metal} at={[0, 0.062, z]} front={0.0165} length={0.014} />
+        <Block material={m.metal} at={[0, 0.042, z]} size={[0.018, 0.02, 0.014]} />
+      </group>
+    ))}
+    <Tube material={m.metal} at={[0, 0.08, 0]} front={0.008} length={0.012} turn={[0, 0, 0]} />
+    <Tube
+      material={m.metal}
+      at={[0.018, 0.062, 0]}
+      front={0.007}
+      length={0.012}
+      turn={[0, 0, Math.PI / 2]}
+    />
+    {/* The energy cell in its cradle along the left side, the one in view, pulsing on a shot */}
+    <Tube material={m.glow} at={[-0.028, -0.006, -0.03]} front={0.0085} length={0.085} sides={12} />
+    {[-0.07, 0.01].map((z) => (
+      <Tube
+        key={z}
         material={m.dark}
-        position={[0.045, 0.022, 0.085]}
-        rotation={[0, 0, Math.PI / 2]}
-        order={4}
-      >
-        <cylinderGeometry args={[0.008, 0.008, 0.02, 8]} />
+        at={[-0.028, -0.006, z]}
+        front={0.011}
+        length={0.01}
+        sides={12}
+      />
+    ))}
+    {/* The bolt: slides back on a shot, its handle out to the right and down */}
+    <group ref={moving}>
+      <Tube material={m.metal} at={[0.02, 0.016, 0.05]} front={0.0075} length={0.07} sides={12} />
+      <Tube
+        material={m.metal}
+        at={[0.036, 0.008, 0.07]}
+        front={0.004}
+        length={0.034}
+        sides={8}
+        turn={[0, 0, Math.PI / 2 + 0.5]}
+      />
+      <Part material={m.dark} position={[0.051, -0.001, 0.07]}>
+        <sphereGeometry args={[0.009, 12, 8]} />
       </Part>
     </group>
   </>
@@ -118,75 +201,117 @@ const Rifle = ({ m, moving }) => (
 
 const Pistol = ({ m, moving }) => (
   <>
-    {/* Frame and grip, a square muzzle */}
-    <Part material={m.matte} position={[0, -0.012, -0.02]}>
-      <boxGeometry args={[0.055, 0.04, 0.2]} />
-    </Part>
-    <Part material={m.grip} position={[0, -0.075, 0.05]} rotation={[0.22, 0, 0]}>
-      <boxGeometry args={[0.05, 0.11, 0.055]} />
-    </Part>
-    <Part material={m.dark} position={[0, -0.045, -0.02]}>
-      <boxGeometry args={[0.02, 0.025, 0.06]} />
-    </Part>
-    {/* The slide: recoils back on a shot, its side set with glowing blocks */}
+    {/* Polymer frame with a dust cover, the trigger guard and trigger, a textured grip */}
+    <Block material={m.matte} at={[0, -0.018, -0.035]} size={[0.05, 0.03, 0.19]} />
+    <Block material={m.matte} at={[0, -0.038, -0.095]} size={[0.044, 0.014, 0.07]} />
+    <Block material={m.matte} at={[0, -0.056, -0.02]} size={[0.012, 0.006, 0.055]} />
+    <Block material={m.matte} at={[0, -0.045, -0.05]} size={[0.012, 0.026, 0.006]} />
+    <Block
+      material={m.dark}
+      at={[0, -0.04, -0.012]}
+      size={[0.006, 0.022, 0.006]}
+      turn={[0.25, 0, 0]}
+    />
+    <Block
+      material={m.grip}
+      at={[0, -0.085, 0.055]}
+      size={[0.048, 0.115, 0.058]}
+      turn={[0.22, 0, 0]}
+    />
+    {[-0.07, -0.09, -0.11].map((y) => (
+      <Block
+        key={y}
+        material={m.dark}
+        at={[0, y, 0.06 + (y + 0.09) * -0.22]}
+        size={[0.05, 0.006, 0.04]}
+        turn={[0.22, 0, 0]}
+      />
+    ))}
+    <Block
+      material={m.dark}
+      at={[0, -0.146, 0.07]}
+      size={[0.052, 0.012, 0.062]}
+      turn={[0.22, 0, 0]}
+    />
+    {/* The slide: recoils back on a shot. Sights (the front one a glowing dot), rear serrations,
+        the ejection port, the bore, and a recessed band of glowing "infrastructure blocks" */}
     <group ref={moving}>
-      <Part material={m.metal} position={[0, 0.026, -0.03]} order={1}>
-        <boxGeometry args={[0.06, 0.038, 0.22]} />
-      </Part>
-      <Part material={m.dark} position={[0, 0.026, -0.145]} order={2}>
-        <boxGeometry args={[0.03, 0.03, 0.012]} />
-      </Part>
-      {[
-        [0.031, 0.034, -0.08],
-        [0.031, 0.018, -0.05],
-        [0.031, 0.034, -0.02],
-        [0.031, 0.018, 0.01],
-        [-0.031, 0.026, -0.06],
-        [-0.031, 0.026, -0.0],
-      ].map(([x, y, z]) => (
-        <Part key={`${x}${y}${z}`} material={m.glow} position={[x, y, z]} order={3}>
-          <boxGeometry args={[0.006, 0.012, 0.022]} />
-        </Part>
+      <Block material={m.metal} at={[0, 0.016, -0.03]} size={[0.056, 0.036, 0.22]} />
+      <Block material={m.dark} at={[0, 0.018, -0.06]} size={[0.058, 0.016, 0.13]} />
+      {[-0.11, -0.085, -0.06, -0.035, -0.01].map((z) => (
+        <Block key={z} material={m.glow} at={[0, 0.018, z]} size={[0.06, 0.009, 0.016]} />
+      ))}
+      {[0.035, 0.047, 0.059, 0.071].map((z) => (
+        <Block key={z} material={m.dark} at={[0, 0.016, z]} size={[0.058, 0.026, 0.004]} />
+      ))}
+      <Block material={m.dark} at={[0.018, 0.034, 0.005]} size={[0.02, 0.002, 0.045]} />
+      <Tube material={m.dark} at={[0, 0.012, -0.14]} front={0.009} length={0.004} />
+      <Block material={m.dark} at={[0, 0.038, -0.128]} size={[0.006, 0.008, 0.01]} />
+      <Block material={m.glow} at={[0, 0.0415, -0.124]} size={[0.004, 0.003, 0.003]} />
+      {[-0.012, 0.012].map((x) => (
+        <Block key={x} material={m.dark} at={[x, 0.038, 0.068]} size={[0.01, 0.009, 0.01]} />
       ))}
     </group>
   </>
 );
 
+// The heat sink's fins, round the barrel's hot core
+const FINS = Array.from({ length: 12 }, (_, i) => (i / 12) * Math.PI * 2);
+
 const Blaster = ({ m, moving }) => (
   <>
-    {/* A wide body, and a heavy barrel with a flared muzzle */}
-    <Part material={m.metal} position={[0, 0, 0.03]}>
-      <boxGeometry args={[0.085, 0.075, 0.2]} />
-    </Part>
-    <Part material={m.metal} position={[0, 0.005, -0.15]} rotation={[Math.PI / 2, 0, 0]} order={1}>
-      <cylinderGeometry args={[0.032, 0.036, 0.2, 14]} />
-    </Part>
-    <Part material={m.dark} position={[0, 0.005, -0.255]} rotation={[Math.PI / 2, 0, 0]} order={2}>
-      <cylinderGeometry args={[0.042, 0.034, 0.03, 14]} />
-    </Part>
-    <Part material={m.grip} position={[0, -0.07, 0.07]} rotation={[0.25, 0, 0]}>
-      <boxGeometry args={[0.05, 0.1, 0.055]} />
-    </Part>
-    {/* The radial heat sink: fins round the barrel, glowing hotter with each blast */}
-    {Array.from({ length: 8 }, (_, i) => {
-      const a = (i / 8) * Math.PI * 2;
-      return (
-        <Part
-          key={a}
-          material={m.glow}
-          position={[Math.cos(a) * 0.045, 0.005 + Math.sin(a) * 0.045, -0.1]}
-          rotation={[0, 0, a]}
-          order={3}
-        >
-          <boxGeometry args={[0.016, 0.005, 0.09]} />
-        </Part>
-      );
-    })}
-    {/* The pump under the barrel: slides back on a blast */}
+    {/* A wide body under a top shroud, a power pack glowing along its left side, grip and guard */}
+    <Block material={m.metal} at={[0, 0, 0.03]} size={[0.08, 0.07, 0.2]} />
+    <Block material={m.matte} at={[0, 0.044, 0]} size={[0.066, 0.02, 0.25]} />
+    <Block material={m.dark} at={[0, 0.058, 0.03]} size={[0.03, 0.008, 0.14]} />
+    <Block material={m.dark} at={[-0.041, -0.005, 0.04]} size={[0.004, 0.05, 0.13]} />
+    <Block material={m.glow} at={[-0.0435, -0.005, 0.04]} size={[0.002, 0.008, 0.1]} />
+    <Block material={m.dark} at={[0, -0.05, 0.0]} size={[0.05, 0.035, 0.07]} />
+    <Block
+      material={m.grip}
+      at={[0, -0.075, 0.085]}
+      size={[0.05, 0.1, 0.055]}
+      turn={[0.25, 0, 0]}
+    />
+    <Block material={m.dark} at={[0, -0.06, 0.04]} size={[0.01, 0.005, 0.045]} />
+    {/* The barrel: a hot core in the accent between dark radial fins, held by two collars, to a
+        muzzle flaring forward round a glowing bore */}
+    <Tube material={m.metal} at={[0, 0.005, -0.15]} front={0.026} length={0.2} sides={20} />
+    <Tube material={m.glow} at={[0, 0.005, -0.12]} front={0.034} length={0.1} sides={20} />
+    {FINS.map((a) => (
+      <Block
+        key={a}
+        material={m.dark}
+        at={[Math.cos(a) * 0.044, 0.005 + Math.sin(a) * 0.044, -0.12]}
+        size={[0.022, 0.004, 0.096]}
+        turn={[0, 0, a]}
+      />
+    ))}
+    {[-0.172, -0.068].map((z) => (
+      <Tube key={z} material={m.metal} at={[0, 0.005, z]} front={0.052} length={0.01} sides={20} />
+    ))}
+    <Tube
+      material={m.dark}
+      at={[0, 0.005, -0.265]}
+      front={0.04}
+      back={0.03}
+      length={0.035}
+      sides={20}
+    />
+    <Tube material={m.glow} at={[0, 0.005, -0.28]} front={0.018} length={0.004} sides={20} />
+    {/* The pump under the barrel: slides back on a blast, ridged for the hand */}
     <group ref={moving}>
-      <Part material={m.dark} position={[0, -0.04, -0.12]} rotation={[Math.PI / 2, 0, 0]} order={2}>
-        <cylinderGeometry args={[0.018, 0.018, 0.1, 10]} />
-      </Part>
+      <Tube material={m.matte} at={[0, -0.042, -0.13]} front={0.019} length={0.11} sides={14} />
+      {[-0.165, -0.13, -0.095].map((z) => (
+        <Tube
+          key={z}
+          material={m.dark}
+          at={[0, -0.042, z]}
+          front={0.0205}
+          length={0.007}
+          sides={14}
+        />
+      ))}
     </group>
   </>
 );
@@ -289,11 +414,11 @@ const back = new Euler();
 const MODELS = [Rifle, Pistol, Blaster];
 // Each model's size in hand (the blaster's wide barrel would fill the view at full size)
 const SIZE = [1, 1, 0.78];
-const FLASH_AT = [-0.4, -0.16, -0.28];
+const FLASH_AT = [-0.49, -0.16, -0.3];
 // Where a shell leaves the weapon (model units): the rifle's bolt, the pistol's ejection port
 const PORT = [
-  [0.04, 0.03, 0.06],
-  [0.035, 0.04, -0.02],
+  [0.03, 0.026, 0.045],
+  [0.03, 0.036, 0.005],
   [0, 0, 0],
 ];
 
@@ -509,6 +634,22 @@ const Viewmodel = ({
   );
   useEffect(() => () => env?.dispose(), [env]);
 
+  // The speck that clears the depth buffer before the weapon: draws nothing itself
+  const speck = useMemo(
+    () => ({
+      geometry: new PlaneGeometry(1e-4, 1e-4),
+      material: new MeshBasicMaterial({ colorWrite: false, ...ON_TOP }),
+    }),
+    []
+  );
+  useEffect(
+    () => () => {
+      speck.geometry.dispose();
+      speck.material.dispose();
+    },
+    [speck]
+  );
+
   // Each weapon's accent, for its muzzle light (plain colors: nothing to free)
   const accents = useMemo(() => ACCENT.map((a) => toColor(colors[a])), [colors]);
 
@@ -523,7 +664,7 @@ const Viewmodel = ({
         dark: basic(color('dark')),
         grip: basic(color('dark').lerp(color('muted'), 0.3)),
         glow: ACCENT.map((a) => basic(color(a))),
-        flash: ACCENT.map((a) => new SpriteMaterial({ color: color(a), opacity: 0, ...OVER })),
+        flash: ACCENT.map((a) => new SpriteMaterial({ color: color(a), opacity: 0, ...ON_TOP })),
       };
     }
     const envMap = env?.texture ?? null;
@@ -577,7 +718,7 @@ const Viewmodel = ({
             blending: AdditiveBlending,
             toneMapped: false,
             opacity: 0,
-            ...OVER,
+            ...ON_TOP,
           })
       ),
     };
@@ -669,6 +810,7 @@ const Viewmodel = ({
 
   return (
     <>
+      <DepthClear material={speck.material} geometry={speck.geometry} />
       <group ref={group} position={BASE} scale={SCALE * SIZE[weapon]}>
         {MODELS.map((Model, i) => (
           <group key={i} visible={i === weapon}>
