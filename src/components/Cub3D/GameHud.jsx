@@ -29,14 +29,87 @@ const SOLID = 'border border-line bg-surface/[0.88] backdrop-blur-md';
 // The dialogs over the paused game: the dark island's frosted glass
 const DIALOG = 'rounded-lg border bg-glass-strong shadow-modal backdrop-blur-xl';
 
-/** Corner brackets around a panel, in its accent (`className` sets the color), 1 px */
-export const Brackets = ({ className = 'text-foreground-muted', size = 'h-2.5 w-2.5' }) => (
-  <span aria-hidden='true' className={`pointer-events-none absolute -inset-px ${className}`}>
-    <span className={`absolute left-0 top-0 ${size} border-l border-t border-current`} />
-    <span className={`absolute right-0 top-0 ${size} border-r border-t border-current`} />
-    <span className={`absolute bottom-0 left-0 ${size} border-b border-l border-current`} />
-    <span className={`absolute bottom-0 right-0 ${size} border-b border-r border-current`} />
-  </span>
+/** Corner brackets around a panel, in its accent (`className` sets the color), 1 px (2 `thick`) */
+export const Brackets = ({
+  className = 'text-foreground-muted',
+  size = 'h-2.5 w-2.5',
+  thick = false,
+}) => {
+  const [l, r, t, b] = thick
+    ? ['border-l-2', 'border-r-2', 'border-t-2', 'border-b-2']
+    : ['border-l', 'border-r', 'border-t', 'border-b'];
+  return (
+    <span aria-hidden='true' className={`pointer-events-none absolute -inset-px ${className}`}>
+      <span className={`absolute left-0 top-0 ${size} ${l} ${t} border-current`} />
+      <span className={`absolute right-0 top-0 ${size} ${r} ${t} border-current`} />
+      <span className={`absolute bottom-0 left-0 ${size} ${b} ${l} border-current`} />
+      <span className={`absolute bottom-0 right-0 ${size} ${b} ${r} border-current`} />
+    </span>
+  );
+};
+
+/**
+ * Text typed out a few characters at a time (a dossier, a crew member's line): returns how many
+ * characters of `text` show, and `finish` to show them all at once. A new text starts from none;
+ * `enabled` false shows it whole (reduced motion). `onStep` runs every `tickEvery` steps (a quiet
+ * key sound), not on every one
+ */
+const useTypewriter = (
+  text,
+  { enabled = true, chars = 1, interval = 28, onStep, tickEvery = 3 } = {}
+) => {
+  const [typed, setTyped] = useState({ text, count: 0 });
+  // Set by finish: the running timer stops at its next tick
+  const skip = useRef(false);
+  const step = useEffectEvent(() => onStep?.());
+  useEffect(() => {
+    if (!enabled) return undefined;
+    skip.current = false;
+    let count = 0;
+    let steps = 0;
+    const timer = window.setInterval(() => {
+      if (skip.current) {
+        window.clearInterval(timer);
+        return;
+      }
+      count = Math.min(count + chars, text.length);
+      steps += 1;
+      setTyped({ text, count });
+      if (steps % tickEvery === 1) step();
+      if (count >= text.length) window.clearInterval(timer);
+    }, interval);
+    return () => window.clearInterval(timer);
+  }, [text, enabled, chars, interval, tickEvery]);
+  const finish = () => {
+    skip.current = true;
+    setTyped({ text, count: text.length });
+  };
+  let shown = 0;
+  if (!enabled) shown = text.length;
+  else if (typed.text === text) shown = typed.count;
+  return [shown, finish];
+};
+
+// Between 0 and `max`
+const clampTo = (value, max) => Math.max(0, Math.min(max, value));
+
+/**
+ * A run of text being typed: the full text holds its place (invisible), the typed part is drawn
+ * over it, so the dialog never reflows as it types. Screen readers get the whole text at once
+ */
+const Typed = ({ text, shown, caret = false }) => (
+  <>
+    <span className='sr-only'>{text}</span>
+    <span aria-hidden='true' className='relative block'>
+      <span className='invisible'>{text}</span>
+      <span className='absolute inset-0'>
+        {text.slice(0, shown)}
+        {caret && shown < text.length && (
+          <span className='ml-px inline-block h-[1em] w-[0.55em] translate-y-[0.15em] bg-primary-400' />
+        )}
+      </span>
+    </span>
+  </>
 );
 // Every main and pause menu button: one text style (mono capitals), centered when a label wraps
 const MENU_BUTTON = 'w-full justify-center text-center font-mono uppercase tracking-widest';
@@ -237,8 +310,19 @@ export const GameHud = ({
   volume,
   onVolume,
   onPause,
+  hubFlash = 0,
+  noFlash = false,
 }) => (
   <>
+    {/* The command hub coming online: a cool edge glow that fades (not with reduced motion or
+        Reduce flashing; the hub's lit hologram and its dossier say it as well) */}
+    {hubFlash > 0 && !noFlash && (
+      <div
+        key={hubFlash}
+        aria-hidden='true'
+        className='pointer-events-none absolute inset-0 z-20 opacity-0 shadow-[inset_0_0_120px_24px_rgb(var(--c-info)/0.55)] motion-safe:animate-hub-glow'
+      />
+    )}
     {/* A red edge, flashed by the game loop when a threat wears integrity down */}
     <div
       ref={hitRef}
@@ -744,6 +828,11 @@ export const SystemFailure = ({ t, onReboot, onMenu }) => {
 /**
  * A wall's content, opened from the crosshair: a dialog over the game with a CRT switch-on.
  * useModalDialog makes the game inert behind it and closes it on Escape before the game sees it.
+ * In Game Mode (`terminal`) it is a holographic terminal: dark glass with glowing corner
+ * brackets, faint scan lines, a slow flicker (not with reduced motion or Reduce flashing), the
+ * title and text typed out (whole at once with reduced motion; any key or click finishes it) with
+ * a quiet tick (`onType`), and a Close terminal button. Screen readers get the whole text at once,
+ * and every link and button is there from the start
  */
 export const GameInfo = ({
   t,
@@ -753,15 +842,57 @@ export const GameInfo = ({
   onClose,
   closeLabel,
   dark = false,
+  terminal = false,
+  reduced = false,
+  noFlash = false,
+  onType,
   children,
 }) => {
   const titleId = useId();
+  const scroller = useRef(null);
   const { overlayRef, panelRef, close, onKeyDown, backdrop } = useModalDialog(onClose);
+  const lines = detail.lines ?? [];
+  // What types out: the title, then each paragraph, as one run of characters
+  const [shown, finish] = useTypewriter([title, ...lines].join(''), {
+    enabled: terminal && !reduced,
+    chars: 4,
+    interval: 16,
+    onStep: onType,
+  });
+  const typing = shown < title.length + lines.reduce((sum, line) => sum + line.length, 0);
+  // How much of each part shows: the title's characters come first, then each line's in turn
+  const titleShown = Math.min(shown, title.length);
+  const starts = lines.map(
+    (_, i) => title.length + lines.slice(0, i).reduce((sum, line) => sum + line.length, 0)
+  );
+  const lineShown = lines.map((line, i) => clampTo(shown - starts[i], line.length));
 
   useEffect(() => {
-    panelRef.current?.focus();
+    // The scrolling body takes focus, so the arrow keys scroll it
+    (scroller.current ?? panelRef.current)?.focus();
   }, [panelRef]);
+  // The E that opened it (and its auto-repeat while still held) must not skip the typing: keys and
+  // clicks count only a moment after it opens
+  const armed = useRef(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      armed.current = true;
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, []);
 
+  const keys = (e) => {
+    // Any key but Tab, Shift or Escape finishes the typing at once
+    if (typing && armed.current && !e.repeat && !['Tab', 'Shift', 'Escape'].includes(e.key)) {
+      finish();
+    }
+    onKeyDown(e);
+  };
+  const skip = () => {
+    if (armed.current) finish();
+  };
+
+  const heading = 'font-mono text-sm font-bold uppercase tracking-widest text-foreground';
   return createPortal(
     <div
       ref={overlayRef}
@@ -775,99 +906,171 @@ export const GameInfo = ({
         aria-modal='true'
         aria-labelledby={titleId}
         tabIndex={-1}
-        onKeyDown={onKeyDown}
-        className={`relative m-auto max-h-full w-full max-w-2xl overflow-y-auto ${DIALOG} border-primary/40 p-6 text-foreground outline-hidden motion-safe:animate-crt-in`}
+        onKeyDown={keys}
+        onPointerDown={typing ? skip : undefined}
+        className={
+          terminal
+            ? `holo-terminal relative m-auto flex max-h-full w-full max-w-2xl flex-col rounded-lg border border-primary-400/60 bg-background/90 text-foreground outline-hidden backdrop-blur-md motion-safe:animate-crt-in ${noFlash ? '' : 'holo-flicker'}`
+            : `relative m-auto flex max-h-full w-full max-w-2xl flex-col ${DIALOG} border-primary/40 text-foreground outline-hidden motion-safe:animate-crt-in`
+        }
       >
-        <Brackets className='text-primary-400' size='h-4 w-4' />
-        {/* Game Mode's dossier: which section of the profile this is */}
-        {kicker && (
-          <p className='mb-1 border-b border-line pb-2 font-mono text-xs font-bold uppercase tracking-widest text-foreground'>
-            {kicker}
-          </p>
-        )}
-        <h2 id={titleId} className='font-mono text-2xl font-black uppercase text-primary-400'>
-          {title}
-        </h2>
-        {detail.lines?.map((line) => (
-          <p key={line} className='mt-3 leading-relaxed'>
-            {line}
-          </p>
-        ))}
-        {detail.tags && (
-          <ul className='mt-4 flex flex-wrap gap-2'>
-            {detail.tags.map((tag) => (
-              <li
-                key={tag}
-                className='rounded-lg border border-line-strong bg-surface-raised px-3 py-1 text-sm'
-              >
-                {tag}
-              </li>
-            ))}
-          </ul>
-        )}
-        {detail.items && (
-          <ul className='mt-4 space-y-4'>
-            {detail.items.map(({ name, description, link }) => (
-              <li key={name}>
-                <h3 className='font-bold text-foreground'>{name}</h3>
-                <p className='mt-1 text-sm leading-relaxed text-foreground-muted'>{description}</p>
-                {link && (
-                  <a
-                    href={link}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    aria-label={t('demos.sourceAria', { name })}
-                    className='mt-1 inline-block text-sm font-semibold text-primary-400 underline underline-offset-4'
-                  >
-                    {t('demos.source')}
-                  </a>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-        {/* Experience and education: a title, where, when, and what was done */}
-        {detail.entries && (
-          <ol className='mt-4 space-y-4 border-l-2 border-line-strong pl-4'>
-            {detail.entries.map(({ title: heading, place, date, points }) => (
-              <li key={`${heading}-${place}`}>
-                <h3 className='font-bold text-foreground'>{heading}</h3>
-                <p className='text-sm font-semibold text-foreground'>
-                  {place}
-                  {date && <span className='font-normal text-foreground-muted'> · {date}</span>}
-                </p>
-                {points.length > 0 && (
-                  <ul className='mt-1 list-disc space-y-1 pl-5 text-sm leading-relaxed text-foreground'>
-                    {points.map((point) => (
-                      <li key={point}>{point}</li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            ))}
-          </ol>
-        )}
-        {detail.links && (
-          <ul className='mt-4 flex flex-wrap gap-3'>
-            {detail.links.map(({ href, label }) => (
-              <li key={href}>
-                <a
-                  href={href}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className={`${styles.buttonGhost} inline-flex`}
+        <Brackets
+          className={terminal ? 'holo-glow text-primary-400' : 'text-primary-400'}
+          size={terminal ? 'h-5 w-5' : 'h-4 w-4'}
+          thick={terminal}
+        />
+        {terminal && <span aria-hidden='true' className='holo-scan' />}
+        <div ref={scroller} tabIndex={-1} className='relative overflow-y-auto p-6 outline-hidden'>
+          {/* Game Mode's dossier: which section of the profile this is */}
+          {kicker && <p className={`mb-1 border-b border-line pb-2 ${heading}`}>{kicker}</p>}
+          <h2 id={titleId} className='font-mono text-2xl font-black uppercase text-primary-400'>
+            {terminal ? <Typed text={title} shown={titleShown} caret={typing} /> : title}
+          </h2>
+          {lines.map((line, i) => (
+            <p key={line} className='mt-3 leading-relaxed'>
+              {terminal ? (
+                <Typed
+                  text={line}
+                  shown={lineShown[i]}
+                  caret={typing && titleShown === title.length && lineShown[i] < line.length}
+                />
+              ) : (
+                line
+              )}
+            </p>
+          ))}
+          {/* The command hub: the mission's progress, ticked (and said) per section */}
+          {detail.checklist && (
+            <section className='mt-5'>
+              <h3 className={heading}>{detail.checklist.heading}</h3>
+              <ol className='mt-2 grid gap-x-6 gap-y-1 font-mono text-sm sm:grid-cols-2'>
+                {detail.checklist.items.map(({ id, title: name, found, next }) => (
+                  <li key={id} className='flex items-center gap-2'>
+                    <span
+                      aria-hidden='true'
+                      className={found ? 'text-success' : 'text-foreground-muted'}
+                    >
+                      {found ? '✓' : '○'}
+                    </span>
+                    <span>{name}</span>
+                    {/* Read as "About, not yet found, next" */}
+                    <span className='sr-only'>
+                      {`, ${found ? detail.checklist.found : detail.checklist.notYet}`}
+                    </span>
+                    {next && (
+                      <span className='text-xs font-bold uppercase tracking-wider text-primary-400'>
+                        <span className='sr-only'>, </span>
+                        {detail.checklist.next}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+          {detail.controls && (
+            <section className='mt-5'>
+              <h3 className={heading}>{detail.controls.heading}</h3>
+              <ul className='mt-2 space-y-1 font-mono text-sm leading-relaxed text-foreground'>
+                {detail.controls.items.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {detail.tags && (
+            <ul className='mt-4 flex flex-wrap gap-2'>
+              {detail.tags.map((tag) => (
+                <li
+                  key={tag}
+                  className='rounded-lg border border-line-strong bg-surface-raised px-3 py-1 text-sm'
                 >
-                  {label}
-                  <span className='sr-only'>{t('footer.newTab')}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-        {children}
-        <button type='button' onClick={close} className={`${styles.buttonPrimary} mt-6`}>
-          {closeLabel ?? t('demos.game.backToGame')}
-        </button>
+                  {tag}
+                </li>
+              ))}
+            </ul>
+          )}
+          {detail.items && (
+            <ul className='mt-4 space-y-4'>
+              {detail.items.map(({ name, description, link }) => (
+                <li key={name}>
+                  <h3 className='font-bold text-foreground'>{name}</h3>
+                  <p className='mt-1 text-sm leading-relaxed text-foreground-muted'>
+                    {description}
+                  </p>
+                  {link && (
+                    <a
+                      href={link}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      aria-label={t('demos.sourceAria', { name })}
+                      className='mt-1 inline-block text-sm font-semibold text-primary-400 underline underline-offset-4'
+                    >
+                      {t('demos.source')}
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {/* Experience and education: a title, where, when, and what was done */}
+          {detail.entries && (
+            <ol className='mt-4 space-y-4 border-l-2 border-line-strong pl-4'>
+              {detail.entries.map(({ title: entry, place, date, points }) => (
+                <li key={`${entry}-${place}`}>
+                  <h3 className='font-bold text-foreground'>{entry}</h3>
+                  <p className='text-sm font-semibold text-foreground'>
+                    {place}
+                    {date && <span className='font-normal text-foreground-muted'> · {date}</span>}
+                  </p>
+                  {points.length > 0 && (
+                    <ul className='mt-1 list-disc space-y-1 pl-5 text-sm leading-relaxed text-foreground'>
+                      {points.map((point) => (
+                        <li key={point}>{point}</li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+          {detail.links && (
+            <>
+              {detail.linksHeading && <h3 className={`mt-5 ${heading}`}>{detail.linksHeading}</h3>}
+              <ul className='mt-4 flex flex-wrap gap-3'>
+                {detail.links.map(({ href, label }) => (
+                  <li key={href}>
+                    <a
+                      href={href}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className={`${styles.buttonGhost} inline-flex`}
+                    >
+                      {label}
+                      <span className='sr-only'>{t('footer.newTab')}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {children}
+          <button
+            type='button'
+            onClick={close}
+            className={`${styles.buttonPrimary} mt-6 gap-3 ${terminal ? 'font-mono uppercase tracking-widest' : ''}`}
+          >
+            {closeLabel ?? t('demos.game.backToGame')}
+            {terminal && (
+              <kbd
+                aria-hidden='true'
+                className='rounded-xs border border-current px-1.5 py-0.5 font-mono text-xs font-bold'
+              >
+                {t('demos.game.escKey')}
+              </kbd>
+            )}
+          </button>
+        </div>
       </div>
     </div>,
     document.body
@@ -1036,32 +1239,25 @@ export const NpcDialogue = ({ t, name, line, reduced, onClose }) => {
   const lineId = useId();
   const box = useRef(null);
   const button = useRef(null);
-  // Characters typed so far, per line: a new line starts from none
-  const [typed, setTyped] = useState({ line, count: 0 });
-  let shown = 0;
-  if (reduced) shown = line.length;
-  else if (typed.line === line) shown = typed.count;
+  // Characters typed so far: a new line starts from none. Space, Enter on the line, or a click
+  // shows it whole at once
+  const [shown, finish] = useTypewriter(line, { enabled: !reduced });
+  const typing = shown < line.length;
 
   useEffect(() => {
     box.current?.focus();
   }, []);
-  useEffect(() => {
-    if (reduced) return undefined;
-    const timer = window.setInterval(() => {
-      setTyped((last) => {
-        const n = last.line === line ? last.count : 0;
-        if (n >= line.length) window.clearInterval(timer);
-        return { line, count: Math.min(n + 1, line.length) };
-      });
-    }, 28);
-    return () => window.clearInterval(timer);
-  }, [line, reduced]);
 
   const onKeyDown = (e) => {
     // Keys stay here: Escape closes this, not Game Mode. A held E does not close the line it
     // just opened
     e.stopPropagation();
     if (e.repeat) return;
+    if (typing && (e.key === ' ' || (e.key === 'Enter' && e.target !== button.current))) {
+      e.preventDefault();
+      finish();
+      return;
+    }
     if (e.key === 'Escape' || e.code === 'KeyE') {
       e.preventDefault();
       onClose();
@@ -1081,6 +1277,7 @@ export const NpcDialogue = ({ t, name, line, reduced, onClose }) => {
       aria-describedby={lineId}
       tabIndex={-1}
       onKeyDown={onKeyDown}
+      onPointerDown={typing ? finish : undefined}
       className={`absolute inset-x-3 bottom-12 z-[45] mx-auto max-w-2xl ${DIALOG} border-primary-400/40 p-4 text-foreground outline-hidden`}
     >
       <Brackets className='text-primary-400' />

@@ -47,6 +47,8 @@ import { MAP_CUB, parseCub } from './map';
 import {
   ENEMIES,
   GAME_PANELS,
+  HUB,
+  MOVE_SPEED,
   NPCS,
   PROP_BOXES,
   SECTIONS,
@@ -70,7 +72,6 @@ const loadSfx = () => import('./sfx');
 
 const EYE = 0.5; // walls are 1 high: the eye is halfway, as in a raycaster
 const FOV = 60; // horizontal, the original's FOV_ANGLE
-const MOVE_SPEED = 3; // cells per second (the original: SPEED 4 of a 64-unit cell per frame)
 const TURN_SPEED = 3; // radians per second (the original: 0.05 per frame)
 const REDUCED_TURN = Math.PI / 4; // with reduced motion, each arrow press turns one step
 const RADIUS = 0.2; // how close the player gets to a wall
@@ -456,6 +457,7 @@ const Scene = memo(function Scene({
   slow,
   hitStop,
   respawnRef,
+  hubLitRef,
 }) {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
@@ -752,6 +754,8 @@ const Scene = memo(function Scene({
             guideRef={guideRef}
             noFlash={noFlash}
             graphics={graphics}
+            hitStopRef={hitStop}
+            hubLitRef={hubLitRef}
           />
         </Suspense>
       ) : (
@@ -874,7 +878,8 @@ const aimAt = (
   enemies,
   npcs = [],
   panelRange = AIM_RANGE,
-  reach = AIM_RANGE
+  reach = AIM_RANGE,
+  objects = []
 ) => {
   const { x, z } = camera.position;
   const yaw = camera.rotation.y;
@@ -895,6 +900,8 @@ const aimAt = (
   };
   enemies.forEach((enemy) => targetable(enemy) && consider(enemy, ENEMY_RADIUS, reach));
   npcs.forEach((npc) => consider(npc, NPC_RADIUS, AIM_RANGE));
+  // Things that stand in a room and answer like a terminal (the command hub): within panel range
+  objects.forEach((object) => consider(object, object.radius, panelRange));
   if (hit || wall > panelRange) return hit;
   const panel = panels.find(
     ({ position: [px, , pz] }) => Math.hypot(hx - px, hz - pz) < AIM_RADIUS
@@ -940,13 +947,60 @@ const TOUCH_MOVES = [
 ];
 const TOUCH_BUTTON = `inline-flex h-12 w-12 select-none items-center justify-center rounded-xl border border-line-strong bg-glass text-lg font-bold text-foreground backdrop-blur-md [touch-action:none] ${styles.hudFocus}`;
 
-// Panels that open something else than their own text (Game Mode's rooms.js)
-const KIND = Object.fromEntries(GAME_PANELS.map(({ id, kind }) => [id, kind]));
+// Panels that open something else than their own text (Game Mode's rooms.js), and the command hub
+const KIND = {
+  ...Object.fromEntries(GAME_PANELS.map(({ id, kind }) => [id, kind])),
+  [HUB.id]: HUB.kind,
+};
+// What else the crosshair can find in Game Mode, standing in a room (aimAt's `objects`)
+const HUB_OBJECTS = [HUB];
+// The weapon's motion at rest (GameMotion and the viewmodel read every field): a shot sets `kick`,
+// which `recoil` springs toward and back; `eject` counts shots that throw a shell
+const restMotion = () => ({
+  recoil: 0,
+  kick: 0,
+  shake: 0,
+  flash: 0,
+  bobX: 0,
+  bobY: 0,
+  sway: 0,
+  eject: 0,
+});
 const panelTitle = (t, id, game) => {
   if (!game) return t(`demos.cub3d.panels.${id}`);
   return t(KIND[id] === 'section' ? `demos.game.sections.${id}` : `demos.game.panels.${id}`);
 };
 const NPC_IDS = new Set(NPCS.map(({ id }) => id));
+// The line above a dossier's title: which section of the profile it is, or the hub's briefing
+const dossierKicker = (t, id, game) => {
+  if (!game) return null;
+  if (KIND[id] === 'section') {
+    return t('demos.game.dossier', { number: SECTIONS.indexOf(id) + 1, total: SECTIONS.length });
+  }
+  return KIND[id] === 'hub' ? t('demos.game.hub.kicker') : null;
+};
+// The command hub's dossier: the owner's briefing, the mission's progress (live, from the sections
+// read so far, the next one marked), the controls, and where to find the owner
+const hubDetail = (t, sections) => {
+  const next = sections.find(({ found }) => !found)?.id;
+  return {
+    lines: [t('demos.game.story'), t('demos.game.objective')],
+    checklist: {
+      heading: t('demos.game.hub.progress'),
+      items: sections.map(({ id, title, found }) => ({ id, title, found, next: id === next })),
+      found: t('demos.game.mission.discovered'),
+      notYet: t('demos.game.mission.notYet'),
+      next: t('demos.game.mission.next'),
+    },
+    controls: { heading: t('demos.game.hub.controls'), items: t('demos.game.keys') },
+    linksHeading: t('demos.game.hub.links'),
+    links: [
+      { href: person.resume, label: t('demos.game.mission.resume') },
+      { href: person.github, label: t('demos.game.links.github') },
+      { href: person.linkedin, label: t('demos.game.links.linkedin') },
+    ],
+  };
+};
 // What the crosshair is on (a threat, a crew member or a panel id), as the HUD shows and
 // announces it
 const aimText = (t, enemies, id) => {
@@ -1142,7 +1196,11 @@ const Cub3DWorld = ({
   const sfx = useRef(null);
   const fxRef = useRef(null);
   // Set by a shot, eased back to 0 by GameMotion (which adds the gauntlet's bob and sway)
-  const motion = useRef({ recoil: 0, shake: 0 });
+  const motion = useRef(restMotion());
+  // The command hub's hologram burns bright while its dossier is open (Facility reads it), and a
+  // counter replays the HUD's edge glow each time it opens
+  const hubLit = useRef(false);
+  const [hubFlash, setHubFlash] = useState(0);
   // The HUD's crosshair (its spread), energy and integrity bars and hit flash, written per frame
   const crosshairRef = useRef(null);
   const energyBar = useRef(null);
@@ -1652,7 +1710,8 @@ const Cub3DWorld = ({
         enemies.current,
         npcs.current,
         PANEL_RANGE,
-        WEAPON_FX[weaponState.current].range
+        WEAPON_FX[weaponState.current].range,
+        HUB_OBJECTS
       );
       if (aimed === targetRef.current) return;
       targetRef.current = aimed;
@@ -1873,7 +1932,8 @@ const Cub3DWorld = ({
     lockRef.current?.unlock();
     input.current.clear();
     firing.current.held = false;
-    motion.current = { recoil: 0, shake: 0 };
+    // Every field back to rest, keeping only the shell count (the viewmodel's pool follows it)
+    motion.current = { ...restMotion(), eject: motion.current.eject };
     const camera = cameraRef.current;
     if (camera) {
       camera.rotation.x = 0;
@@ -1912,6 +1972,17 @@ const Cub3DWorld = ({
     }
     if (NPC_IDS.has(id)) {
       talkTo(id);
+      return;
+    }
+    // The command hub: its own dossier (briefing, progress, controls), with a sound, the
+    // hologram lighting up and an edge glow. Not a section: the mission does not count it
+    if (KIND[id] === 'hub') {
+      // Lit before holdView's frame, so that frame shows it
+      hubLit.current = true;
+      holdView();
+      play('access');
+      setHubFlash((n) => n + 1);
+      setOpenPanel(id);
       return;
     }
     holdView();
@@ -1970,8 +2041,12 @@ const Cub3DWorld = ({
     energy.current.at = now;
     shots.current.fired += 1;
     firing.current.ready = now + cfg.cooldown * 1000;
-    motion.current.recoil = cfg.kick;
+    // The recoil's target: a shot adds to it (rapid fire climbs, to a point), the weapon springs
+    // up to it fast and settles back slowly (GameMotion)
+    motion.current.kick = Math.min(1.3, motion.current.kick + cfg.kick);
     motion.current.shake = cfg.shake;
+    // The rifle's bolt and the pistol's slide throw a shell (the blaster has none)
+    if (cfg.shell) motion.current.eject += 1;
     // The muzzle flash, no more than three times a second whatever the rate of fire
     if (now - lastFlash.current >= 334) {
       motion.current.flash = 1;
@@ -2025,6 +2100,7 @@ const Cub3DWorld = ({
   };
   const closePanel = () => {
     setOpenPanel(null);
+    hubLit.current = false;
     if (game) {
       const found = foundRef.current;
       foundRef.current = null;
@@ -2485,6 +2561,7 @@ const Cub3DWorld = ({
           slow={slow}
           hitStop={hitStop}
           respawnRef={respawnRef}
+          hubLitRef={hubLit}
         />
         {game && (
           <GameLayer
@@ -2687,6 +2764,8 @@ const Cub3DWorld = ({
           volume={volume}
           onVolume={changeVolume}
           onPause={pause}
+          hubFlash={hubFlash}
+          noFlash={noFlash}
         />
       )}
       {pauseOpen && (
@@ -2713,16 +2792,16 @@ const Cub3DWorld = ({
           t={t}
           dark={game}
           title={panelTitle(t, openPanel, game)}
-          kicker={
-            game && KIND[openPanel] === 'section'
-              ? t('demos.game.dossier', {
-                  number: SECTIONS.indexOf(openPanel) + 1,
-                  total: SECTIONS.length,
-                })
-              : null
-          }
-          detail={details[openPanel]}
+          kicker={dossierKicker(t, openPanel, game)}
+          detail={openPanel === HUB.id ? hubDetail(t, sectionList) : details[openPanel]}
           onClose={closePanel}
+          // Game Mode's dossiers are terminals: typed out (with a quiet tick when sound is on), a
+          // scan-line overlay, and a Close terminal button
+          terminal={game}
+          reduced={reduced}
+          noFlash={noFlash}
+          onType={() => play('tick')}
+          closeLabel={game ? t('demos.game.closeTerminal') : undefined}
         >
           {openPanel === 'contact' && <ContactForm />}
           {game && openPanel === 'projects' && (

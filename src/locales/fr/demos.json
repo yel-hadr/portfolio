@@ -201,6 +201,7 @@
     "on": "activé",
     "off": "coupé",
     "backToGame": "Retour au jeu",
+    "closeTerminal": "Fermer le terminal",
     "use": "Ouvrir",
     "escKey": "Échap",
     "rooms": {
@@ -218,7 +219,8 @@
       "contact": "Communications sécurisées",
       "cub3dBody": "Lance la démo cub3D.",
       "fdfBody": "Lance la démo FdF.",
-      "contactBody": "Ouvre un canal : le formulaire de contact."
+      "contactBody": "Ouvre un canal : le formulaire de contact.",
+      "hub": "Centre de commande"
     },
     "weapons": ["Kubernetes Kar98k", "Terraform Tactical", "The DevOps Defender"],
     "weapon": "Arme : {name}",
@@ -294,6 +296,12 @@
     "recharging": "Recharge : attendez que la barre d’énergie se remplisse.",
     "integrityLow": "Intégrité faible : éloignez-vous des menaces.",
     "hologram": "CENTRE DE COMMANDE",
+    "hub": {
+      "kicker": "Contrôle de mission · briefing",
+      "progress": "Progression de la mission",
+      "controls": "Commandes",
+      "links": "Liens"
+    },
     "crewTitle": "L’équipe",
     "npcs": {
       "sysadmin": {

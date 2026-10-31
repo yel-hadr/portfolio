@@ -87,10 +87,19 @@ export const iconSpot = (i) => [17 + (i % 6) * 1.8, ICON_Y, i < 6 ? 11.4 : 13.6]
 // reaches, `cone` (radians) hits every threat in it instead of the one in the crosshair; `energy`
 // is what a shot costs (of 100, refilled shortly after the last shot); `shake` and `kick` scale the
 // screen shake and the weapon's recoil; `fx` is the particle effect (Enemies.jsx), `sound` the
-// sfx.js voice. Every hit neutralizes: the weapons differ in reach and spread
+// sfx.js voice; `shell`: each shot throws a spent shell from the ejection port (Viewmodel.jsx). Every hit neutralizes: the weapons differ in reach and spread
 export const WEAPON_FX = [
   // Kubernetes Kar98k, the rifle: one heavy shot that reaches past a threat's sight, a blue trail
-  { cooldown: 0.9, range: 14, energy: 30, shake: 1, kick: 1, fx: 'trail', sound: 'sniper' },
+  {
+    cooldown: 0.9,
+    range: 14,
+    energy: 30,
+    shake: 1,
+    kick: 1,
+    fx: 'trail',
+    sound: 'sniper',
+    shell: true,
+  },
   // Terraform Tactical, the pistol: rapid fire at short range, green blocks where it lands
   {
     cooldown: 0.15,
@@ -101,6 +110,7 @@ export const WEAPON_FX = [
     kick: 0.35,
     fx: 'blocks',
     sound: 'provision',
+    shell: true,
   },
   // The DevOps Defender, the blaster: a wide blast hitting every threat in its cone, an orange
   // radial burst
@@ -177,6 +187,14 @@ export const LASER_GRID = {
 
 // The command hub's holographic projection, in the About room
 export const HOLOGRAM = [3.5, 12];
+// The hub answers like a wall terminal (Press E, then its own dossier: the briefing, the mission's
+// progress, the controls), but it stands in the room: the crosshair finds it by its distance from
+// the view's center line, as the crew (`radius` in cells, a little wider than the globe)
+export const HUB = { id: 'hub', kind: 'hub', x: HOLOGRAM[0], z: HOLOGRAM[1], radius: 0.45 };
+
+// Walking speed, cells per second (the original cub3D: SPEED 4 of a 64-unit cell per frame). The
+// weapon's bob follows the speed the player actually moves at (Enemies.jsx)
+export const MOVE_SPEED = 3;
 
 // Ceiling lamps: [x, z, flickers]
 export const LAMPS = [

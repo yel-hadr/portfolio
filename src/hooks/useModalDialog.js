@@ -72,12 +72,14 @@ export const useModalDialog = (onClose) => {
     const first = items[0];
     const last = items[items.length - 1];
     const current = document.activeElement;
-    // Focus on the panel itself (on open, or after a click on a non-interactive part) counts as
-    // outside the cycle: Tab enters at the start, Shift+Tab at the end
-    if (e.shiftKey && (current === first || current === panel)) {
+    // Focus anywhere but on a control (the panel itself on open or after a click on a
+    // non-interactive part, or a focusable body such as a dossier's scroller) counts as outside the
+    // cycle: Tab enters at the start, Shift+Tab at the end
+    const outside = !items.includes(current);
+    if (e.shiftKey && (current === first || outside)) {
       e.preventDefault();
       last.focus();
-    } else if (!e.shiftKey && (current === last || current === panel)) {
+    } else if (!e.shiftKey && (current === last || outside)) {
       e.preventDefault();
       first.focus();
     }

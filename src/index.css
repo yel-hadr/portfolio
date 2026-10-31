@@ -85,6 +85,8 @@
   --animate-crt-in: crt-in 280ms ease-out;
   --animate-prompt-in: prompt-in 180ms ease-out;
   --animate-hud-tick: hud-tick 3.2s ease-in-out infinite;
+  /* Game Mode's command hub coming online: an edge glow that fades out */
+  --animate-hub-glow: hub-glow 600ms ease-out;
 
   @keyframes backdrop-in {
     from {
@@ -118,6 +120,11 @@
   @keyframes prompt-in {
     from {
       opacity: 0;
+    }
+  }
+  @keyframes hub-glow {
+    from {
+      opacity: 1;
     }
   }
   /* The HUD meters' sheen, running along the bar now and then */
@@ -653,6 +660,61 @@
     .spotlight {
       display: none;
     }
+  }
+}
+
+/* Game Mode's dossiers as holographic terminals (GameInfo): light from the glass and its
+   brackets (the dark island's glow; none would show on light), faint scan lines over the text
+   (about 4% foreground, so every text pair keeps its contrast) and a slow, shallow flicker */
+.holo-terminal {
+  box-shadow:
+    0 0 40px rgb(var(--c-primary) / calc(0.22 * var(--glow))),
+    inset 0 0 32px rgb(var(--c-primary) / calc(0.07 * var(--glow)));
+}
+.holo-glow {
+  filter: drop-shadow(0 0 6px rgb(var(--c-primary) / calc(0.85 * var(--glow))));
+}
+.holo-scan {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgb(var(--c-foreground) / 0.035) 0 1px,
+    transparent 1px 3px
+  );
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* A projection's unsteady light: mostly still, with two shallow dips in seven seconds (a 6%
+     change in opacity, far from a flash). Reduce flashing drops the class */
+  /* After the CRT switch-on (an unlayered animation would otherwise replace it) */
+  .holo-flicker {
+    animation:
+      crt-in 280ms ease-out,
+      holo-flicker 7s linear 280ms infinite;
+  }
+}
+@keyframes holo-flicker {
+  0%,
+  46%,
+  49%,
+  71%,
+  74%,
+  100% {
+    opacity: 1;
+  }
+  47.5% {
+    opacity: 0.94;
+  }
+  72.5% {
+    opacity: 0.97;
+  }
+}
+@media (forced-colors: active) {
+  .holo-scan {
+    display: none;
   }
 }
 

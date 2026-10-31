@@ -201,6 +201,7 @@
     "on": "on",
     "off": "off",
     "backToGame": "Back to the game",
+    "closeTerminal": "Close terminal",
     "use": "Use",
     "escKey": "Esc",
     "rooms": {
@@ -218,7 +219,8 @@
       "contact": "Secure comms",
       "cub3dBody": "Runs the live cub3D demo.",
       "fdfBody": "Runs the live FdF demo.",
-      "contactBody": "Opens a channel: the contact form."
+      "contactBody": "Opens a channel: the contact form.",
+      "hub": "Command hub"
     },
     "weapons": ["Kubernetes Kar98k", "Terraform Tactical", "The DevOps Defender"],
     "weapon": "Weapon: {name}",
@@ -294,6 +296,12 @@
     "recharging": "Recharging: wait for the energy bar to refill.",
     "integrityLow": "Integrity low: back away from the threats.",
     "hologram": "COMMAND HUB",
+    "hub": {
+      "kicker": "Mission control · briefing",
+      "progress": "Mission progress",
+      "controls": "Controls",
+      "links": "Links"
+    },
     "crewTitle": "The crew",
     "npcs": {
       "sysadmin": {
