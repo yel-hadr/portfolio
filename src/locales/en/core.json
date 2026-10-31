@@ -19,11 +19,12 @@
     "switchToFrench": "Passer en français",
     "themeToLight": "Switch to light mode",
     "themeToDark": "Switch to dark mode",
-    "pauseMotion": "Pause animations",
-    "playMotion": "Play animations",
+    "pauseMotion": "Pause background animations",
+    "playMotion": "Play background animations",
     "openTerminal": "Open terminal",
     "terminalShortcut": "Shortcut: Ctrl + `",
-    "blog": "Blog"
+    "blog": "Blog",
+    "menu": "Menu"
   },
   "person": {
     "title": "Software Engineer | Cloud Infrastructure & DevOps",

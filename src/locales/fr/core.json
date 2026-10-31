@@ -19,11 +19,12 @@
     "switchToFrench": "Passer en français",
     "themeToLight": "Passer en mode clair",
     "themeToDark": "Passer en mode sombre",
-    "pauseMotion": "Mettre les animations en pause",
-    "playMotion": "Relancer les animations",
+    "pauseMotion": "Mettre en pause les animations d’arrière-plan",
+    "playMotion": "Relancer les animations d’arrière-plan",
     "openTerminal": "Ouvrir le terminal",
     "terminalShortcut": "Raccourci : Ctrl + `",
-    "blog": "Blog"
+    "blog": "Blog",
+    "menu": "Menu"
   },
   "person": {
     "title": "Ingénieur logiciel | Infrastructure cloud & DevOps",
