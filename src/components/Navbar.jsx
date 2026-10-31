@@ -87,8 +87,10 @@ const MotionToggle = () => {
       aria-pressed={paused}
       onClick={() => setMotionPaused(!paused)}
       aria-label={t('nav.pauseMotion')}
-      title={paused ? t('nav.playMotion') : t('nav.pauseMotion')}
-      className={`inline-flex ${ICON_BUTTON} ${paused ? 'bg-primary/15 text-primary-400 ring-1 ring-primary/60 shadow-[0_0_14px_rgb(var(--c-primary)/calc(0.35*var(--glow)))] hover:bg-primary/20 hover:text-primary-400' : ''}`}
+      // The same text as the name: a title that changed with the state would be read as a
+      // description contradicting it
+      title={t('nav.pauseMotion')}
+      className={`inline-flex ${ICON_BUTTON} ${paused ? 'bg-primary/15 text-primary-400 ring-1 ring-primary-400 shadow-[0_0_14px_rgb(var(--c-primary)/calc(0.35*var(--glow)))] hover:bg-primary/20 hover:text-primary-400' : ''}`}
     >
       <span aria-hidden='true' className='icon-swap' data-state={paused ? 'off-ccw' : 'on'}>
         <PauseIcon className='h-4 w-4' />
@@ -393,7 +395,7 @@ const Navbar = ({ onOpenTerminal }) => {
               }}
               className={`relative flex min-h-13 items-center rounded-2xl px-4 text-lg font-medium transition-colors ${
                 isActive
-                  ? 'bg-surface-raised text-foreground before:absolute before:inset-y-3 before:left-0 before:w-1 before:rounded-full before:bg-primary forced-colors:underline'
+                  ? 'bg-surface-raised text-foreground before:absolute before:inset-y-3 before:left-0 before:w-1 before:rounded-full before:bg-primary-400 forced-colors:underline'
                   : 'text-foreground-muted hover:bg-surface-raised hover:text-foreground'
               }`}
             >
