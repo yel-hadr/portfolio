@@ -59,17 +59,13 @@ const darkTokens = async () => {
     .join('\n');
 };
 
+// Geist's variable font: one file for every weight
 const fonts = async () => {
-  const faces = await Promise.all(
-    [500, 600, 900].map(async (weight) => {
-      const src = await dataUrl(
-        `node_modules/@fontsource/geist/files/geist-latin-${weight}-normal.woff2`,
-        'font/woff2'
-      );
-      return `@font-face { font-family: Geist; font-weight: ${weight}; src: url(${src}) format('woff2'); }`;
-    })
+  const src = await dataUrl(
+    'node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2',
+    'font/woff2'
   );
-  return faces.join('\n');
+  return `@font-face { font-family: Geist; font-weight: 100 900; src: url(${src}) format('woff2'); }`;
 };
 
 const main = async () => {
