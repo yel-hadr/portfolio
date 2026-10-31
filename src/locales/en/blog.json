@@ -1,6 +1,6 @@
 {
   "title": "Blog.",
-  "lead": "Short posts from building and running backends and infrastructure: the problem, why it happens, the fix and a snippet to reuse.",
+  "lead": "Posts from building backends, infrastructure and graphics: the problem, why it happens, the fix and code to reuse. The deep dives go into the math.",
   "latest": "Latest posts",
   "topics": "Topics",
   "allPosts": "All posts",

@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { m } from 'framer-motion';
 
 import { styles } from '../styles';
@@ -87,6 +87,7 @@ const ProjectCard = ({
         <div className='mt-auto grid gap-3 pt-6 xs:flex xs:flex-wrap xs:items-center'>
           <m.button
             type='button'
+            data-demo={demo}
             onClick={(e) => onRunDemo(demo, e.currentTarget)}
             onPointerEnter={() => prefetch(DEMO_LOADERS[demo])}
             onFocus={() => prefetch(DEMO_LOADERS[demo])}
@@ -173,6 +174,28 @@ const Works = () => {
     running?.opener?.focus();
     setRunning(null);
   };
+
+  // A link such as /?demo=fdf (from the blog's deep dives) runs that demo once the page is up,
+  // as if from its card's button, so closing it lands on the card. The parameter then leaves the
+  // URL, so a reload or a shared link of the page does not open it again
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const demo = params.get('demo');
+    if (!demo || !Object.hasOwn(DEMOS, demo)) return;
+    params.delete('demo');
+    const query = params.toString();
+    const { pathname, hash } = window.location;
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${pathname}${query ? `?${query}` : ''}${hash}`
+    );
+    setRunning({
+      demo,
+      opener: document.querySelector(`[data-demo="${demo}"]`),
+      origin: undefined,
+    });
+  }, []);
 
   return (
     <>
