@@ -172,8 +172,14 @@ const gameDpr = (quality) => {
   return LOW_DPR + (top - LOW_DPR) * quality;
 };
 const DEMO_DPR = [1, 2];
-const GAME_GL = { powerPreference: 'default', antialias: false };
-const DEMO_GL = { powerPreference: 'default' };
+// Transparent, composited without premultiplied alpha, like the page's 3D layer
+const GAME_GL = {
+  powerPreference: 'default',
+  antialias: false,
+  alpha: true,
+  premultipliedAlpha: false,
+};
+const DEMO_GL = { powerPreference: 'default', alpha: true, premultipliedAlpha: false };
 const CAMERA = { fov: 50, near: 0.05, far: 60 };
 const CONTRAST_KEY = 'game-contrast';
 const VOLUME_KEY = 'game-volume';

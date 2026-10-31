@@ -160,7 +160,14 @@ const Scene3D = () => {
           resize={{ scroll: false }}
           frameloop='demand'
           dpr={[1, 1.5]}
-          gl={{ antialias: true, alpha: true, powerPreference: 'default' }}
+          // A transparent canvas composited without premultiplied alpha (the owner's choice for
+          // the light page): the CSS background shows through the clear color
+          gl={{
+            antialias: true,
+            alpha: true,
+            premultipliedAlpha: false,
+            powerPreference: 'default',
+          }}
           onCreated={({ gl, invalidate }) => {
             // Redraw once the GPU hands the context back after a loss
             gl.domElement.addEventListener('webglcontextrestored', () => invalidate());

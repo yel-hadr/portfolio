@@ -711,7 +711,7 @@ const FdfViewer = ({ t }) => {
         <Canvas
           frameloop='demand'
           dpr={[1, 2]}
-          gl={{ powerPreference: 'default' }}
+          gl={{ alpha: true, premultipliedAlpha: false, powerPreference: 'default' }}
           onCreated={({ gl, invalidate }) => {
             glRef.current = gl;
             // Demand mode: a restored context stays blank until something asks for a frame
