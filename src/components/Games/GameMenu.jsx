@@ -66,7 +66,7 @@ const GameMenu = ({ onClose, onPlayTerminal }) => {
   return createPortal(
     <div
       ref={overlayRef}
-      className='fixed inset-0 z-[60] flex justify-center bg-background/75 backdrop-blur-xs sm:items-center sm:p-6'
+      className='fixed inset-0 z-[60] flex justify-center bg-background/75 backdrop-blur-sm motion-safe:animate-backdrop-in sm:items-center sm:p-6'
       {...backdrop}
     >
       <div

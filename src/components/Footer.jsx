@@ -3,7 +3,8 @@ import { navLinks, person } from '../constans';
 import { useI18n } from '../i18n/context';
 import SystemStatus from './SystemStatus';
 
-const LINK = 'font-medium text-foreground-muted hover:text-foreground transition-colors';
+// .link-draw: an underline draws in from the left on hover or focus
+const LINK = 'link-draw font-medium text-foreground-muted hover:text-foreground transition-colors';
 
 const Footer = ({ onOpenGames, onEnterGame }) => {
   const { t } = useI18n();

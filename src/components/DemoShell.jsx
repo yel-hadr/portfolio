@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useEffectEvent, useId, useLayoutEffect } from 'react';
+import { Suspense, useEffect, useEffectEvent, useId, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 import CanvasErrorBoundary from './CanvasErrorBoundary';
@@ -42,6 +42,9 @@ const GROW = (() => {
   };
 })();
 
+// Closing: quick and accelerating, as the opening is a settling spring
+const SHRINK_MS = 260;
+
 /** A message in place of the demo: loading, no WebGL, or a failure */
 const Notice = ({ id, role, children }) => (
   <div className='flex h-full items-center justify-center p-6'>
@@ -62,7 +65,8 @@ const Notice = ({ id, role, children }) => (
  *
  * Opened from a project card, the panel grows out of that card (`origin`, the card's box): it
  * starts at the card's position and size and springs to its own, then its content fades in. The
- * demo's canvas mounts after that. Not under reduced motion; closing is instant.
+ * demo's canvas mounts after that. Closing plays it backwards: the panel shrinks into the card as
+ * the backdrop fades, then the dialog unmounts. Neither under reduced motion (instant).
  */
 const DemoShell = ({ id, repo, onClose, origin, children }) => {
   const { t } = useI18n();
@@ -70,9 +74,44 @@ const DemoShell = ({ id, repo, onClose, origin, children }) => {
   const titleId = useId();
   const descId = useId();
   const noticeId = useId();
-  const { overlayRef, panelRef, close, onKeyDown, backdrop } = useModalDialog(onClose);
-  const name = t(`demos.${id}.name`);
   const reduced = usePrefersReducedMotion();
+  // Closing shrinks the panel back into its card first (below); a second close meanwhile is ignored
+  const closing = useRef(false);
+  // The dialog's panel and overlay, from useModalDialog below (set in a layout effect: the close
+  // handler is declared before the hook that owns them)
+  const shell = useRef({ panel: null, overlay: null });
+  const shrinkThenClose = () => {
+    if (closing.current) return;
+    closing.current = true;
+    const { panel, overlay } = shell.current;
+    const to = panel?.getBoundingClientRect();
+    if (!panel || !origin || reduced || !to?.width) {
+      onClose();
+      return;
+    }
+    panel.style.setProperty('transform-origin', 'top left');
+    const shrink = panel.animate(
+      [
+        { transform: 'none', opacity: 1 },
+        {
+          transform: `translate(${origin.left - to.left}px, ${origin.top - to.top}px) scale(${origin.width / to.width}, ${origin.height / to.height})`,
+          opacity: 0.4,
+        },
+      ],
+      { duration: SHRINK_MS, easing: 'cubic-bezier(0.4, 0, 0.7, 1)', fill: 'forwards' }
+    );
+    overlay?.animate([{ opacity: 1 }, { opacity: 0 }], {
+      duration: SHRINK_MS,
+      easing: 'ease-in',
+      fill: 'forwards',
+    });
+    shrink.finished.then(onClose, onClose);
+  };
+  const { overlayRef, panelRef, close, onKeyDown, backdrop } = useModalDialog(shrinkThenClose);
+  useLayoutEffect(() => {
+    shell.current = { panel: panelRef.current, overlay: overlayRef.current };
+  });
+  const name = t(`demos.${id}.name`);
 
   // Before the first paint: place the panel over the card, then let it spring open. Once, on
   // open (the card's box is where it was clicked), so the values are read through an effect event
@@ -116,7 +155,7 @@ const DemoShell = ({ id, repo, onClose, origin, children }) => {
   return createPortal(
     <div
       ref={overlayRef}
-      className='fixed inset-0 z-[60] flex justify-center bg-background/75 backdrop-blur-xs md:items-center md:p-6'
+      className='fixed inset-0 z-[60] flex justify-center bg-background/75 backdrop-blur-sm motion-safe:animate-backdrop-in md:items-center md:p-6'
       {...backdrop}
     >
       <div

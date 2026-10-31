@@ -38,7 +38,7 @@ const ArchitectureModal = ({ diagram, onClose }) => {
   return createPortal(
     <div
       ref={overlayRef}
-      className='fixed inset-0 z-[60] flex justify-center bg-background/75 backdrop-blur-xs sm:[@media(min-height:30rem)]:items-center sm:[@media(min-height:30rem)]:p-6'
+      className='fixed inset-0 z-[60] flex justify-center bg-background/75 backdrop-blur-sm motion-safe:animate-backdrop-in sm:[@media(min-height:30rem)]:items-center sm:[@media(min-height:30rem)]:p-6'
       {...backdrop}
     >
       <div

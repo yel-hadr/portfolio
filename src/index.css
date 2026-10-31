@@ -77,11 +77,19 @@
 
   /* Game Mode (src/components/Cub3D): used behind motion-safe, so reduced motion drops them */
   --animate-game-in: game-in 300ms ease-out;
+  /* A dialog's backdrop: the page dims and blurs in over 200 ms (opacity only; the blur fades
+     with it) */
+  --animate-backdrop-in: backdrop-in 200ms ease-out;
   --animate-game-out: game-out 250ms ease-in forwards;
   --animate-crt-in: crt-in 280ms ease-out;
   --animate-prompt-in: prompt-in 180ms ease-out;
   --animate-hud-tick: hud-tick 3.2s ease-in-out infinite;
 
+  @keyframes backdrop-in {
+    from {
+      opacity: 0;
+    }
+  }
   @keyframes game-in {
     from {
       opacity: 0;
@@ -412,6 +420,38 @@
     .card-glass:hover,
     .vertical-timeline-element-content:hover {
       translate: var(--card-lift);
+    }
+  }
+
+  /* An inline text link's underline that draws in from left to right on hover or focus: a 2px bar
+     (::after) scaled from 0 to 1 along x from the left edge, transform only. The link keeps its
+     resting underline (text-decoration), so it never relies on color alone (WCAG 1.4.1); the
+     bar is the hover state. Instant under reduced motion */
+  .link-draw {
+    position: relative;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+  }
+  .link-draw::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -3px;
+    height: 2px;
+    border-radius: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    pointer-events: none;
+  }
+  .link-draw:hover::after,
+  .link-draw:focus-visible::after {
+    transform: scaleX(1);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .link-draw::after {
+      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
     }
   }
 

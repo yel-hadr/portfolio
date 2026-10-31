@@ -5,7 +5,7 @@ import { blogPath, blogPosts, feedPath } from 'virtual:blog-posts';
 
 import { styles } from '../styles';
 import { SectionWrapper } from '../hoc';
-import { pressable, reveal } from '../utils/motion';
+import { SPRING, pressable, reveal } from '../utils/motion';
 import SectionHeader from './SectionHeader';
 import { useI18n } from '../i18n/context';
 
@@ -49,6 +49,9 @@ const PostCard = ({ slug, date, tags, title, summary }) => {
   return (
     <m.li
       variants={reveal()}
+      // The whole card is its link (stretched): a press gives a little, like a button
+      whileTap={{ scale: 0.98 }}
+      transition={SPRING}
       className={`${styles.card} relative flex min-w-0 flex-col gap-4 transition-colors hover:border-line-strong`}
     >
       <h3 className={styles.cardTitle}>

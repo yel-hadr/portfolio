@@ -16,7 +16,8 @@ const SectionWrapper = (Component, idName) =>
         variants={staggerContainer()}
         initial='hidden'
         whileInView='show'
-        viewport={{ once: true, amount: 0.1 }}
+        // Once, as the section's top passes 100px into the viewport
+        viewport={{ once: true, margin: '-100px' }}
         className={`${styles.container} ${styles.section} relative`}
       >
         <Component />

@@ -119,7 +119,7 @@ const ProjectCard = ({
               onPointerEnter={() => prefetch(loadDiagram)}
               onFocus={() => prefetch(loadDiagram)}
               aria-haspopup='dialog'
-              className='inline-flex w-fit items-center gap-2 rounded-xl font-semibold text-primary-400 transition-colors hover:text-foreground'
+              className='link-draw inline-flex w-fit items-center gap-2 rounded-xl font-semibold text-primary-400 transition-colors hover:text-foreground'
             >
               <svg
                 aria-hidden='true'
@@ -145,7 +145,7 @@ const ProjectCard = ({
               href={source_code_link}
               target='_blank'
               rel='noopener noreferrer'
-              className='inline-flex w-fit items-center gap-2 rounded-xl font-semibold text-foreground hover:text-primary-400 transition-colors'
+              className='link-draw inline-flex w-fit items-center gap-2 rounded-xl font-semibold text-foreground hover:text-primary-400 transition-colors'
             >
               <GithubIcon className='h-5 w-5' />
               {t('works.viewSource')}
