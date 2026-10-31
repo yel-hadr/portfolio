@@ -29,11 +29,13 @@ const Education = () => {
   return (
     <>
       <SectionHeader id='education' title={t('education.title')} />
-      <ul className='mt-10 grid gap-8 md:grid-cols-2'>
+      {/* Two columns from md when there is more than one entry; a single card keeps a readable
+          line length instead of stretching across the page */}
+      <ul className={`mt-10 grid gap-8 ${education.length > 1 ? 'md:grid-cols-2' : 'max-w-3xl'}`}>
         {education.map((entry) => (
           <EducationCard
             key={entry.id}
-            school={entry.school}
+            school={t(`education.items.${entry.id}.school`)}
             degree={t(`education.items.${entry.id}.degree`)}
             date={t(`education.items.${entry.id}.date`)}
             points={t(`education.items.${entry.id}.points`)}

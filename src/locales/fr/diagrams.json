@@ -20,7 +20,7 @@
   },
   "cloud1": {
     "title": "Architecture de Cloud-1",
-    "description": "Terraform provisionne l’infrastructure AWS, Ansible configure l’hôte en SSH et Docker Compose fait tourner WordPress derrière nginx. Les flèches orange suivent la requête d’un visiteur, les flèches violettes le provisionnement.",
+    "description": "Terraform provisionne l’infrastructure AWS, Ansible configure l’hôte en SSH et Docker Compose fait tourner WordPress derrière Nginx. Les flèches orange suivent la requête d’un visiteur, les flèches violettes le provisionnement.",
     "legend": {
       "control": "Provisionnement"
     },
@@ -80,7 +80,7 @@
       "visitor": {
         "name": "Visiteur",
         "role": "Navigateur web",
-        "description": "Accède au site par son nom. Les deux noms pointent vers l’IP Elastic et nginx choisit l’hôte virtuel d’après l’en-tête Host.",
+        "description": "Accède au site par son nom. Les deux noms pointent vers l’IP Elastic et Nginx choisit l’hôte virtuel d’après l’en-tête Host.",
         "facts": [
           "https://youssefelhadraoui.tech -> WordPress",
           "https://pma.youssefelhadraoui.tech -> phpMyAdmin"
@@ -107,7 +107,7 @@
         ]
       },
       "nginx": {
-        "name": "nginx",
+        "name": "Nginx",
         "role": "Proxy inverse TLS",
         "description": "Le seul conteneur qui publie des ports. Le port 80 répond par une redirection 301 vers HTTPS (sauf pour le challenge ACME) ; le port 443 termine TLS 1.2/1.3 et route selon le nom. Les noms inconnus reçoivent un 444.",
         "facts": [
@@ -120,7 +120,7 @@
       "wordpress": {
         "name": "WordPress",
         "role": "Pool php-fpm",
-        "description": "Ne publie aucun port : seul nginx l’atteint, en FastCGI sur le port 9000. Il lit et écrit ses données dans MariaDB via le réseau backend.",
+        "description": "Ne publie aucun port : seul Nginx l’atteint, en FastCGI sur le port 9000. Il lit et écrit ses données dans MariaDB via le réseau backend.",
         "facts": [
           "Image wordpress:6.8-fpm-alpine",
           "Réseaux : frontend et backend",

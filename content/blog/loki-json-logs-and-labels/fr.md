@@ -1,6 +1,7 @@
 ---
 title: Loki veut des logs JSON et peu de labels
 summary: Loki n’indexe que les labels : les champs à forte cardinalité, comme un identifiant de requête ou de tenant, vont dans la ligne de log. Avec un objet JSON par ligne, le parseur json de LogQL filtre dessus au moment de la requête.
+description: Loki n’indexe que les labels : les identifiants à forte cardinalité vont dans la ligne de log, en JSON, que le parseur json de LogQL filtre à la requête.
 ---
 
 ## Le problème

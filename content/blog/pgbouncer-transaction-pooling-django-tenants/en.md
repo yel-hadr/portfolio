@@ -1,6 +1,7 @@
 ---
 title: PgBouncer transaction pooling breaks django-tenants
 summary: django-tenants picks the tenant with a session-level SET search_path, which PgBouncer's transaction mode does not keep. Why queries can reach the wrong schema, and two fixes.
+description: django-tenants sets the tenant with a session-level SET search_path, which PgBouncer’s transaction mode drops. Why queries hit the wrong schema, and two fixes.
 ---
 
 ## The problem

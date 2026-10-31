@@ -1,6 +1,7 @@
 ---
 title: Loki wants JSON log lines and few labels
 summary: Loki indexes labels only, so high-cardinality fields such as request or tenant IDs belong in the log line. With one JSON object per line, LogQL's json parser filters on them at query time.
+description: Loki indexes only labels, so high-cardinality IDs belong in the log line. With one JSON object per line, LogQL’s json parser filters on them at query time.
 ---
 
 ## The problem

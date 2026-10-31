@@ -7,16 +7,23 @@ import { projects } from '../constans';
 import { pressable, reveal } from '../utils/motion';
 import SectionHeader from './SectionHeader';
 import Spotlight from './Spotlight';
-import { useI18n } from '../i18n/context';
+import { tagName, useI18n } from '../i18n/context';
 import CanvasErrorBoundary from './CanvasErrorBoundary';
 import { GithubIcon } from './icons';
 
 // The diagram modal (SVG diagrams + text) loads only when a visitor opens one
-const ArchitectureModal = lazy(() => import('./diagrams/ArchitectureModal'));
+const loadDiagram = () => import('./diagrams/ArchitectureModal');
+const ArchitectureModal = lazy(loadDiagram);
 // The live demos (each with its own 3D scene) load only when a visitor runs one
-const DEMOS = {
-  cub3d: lazy(() => import('./Cub3D/Cub3DModal')),
-  fdf: lazy(() => import('./Fdf/FdfModal')),
+const DEMO_LOADERS = {
+  cub3d: () => import('./Cub3D/Cub3DModal'),
+  fdf: () => import('./Fdf/FdfModal'),
+};
+const DEMOS = { cub3d: lazy(DEMO_LOADERS.cub3d), fdf: lazy(DEMO_LOADERS.fdf) };
+// Starts a chunk's download when the pointer reaches its button or the button takes focus, so the
+// click finds it loaded. A failure here is ignored: the click's own load reports it
+const prefetch = (load) => {
+  load().catch(() => {});
 };
 
 // Tag colors in src/constans keep their legacy class names; map them to theme tokens with AA
@@ -66,21 +73,23 @@ const ProjectCard = ({
       <ul className='mt-4 flex flex-wrap gap-2' aria-label={t('works.technologies')}>
         {tags.map((tag) => (
           <li
-            key={tag.name}
-            // Technology names are English, also on the French page
-            lang='en'
+            key={tag.id ?? tag.name}
+            // Product names are English, also on the French page; a technique (`id`) is translated
+            lang={tag.id ? undefined : 'en'}
             className={`rounded-full border border-line bg-surface-raised px-3 py-1 text-sm font-medium ${TAG_COLORS[tag.color] ?? 'text-foreground-muted'}`}
           >
-            {tag.name}
+            {tagName(t, tag)}
           </li>
         ))}
       </ul>
       {demo && (
         // A live demo: two buttons, the demo first
-        <div className='mt-auto flex flex-wrap items-center gap-3 pt-6'>
+        <div className='mt-auto grid gap-3 pt-6 xs:flex xs:flex-wrap xs:items-center'>
           <m.button
             type='button'
             onClick={(e) => onRunDemo(demo, e.currentTarget)}
+            onPointerEnter={() => prefetch(DEMO_LOADERS[demo])}
+            onFocus={() => prefetch(DEMO_LOADERS[demo])}
             aria-haspopup='dialog'
             aria-label={t('works.runDemoAria', { name })}
             className={styles.buttonPrimary}
@@ -107,6 +116,8 @@ const ProjectCard = ({
             <button
               type='button'
               onClick={(e) => onOpenDiagram(diagram, e.currentTarget)}
+              onPointerEnter={() => prefetch(loadDiagram)}
+              onFocus={() => prefetch(loadDiagram)}
               aria-haspopup='dialog'
               className='inline-flex w-fit items-center gap-2 rounded-xl font-semibold text-primary-400 transition-colors hover:text-foreground'
             >
@@ -172,10 +183,12 @@ const Works = () => {
             key={project.id}
             {...project}
             onOpenDiagram={(diagram, opener) => setOpen({ diagram, opener })}
-            onRunDemo={(demo, opener) =>
+            onRunDemo={(demo, opener) => {
+              // Cleared first, so a second failure changes the live region and is said again
+              setDemoNotice('');
               // The card's box: the demo's dialog grows out of it
-              setRunning({ demo, opener, origin: opener.closest('li')?.getBoundingClientRect() })
-            }
+              setRunning({ demo, opener, origin: opener.closest('li')?.getBoundingClientRect() });
+            }}
           />
         ))}
       </ul>

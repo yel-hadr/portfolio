@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import { useStillMotion } from '../hooks/useMotionPaused';
 
 /*
  * Interactive waves background, ported from the ReactBits "Interactive Waves Background"
@@ -103,7 +103,7 @@ const STOPS = [
 
 const WavesBackground = ({ paused = false }) => {
   const canvasRef = useRef(null);
-  const reduced = usePrefersReducedMotion();
+  const reduced = useStillMotion();
   // One still frame under reduced motion, and while a live demo covers the page (no animation
   // or pointer work behind its dialog)
   const still = reduced || paused;
@@ -231,7 +231,9 @@ const WavesBackground = ({ paused = false }) => {
 
     const tick = (time) => {
       frameId = requestAnimationFrame(tick);
-      if (time - last < FRAME_MS) return;
+      // 1 ms of slack: at 60 Hz two vsyncs are 33.3 ms apart, a hair under FRAME_MS, and without
+      // it every other drawn frame would wait a third vsync (20 fps), out of step with FrameDriver
+      if (time - last < FRAME_MS - 1) return;
       last = time;
 
       mouse.sx += (mouse.x - mouse.sx) * 0.1;

@@ -19,6 +19,15 @@ class ErrorBoundary extends React.Component {
     this.setState({ hasError: false, error: null });
   };
 
+  // The focused Reload button is gone after a reset: focus goes to the section it reloaded
+  componentDidUpdate(_, prev) {
+    if (prev.hasError && !this.state.hasError) {
+      const section = document.getElementById(this.props.sectionName);
+      section?.setAttribute('tabindex', '-1');
+      section?.focus({ preventScroll: true });
+    }
+  }
+
   render() {
     if (this.state.hasError) {
       return (

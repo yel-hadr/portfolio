@@ -119,7 +119,7 @@ const GameMode = ({ onClose }) => {
       education: {
         entries: education.map((e) => ({
           title: t(`education.items.${e.id}.degree`),
-          place: e.school,
+          place: t(`education.items.${e.id}.school`),
           date: t(`education.items.${e.id}.date`),
           points: t(`education.items.${e.id}.points`),
         })),

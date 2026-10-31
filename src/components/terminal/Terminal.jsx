@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { m } from 'framer-motion';
 
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
@@ -77,6 +78,7 @@ const Terminal = ({ onClose, initialCommand = null }) => {
   // The first entry of the latest command: the log scrolls so it stays in view
   const scrollAnchor = useRef(null);
 
+  const overlayRef = useRef(null);
   const dialogRef = useRef(null);
   const logRef = useRef(null);
   const inputRef = useRef(null);
@@ -91,15 +93,21 @@ const Terminal = ({ onClose, initialCommand = null }) => {
     if (!playing) inputRef.current?.focus();
   }, [playing]);
 
-  // The page behind must not scroll; the stable gutter avoids a layout shift
+  // The page behind must not scroll (the stable gutter avoids a layout shift) and is inert, like
+  // behind the other dialogs: no Tab, click or screen reader reaches it while the terminal is open
   useEffect(() => {
     const root = document.documentElement;
     const { overflow, scrollbarGutter } = root.style;
     root.style.scrollbarGutter = 'stable';
     root.style.overflow = 'hidden';
+    const madeInert = [...document.body.children].filter(
+      (el) => el !== overlayRef.current && !el.inert && el.tagName !== 'SCRIPT'
+    );
+    madeInert.forEach((el) => (el.inert = true));
     return () => {
       root.style.overflow = overflow;
       root.style.scrollbarGutter = scrollbarGutter;
+      madeInert.forEach((el) => (el.inert = false));
     };
   }, []);
 
@@ -339,8 +347,10 @@ const Terminal = ({ onClose, initialCommand = null }) => {
   const fade = reduced ? false : { opacity: 0 };
   const rise = reduced ? false : { opacity: 0, y: 12, scale: 0.985 };
 
-  return (
+  // Rendered into <body>, beside the page, so the page can be made inert without the terminal
+  return createPortal(
     <m.div
+      ref={overlayRef}
       initial={fade}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.15 }}
@@ -464,7 +474,8 @@ const Terminal = ({ onClose, initialCommand = null }) => {
           )}
         </div>
       </m.div>
-    </m.div>
+    </m.div>,
+    document.body
   );
 };
 

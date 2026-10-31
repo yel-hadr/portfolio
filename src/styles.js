@@ -20,9 +20,9 @@ const styles = {
 
   // Primary: dark text on orange (dark 6.8:1, light 5.0:1). Ghost: glass with a strong border (>= 3:1).
   buttonPrimary:
-    'inline-flex items-center rounded-xl border-2 border-transparent bg-primary px-7 py-[0.625rem] font-bold text-on-primary transition-colors hover:bg-primary-hover',
+    'inline-flex items-center justify-center rounded-xl border-2 border-transparent bg-primary px-7 py-[0.625rem] font-bold text-on-primary transition-colors hover:bg-primary-hover',
   buttonGhost:
-    'inline-flex items-center rounded-xl border border-line-strong bg-glass px-7 py-3 font-semibold text-foreground backdrop-blur-md transition-colors hover:border-foreground-muted',
+    'inline-flex items-center justify-center rounded-xl border border-line-strong bg-glass px-7 py-3 font-semibold text-foreground backdrop-blur-md transition-colors hover:border-foreground-muted',
   body: 'text-foreground-muted text-base leading-relaxed',
   // Focus ring of a 3D view (its wrapper has `group`): a layer above the canvas, since an inset
   // ring on the wrapper is painted under an opaque canvas. The ring sits on a band of the page

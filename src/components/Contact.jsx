@@ -1,6 +1,7 @@
 import { m } from 'framer-motion';
 
 import { styles } from '../styles';
+import { person } from '../constans';
 import { SectionWrapper } from '../hoc';
 import { reveal } from '../utils/motion';
 import ContactForm from './ContactForm';
@@ -14,6 +15,16 @@ const Contact = () => {
   return (
     <>
       <SectionHeader id='contact' title={t('contact.title')} lead={t('contact.lead')} />
+      {/* The address in plain sight, for those who would rather write from their own mail */}
+      <m.p variants={reveal()} className={`${styles.sectionLead} !mt-3 break-words`}>
+        {t('contact.emailLead')}{' '}
+        <a
+          href={`mailto:${person.email}`}
+          className='font-semibold text-primary-400 underline decoration-2 underline-offset-4 transition-colors hover:text-foreground'
+        >
+          {person.email}
+        </a>
+      </m.p>
 
       <div className='mt-12 grid gap-10 xl:grid-cols-2'>
         <m.div variants={reveal()} className={styles.card}>
@@ -22,7 +33,7 @@ const Contact = () => {
 
         <m.div variants={reveal(0.1)} className='h-80 md:h-96 xl:h-auto'>
           <SceneView sectionType='earth' className='h-full w-full'>
-            {/* Contact's globe always mounts (About's is desktop-only), so it warms up the shaders */}
+            {/* Mounts once Contact is a viewport away; it compiles its shaders while it loads */}
             <Earth warmUp />
           </SceneView>
         </m.div>

@@ -13,7 +13,7 @@ const ErrorFallback = ({ error, resetErrorBoundary, sectionName }) => {
     >
       <div role='alert' className='m-auto flex flex-col items-center justify-center'>
         <Heading id={`${sectionName}-error`} className='text-2xl font-bold text-foreground mb-4'>
-          {t('error.title', { section: sectionName })}
+          {t('error.title', { section: t(`error.sections.${sectionName}`) })}
         </Heading>
         {/* 3D failures never reach here: SceneView's own boundary swaps in a static fallback */}
         <p className='text-foreground-muted mb-6 text-center max-w-md'>{t('error.body')}</p>

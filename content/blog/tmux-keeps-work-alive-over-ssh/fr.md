@@ -1,6 +1,7 @@
 ---
 title: tmux garde le travail distant en vie quand SSH coupe
 summary: Travaillez sur un serveur dans une session tmux nommée. Si la connexion tombe, le shell et les commandes en cours survivent, et tmux attach les récupère. Quelques raccourcis par défaut couvrent le quotidien.
+description: Travaillez dans une session tmux nommée : si SSH coupe, le shell et ses commandes survivent et tmux attach les récupère. Et les raccourcis du quotidien.
 ---
 
 ## Le problème

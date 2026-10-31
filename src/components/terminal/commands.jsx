@@ -4,6 +4,7 @@ import { blogPath, blogPosts, feedPath } from 'virtual:blog-posts';
 
 import { education, experiences, person, projects, typingChallenge } from '../../constans';
 import { dictionaries } from '../../i18n/dictionaries';
+import { tagName } from '../../i18n/context';
 import { closest, completeWord, normalize } from './helpers';
 import { Block, Bullets, Cmd, ErrorLine, ExtLink, Heading, Link, Muted, Rich } from './output';
 
@@ -196,7 +197,7 @@ export const COMMANDS = [
               <p>{t(`works.items.${project.id}.description`)}</p>
               <p>
                 <span className='text-foreground-muted'>{t('terminal.projects.stack')} </span>
-                {project.tags.map((tag) => tag.name).join(' · ')}
+                {project.tags.map((tag) => tagName(t, tag)).join(' · ')}
               </p>
               {/* No source line for a project without a link, as in the Projects section */}
               {project.source_code_link && (
@@ -249,7 +250,9 @@ export const COMMANDS = [
         <Heading>{t('terminal.education.title')}</Heading>
         {education.map((item) => (
           <div key={item.id} className='pt-1'>
-            <p className='font-semibold text-foreground'>{item.school}</p>
+            <p className='font-semibold text-foreground'>
+              {t(`education.items.${item.id}.school`)}
+            </p>
             <p>{t(`education.items.${item.id}.degree`)}</p>
             <Muted>{t(`education.items.${item.id}.date`)}</Muted>
             <Bullets items={arr(t(`education.items.${item.id}.points`))} />

@@ -29,7 +29,13 @@ const hashTarget = () => {
 const BelowFold = ({ onReady }) => {
   const followHash = useEffectEvent(() => {
     const id = hashTarget();
-    if (id && id !== 'main' && id !== 'top') document.getElementById(id)?.scrollIntoView();
+    const target = id && id !== 'main' && id !== 'top' ? document.getElementById(id) : null;
+    if (target) {
+      target.scrollIntoView();
+      // Focus too, as a nav click does: Tab then continues from the section, not the page's top
+      target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
+    }
     onReady?.();
   });
   // Once, when the sections mount

@@ -507,3 +507,11 @@
     }
   }
 }
+
+/* The navbar's pause switch (useMotionPaused, WCAG 2.2.2) stops the CSS animations as well.
+   Outside the cascade layers, so it also beats the motion-safe:animate-pulse utility */
+:root[data-motion='paused'] .shimmer::after,
+:root[data-motion='paused'] .scanline,
+:root[data-motion='paused'] .animate-pulse {
+  animation: none;
+}
