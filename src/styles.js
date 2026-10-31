@@ -10,7 +10,7 @@ const styles = {
     'text-primary-400 font-semibold text-lg sm:text-xl lg:text-2xl leading-snug sm:leading-7 lg:leading-8 max-w-2xl',
 
   // The small uppercase label over a section heading
-  eyebrow: 'text-eyebrow font-semibold uppercase text-foreground-muted',
+  eyebrow: 'text-eyebrow font-semibold uppercase text-metal',
   sectionHeadText: 'font-black text-foreground text-h2',
   sectionLead:
     'mt-4 text-foreground-muted text-base sm:text-lg leading-relaxed sm:leading-7 max-w-prose',
@@ -18,11 +18,13 @@ const styles = {
   cardTitle: 'text-foreground text-h3 font-bold',
   card: 'card-glass p-6 sm:p-8',
 
-  // Primary: dark text on orange (dark 6.8:1, light 5.0:1). Ghost: glass with a strong border (>= 3:1).
+  // Primary: dark text on orange (dark 6.8:1, light 5.0:1), with a lit top edge on dark
+  // (--shadow-button). Ghost: glass with a strong border (>= 3:1, a control boundary, so it
+  // stays opaque grey rather than a faint white hairline). Both ease their colors over 200 ms
   buttonPrimary:
-    'inline-flex items-center justify-center rounded-xl border-2 border-transparent bg-primary px-7 py-[0.625rem] font-bold text-on-primary transition-colors hover:bg-primary-hover',
+    'inline-flex items-center justify-center rounded-xl border-2 border-transparent bg-primary px-7 py-[0.625rem] font-bold text-on-primary shadow-(--shadow-button) transition-[color,background-color,border-color,box-shadow] duration-200 hover:bg-primary-hover',
   buttonGhost:
-    'inline-flex items-center justify-center rounded-xl border border-line-strong bg-glass px-7 py-3 font-semibold text-foreground backdrop-blur-md transition-colors hover:border-foreground-muted',
+    'inline-flex items-center justify-center rounded-xl border border-line-strong bg-glass px-7 py-3 font-semibold text-foreground backdrop-blur-md transition-colors duration-200 hover:border-foreground-muted',
   body: 'text-foreground-muted text-base leading-relaxed',
   // Focus ring of a 3D view (its wrapper has `group`): a layer above the canvas, since an inset
   // ring on the wrapper is painted under an opaque canvas. The ring sits on a band of the page
