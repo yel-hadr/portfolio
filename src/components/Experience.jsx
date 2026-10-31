@@ -14,9 +14,12 @@ const CARD_STYLE = {
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
   color: 'var(--color-foreground)',
-  border: '1px solid var(--color-line)',
+  // Through a variable, so the stylesheet can brighten it under the pointer (an inline border
+  // would beat a :hover rule), and with the same machined top edge as .card-glass
+  border: '1px solid var(--card-line, var(--color-line))',
   borderRadius: '1.5rem',
-  boxShadow: 'var(--shadow-card)',
+  boxShadow: 'inset 0 1px 0 var(--color-edge), var(--shadow-card)',
+  transition: 'border-color 0.35s ease',
   padding: '1.5rem',
 };
 
