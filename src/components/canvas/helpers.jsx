@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 
-import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
+import { useStillMotion } from '../../hooks/useMotionPaused';
 
 const ORIGIN = [0, 0, 0];
 
@@ -21,14 +21,14 @@ export const ViewCamera = ({ target = ORIGIN, ...props }) => {
 
 /**
  * Slowly spins its children around the Y axis (replaces OrbitControls autoRotate,
- * which also captured pointer/touch input). Stops when the user prefers reduced motion.
+ * which also captured pointer/touch input). Stops under reduced motion or the navbar's pause switch.
  * Keep useFrame callbacks null-safe: R3F does not wrap them, so a throw here escapes
  * every error boundary and blanks all views.
  * @param {number} speed - radians per second
  */
 export const AutoRotate = ({ speed = 0.1, children, ...props }) => {
   const ref = useRef();
-  const reduced = usePrefersReducedMotion();
+  const reduced = useStillMotion();
   useFrame((_, delta) => {
     if (!reduced && ref.current) ref.current.rotation.y += Math.min(delta, 0.1) * speed;
   });

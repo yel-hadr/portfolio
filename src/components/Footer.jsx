@@ -20,6 +20,13 @@ const Footer = ({ onOpenGames, onEnterGame }) => {
           <div>
             <p className='text-lg font-bold text-foreground'>{person.name}</p>
             <p className='mt-1 text-sm text-foreground-muted'>{t('person.title')}</p>
+            <a
+              href={`mailto:${person.email}`}
+              aria-label={t('footer.email', { email: person.email })}
+              className={`${LINK} mt-3 inline-block break-all text-sm underline decoration-line-strong underline-offset-4`}
+            >
+              {person.email}
+            </a>
           </div>
           <SystemStatus />
         </div>
@@ -44,7 +51,13 @@ const Footer = ({ onOpenGames, onEnterGame }) => {
             </a>
           </li>
           <li>
-            <button type='button' onClick={onOpenGames} className={LINK}>
+            <a href={person.linkedin} target='_blank' rel='noopener noreferrer' className={LINK}>
+              {t('footer.linkedin')}
+              <span className='sr-only'>{t('footer.newTab')}</span>
+            </a>
+          </li>
+          <li>
+            <button type='button' aria-haspopup='dialog' onClick={onOpenGames} className={LINK}>
               {t('footer.games')}
             </button>
           </li>

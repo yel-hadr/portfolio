@@ -19,6 +19,9 @@ export function useSpotlight() {
     let px = -1;
     let py = -1;
     let frame = 0;
+    // The card under the pointer, from the pointer event's own hit test; null after a scroll,
+    // which moves the cards under a still pointer, so the next frame hit-tests again
+    let target = null;
 
     const light = (card) => {
       if (card === lit) return;
@@ -29,7 +32,8 @@ export function useSpotlight() {
     const draw = () => {
       frame = 0;
       // What is under the pointer now (the 3D layer and the grain let the pointer through)
-      const card = document.elementFromPoint(px, py)?.closest(CARDS) ?? null;
+      const card = target ?? document.elementFromPoint(px, py)?.closest(CARDS) ?? null;
+      target = null;
       light(card);
       if (!card) return;
       const box = card.getBoundingClientRect();
@@ -43,6 +47,17 @@ export function useSpotlight() {
       if (e.pointerType === 'touch') return;
       px = e.clientX;
       py = e.clientY;
+      const card = e.target.closest?.(CARDS) ?? null;
+      // Off every card (a dialog, Game Mode, the gaps between cards): no frame at all
+      if (!card) {
+        light(null);
+        return;
+      }
+      target = card;
+      schedule();
+    };
+    const onScroll = () => {
+      target = null;
       schedule();
     };
     const onLeave = () => {
@@ -56,11 +71,11 @@ export function useSpotlight() {
       on = hover.matches;
       if (on) {
         document.addEventListener('pointermove', onMove, { passive: true });
-        window.addEventListener('scroll', schedule, { passive: true });
+        window.addEventListener('scroll', onScroll, { passive: true });
         document.documentElement.addEventListener('pointerleave', onLeave);
       } else {
         document.removeEventListener('pointermove', onMove);
-        window.removeEventListener('scroll', schedule);
+        window.removeEventListener('scroll', onScroll);
         document.documentElement.removeEventListener('pointerleave', onLeave);
         onLeave();
       }
@@ -70,7 +85,7 @@ export function useSpotlight() {
     return () => {
       hover.removeEventListener('change', sync);
       document.removeEventListener('pointermove', onMove);
-      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('scroll', onScroll);
       document.documentElement.removeEventListener('pointerleave', onLeave);
       if (frame) cancelAnimationFrame(frame);
       onLeave();

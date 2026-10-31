@@ -280,11 +280,8 @@ const homeJsonLd = async (root, { title, description }) => {
           image: absoluteUrl(PROFILE_IMAGE.path),
           ...(person.email ? { email: `mailto:${person.email}` } : {}),
           sameAs: [person.github, person.linkedin].filter(Boolean),
-          // Education section (education.items): the 1337 Common Core and 42 Paris
-          alumniOf: [
-            { '@type': 'EducationalOrganization', name: '1337 Coding School (UM6P)' },
-            { '@type': 'EducationalOrganization', name: '42 Paris' },
-          ],
+          // Education section (education.items): 1337, UM6P's school in the 42 Network
+          alumniOf: [{ '@type': 'EducationalOrganization', name: '1337 Coding School (UM6P)' }],
           // Tech stack and the "What I do" areas of the About section
           knowsAbout: [...technologies, ...Object.values(core.about.services)],
           // Experience section: the current role

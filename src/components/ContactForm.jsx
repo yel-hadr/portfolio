@@ -102,15 +102,11 @@ const ContactForm = () => {
 
   return (
     <>
+      {/* Read with each field (aria-describedby): a <form> without a name is not announced */}
       <p id={ids.hint} className='mb-6 text-sm text-foreground-muted'>
         {t('contact.required')}
       </p>
-      <form
-        action={sendAction}
-        onSubmit={onSubmit}
-        aria-describedby={ids.hint}
-        className='flex flex-col gap-6'
-      >
+      <form action={sendAction} onSubmit={onSubmit} className='flex flex-col gap-6'>
         <div className='flex flex-col gap-2'>
           <label htmlFor={ids.name} className='font-medium text-foreground'>
             {t('contact.name')}
@@ -124,6 +120,7 @@ const ContactForm = () => {
             value={form.name}
             onChange={handleChange}
             className={FIELD}
+            aria-describedby={ids.hint}
             required
           />
         </div>
@@ -141,6 +138,7 @@ const ContactForm = () => {
             value={form.email}
             onChange={handleChange}
             className={FIELD}
+            aria-describedby={ids.hint}
             required
           />
         </div>
@@ -157,6 +155,7 @@ const ContactForm = () => {
             value={form.message}
             onChange={handleChange}
             className={`${FIELD} resize-y`}
+            aria-describedby={ids.hint}
             required
           />
         </div>

@@ -132,7 +132,6 @@ const technologies = [
   },
 ];
 
-// Dates are left empty until they are confirmed; the timeline hides an empty date.
 // Title, dates and points: experience.items.<id>, newest first
 const experiences = [
   {
@@ -263,11 +262,8 @@ const projects = [
   },
 ];
 
-// Degree, date and points: education.items.<id>
-const education = [
-  { id: 'paris42', school: '42 Paris' },
-  { id: 'school1337', school: '1337 Coding School' },
-];
+// School, degree, date and points: education.items.<id> (the school's name differs in French)
+const education = [{ id: 'school1337' }];
 
 // Terminal challenge (`game` in the terminal): the commands to type, by difficulty. Plain text
 // only, rendered as text nodes; edit freely.

@@ -36,7 +36,8 @@ const Magnetic = ({ children }) => {
 
   return (
     <m.span
-      className='inline-flex'
+      // Its button fills it, so a full-width slot (the hero's stack on a phone) gives a full-width button
+      className='inline-flex *:flex-1'
       style={on ? { x, y } : undefined}
       onPointerMove={on ? onPointerMove : undefined}
       onPointerLeave={on ? onPointerLeave : undefined}

@@ -249,7 +249,9 @@ export const COMMANDS = [
         <Heading>{t('terminal.education.title')}</Heading>
         {education.map((item) => (
           <div key={item.id} className='pt-1'>
-            <p className='font-semibold text-foreground'>{item.school}</p>
+            <p className='font-semibold text-foreground'>
+              {t(`education.items.${item.id}.school`)}
+            </p>
             <p>{t(`education.items.${item.id}.degree`)}</p>
             <Muted>{t(`education.items.${item.id}.date`)}</Muted>
             <Bullets items={arr(t(`education.items.${item.id}.points`))} />

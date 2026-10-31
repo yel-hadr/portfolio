@@ -1,7 +1,7 @@
 {
   "close": "Close demo",
-  "source": "Source code",
-  "sourceAria": "View {name} source code on GitHub (opens in a new tab)",
+  "source": "View source",
+  "sourceAria": "View source: {name} on GitHub (opens in a new tab)",
   "noWebgl": "This demo needs WebGL 2, which this browser or device does not provide.",
   "cub3d": {
     "name": "cub3D",
@@ -133,7 +133,7 @@
   },
   "loading": "Starting the demo…",
   "failed": "This demo could not start on this device.",
-  "sourceHint": "The Source code link at the top of this dialog shows the project.",
+  "sourceHint": "The View source link at the top of this dialog shows the project.",
   "game": {
     "title": "Game Mode",
     "description": "The portfolio as a first-person mission, built on cub3D: six rooms, one for each section of the profile, threats to neutralize between them, and terminals that open the live demos.",

@@ -21,7 +21,7 @@ Automated sync, on its own, reacts to changes in Git: when the desired state at 
 
 ## The fix
 
-Turn each behaviour on explicitly in the Application's `syncPolicy`:
+Turn each behavior on explicitly in the Application's `syncPolicy`:
 
 - `prune: true` deletes resources that Git no longer declares.
 - `selfHeal: true` syncs again when the live state drifts from Git, which reverts manual changes.

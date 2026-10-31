@@ -19,6 +19,8 @@
     "switchToFrench": "Passer en français",
     "themeToLight": "Passer en mode clair",
     "themeToDark": "Passer en mode sombre",
+    "pauseMotion": "Mettre les animations en pause",
+    "playMotion": "Relancer les animations",
     "openTerminal": "Ouvrir le terminal",
     "terminalShortcut": "Raccourci : Ctrl + `",
     "blog": "Blog"
@@ -39,11 +41,11 @@
   "eyebrows": {
     "about": "Profil",
     "experience": "Parcours",
-    "tech": "Stack",
-    "works": "Projets phares",
-    "education": "Études",
+    "tech": "Boîte à outils",
+    "works": "Réalisations",
+    "education": "Apprentissage entre pairs",
     "blog": "Articles",
-    "contact": "Prendre contact"
+    "contact": "Parlons-en"
   },
   "about": {
     "title": "À propos.",
@@ -80,7 +82,7 @@
         "title": "Stagiaire ingénieur logiciel",
         "date": "févr. 2025 – avr. 2025",
         "points": [
-          "Système d’agrégation de données en temps réel (Python, Redis) et dashboard d’administration Django réduisant de 65 % les temps de requête.",
+          "Système d’agrégation de données en temps réel (Python, Redis) et dashboard d’administration Django réduisant de 65 % les temps de requête.",
           "Automatisation des déploiements via GitHub Actions et mise en place d’une stack de monitoring Grafana et Prometheus."
         ]
       }
@@ -92,7 +94,7 @@
     "tools": "{count} outils",
     "groups": {
       "cloud": {
-        "title": "Cloud et infrastructure as code",
+        "title": "Cloud et infrastructure en tant que code",
         "text": "Une infrastructure AWS provisionnée avec Terraform et configurée avec Ansible."
       },
       "platform": {
@@ -153,21 +155,17 @@
     },
     "runDemo": "Lancer la démo",
     "runDemoAria": "Lancer la démo : {name}",
-    "viewOnGithub": "Voir sur GitHub",
-    "viewOnGithubAria": "Voir sur GitHub : code source de {name} (s’ouvre dans un nouvel onglet)",
+    "viewOnGithub": "Voir le code",
+    "viewOnGithubAria": "Voir le code : {name} sur GitHub (s’ouvre dans un nouvel onglet)",
     "demoFailed": "La démo n’a pas pu se charger."
   },
   "education": {
     "title": "Formation.",
     "items": {
-      "paris42": {
-        "degree": "RNCP niveau 7, Architecte en systèmes d’information et réseaux",
-        "date": "Septembre 2026",
-        "points": []
-      },
       "school1337": {
-        "degree": "Tronc commun",
-        "date": "2022 – 2024",
+        "school": "1337 / UM6P (réseau 42)",
+        "degree": "RNCP niveau 7, génie logiciel",
+        "date": "2022 – 2027 (prévu)",
         "points": [
           "Cursus entre pairs, par projets : C et C++, processus et signaux UNIX, réseau, graphisme et conteneurs avec Docker."
         ]
@@ -177,6 +175,7 @@
   "contact": {
     "title": "Me contacter.",
     "lead": "Une question ou une opportunité ? Envoyez-moi un message.",
+    "emailLead": "Vous préférez l’e-mail ?",
     "required": "Tous les champs sont obligatoires.",
     "name": "Nom",
     "email": "E-mail",
@@ -193,6 +192,8 @@
   "footer": {
     "nav": "Pied de page",
     "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "email": "E-mail : {email}",
     "newTab": " (s’ouvre dans un nouvel onglet)",
     "backToTop": "Retour en haut",
     "rights": "© {year} {name}",
@@ -216,7 +217,17 @@
     "title": "La section {section} n’a pas pu se charger",
     "body": "Rechargez la section pour réessayer.",
     "reload": "Recharger la section",
-    "details": "Détails de l’erreur (pour les développeurs)"
+    "details": "Détails de l’erreur (pour les développeurs)",
+    "sections": {
+      "hero": "Accueil",
+      "about": "À propos",
+      "experience": "Expérience",
+      "tech": "Stack technique",
+      "works": "Projets",
+      "education": "Formation",
+      "blog": "Blog",
+      "contact": "Contact"
+    }
   },
   "loading": "Chargement des scènes 3D",
   "gameMode": "Mode Jeu"
