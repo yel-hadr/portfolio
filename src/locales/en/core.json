@@ -157,7 +157,11 @@
     "runDemoAria": "Run live demo: {name}",
     "viewOnGithub": "View source",
     "viewOnGithubAria": "View source: {name} on GitHub (opens in a new tab)",
-    "demoFailed": "The demo could not load."
+    "demoFailed": "The demo could not load.",
+    "tags": {
+      "raycasting": "Raycasting",
+      "isometric": "Isometric projection"
+    }
   },
   "education": {
     "title": "Education.",
@@ -182,6 +186,12 @@
     "message": "Message",
     "emailPlaceholder": "you@example.com",
     "messagePlaceholder": "What would you like to talk about?",
+    "errors": {
+      "nameMissing": "Enter your name.",
+      "emailMissing": "Enter your email address.",
+      "emailInvalid": "Enter an email address like name@example.com.",
+      "messageMissing": "Write a message."
+    },
     "send": "Send message",
     "sending": "Sending…",
     "sent": "Message sent. I'll get back to you as soon as possible.",
@@ -197,7 +207,7 @@
     "newTab": " (opens in a new tab)",
     "backToTop": "Back to top",
     "rights": "© {year} {name}",
-    "games": "Play games"
+    "games": "Play a game"
   },
   "webgl": {
     "title": "3D scenes are turned off",

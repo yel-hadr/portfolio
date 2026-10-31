@@ -1,6 +1,8 @@
 ---
 title: La synchronisation automatique d’Argo CD ne nettoie ni ne corrige rien par défaut
+seoTitle: Argo CD : l’auto-sync ne nettoie ni ne corrige par défaut
 summary: La synchronisation automatique applique les nouveaux commits, mais garde les ressources supprimées de Git et ignore les modifications manuelles du cluster. Les options prune et selfHeal comblent ces deux manques.
+description: La synchronisation automatique applique les commits, mais garde les ressources retirées de Git et ignore les changements manuels. prune et selfHeal y remédient.
 ---
 
 ## Le problème

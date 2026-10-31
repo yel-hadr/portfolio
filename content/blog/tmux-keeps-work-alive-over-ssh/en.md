@@ -1,6 +1,7 @@
 ---
 title: tmux keeps remote work alive when SSH drops
 summary: Work on a server inside a named tmux session. If the connection drops, the shell and its running commands survive, and tmux attach brings them back. A few default key bindings cover daily use.
+description: Run server work in a named tmux session: if SSH drops, the shell and its commands survive, and tmux attach brings them back. Plus the daily key bindings.
 ---
 
 ## The problem

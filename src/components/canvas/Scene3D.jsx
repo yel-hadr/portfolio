@@ -5,6 +5,7 @@ import { View } from '@react-three/drei';
 import LoadingProgress from '../LoadingProgress';
 import ReleaseContext from './ReleaseContext';
 import { useStillMotion } from '../../hooks/useMotionPaused';
+import { useViewsOnScreen } from './viewPresence';
 
 const AMBIENT_FPS = 30;
 
@@ -13,11 +14,13 @@ const AMBIENT_FPS = 30;
  * with its DOM box (2 frames: drei draws a view one frame after it reports entering the
  * screen). Ambient motion (the globe's rotation, the balls' Float) ticks at ~30 fps; no scene
  * follows the pointer, so pointer moves draw nothing. Still (reduced motion, or the navbar's
- * pause switch): only scroll and resize redraw.
+ * pause switch), or with no 3D view on the screen (viewPresence): only scroll and resize redraw.
  * Hidden tabs cost nothing: requestAnimationFrame pauses.
  */
 const FrameDriver = ({ reduced }) => {
   const invalidate = useThree((state) => state.invalidate);
+  // No ambient frames while no 3D view is in sight: the layer then draws only on scroll
+  const inSight = useViewsOnScreen();
   const again = useRef(false);
 
   // The second frame after a scroll or resize. invalidate(2) from the handlers added 2 per event
@@ -47,14 +50,14 @@ const FrameDriver = ({ reduced }) => {
         invalidate();
       }
     };
-    if (!reduced) raf = requestAnimationFrame(tick);
+    if (!reduced && inSight) raf = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('scroll', redraw);
       window.removeEventListener('resize', redraw);
     };
-  }, [invalidate, reduced]);
+  }, [invalidate, reduced, inSight]);
 
   return null;
 };

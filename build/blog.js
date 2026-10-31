@@ -64,7 +64,7 @@ const rfc822 = (date) => new Date(`${date}T00:00:00Z`).toUTCString();
 
 /**
  * Tiny front matter parser: a leading `---` block of `key: value` lines (values may be quoted).
- * Enough for title and summary; no nesting, lists or multi-line values.
+ * Enough for the title, summary and their short SEO forms; no nesting, lists or multi-line values.
  */
 export const parseFrontMatter = (source) => {
   const match = /^---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(source);
@@ -194,6 +194,9 @@ const loadIndex = async (root) => {
   return byDate(posts);
 };
 
+const SEO_TITLE_MAX = 60;
+const SEO_DESCRIPTION_MAX = 160;
+
 const readPostFile = (root, slug, lang) => {
   const file = resolve(root, CONTENT_DIR, slug, `${lang}.md`);
   let source;
@@ -206,7 +209,20 @@ const readPostFile = (root, slug, lang) => {
   if (!data.title || !data.summary) {
     throw new Error(`[blog] ${CONTENT_DIR}/${slug}/${lang}.md needs a title and a summary`);
   }
-  return { title: data.title, summary: data.summary, body };
+  // Search engines cut a title past about 60 characters and a description past about 160: the
+  // page's <title> and meta description take the short forms (`seoTitle`, optional, and
+  // `description`, falling back to the title and summary), and the build stops on one too long
+  const seo = { title: data.seoTitle || data.title, description: data.description || data.summary };
+  const where = `${CONTENT_DIR}/${slug}/${lang}.md`;
+  if (seo.title.length > SEO_TITLE_MAX) {
+    throw new Error(`[blog] ${where}: title over ${SEO_TITLE_MAX} characters, add a seoTitle`);
+  }
+  if (seo.description.length > SEO_DESCRIPTION_MAX) {
+    throw new Error(
+      `[blog] ${where}: description over ${SEO_DESCRIPTION_MAX} characters, shorten it`
+    );
+  }
+  return { title: data.title, summary: data.summary, seo, body };
 };
 
 /** Every post with its front matter in both languages, newest first. */
@@ -288,6 +304,7 @@ const renderPage = (ctx, { lang, head, alternatePaths, current, main }) => {
     <meta name="theme-color" content="#0b0e14" />
     <meta name="color-scheme" content="dark" />
     <link rel="icon" type="image/svg+xml" href="${href('/logo.svg')}" />
+    <link rel="apple-touch-icon" href="${href('/apple-touch-icon.png')}" />
     ${THEME_SCRIPT}
     ${head}
     ${ctx.assets.css.map((file) => `<link rel="stylesheet" href="${file}" />`).join('\n    ')}
@@ -412,12 +429,14 @@ ${cards}
 const postPage = (ctx, lang, index) => {
   const s = ctx.strings[lang];
   const post = ctx.posts[index];
-  const { title, summary, body } = post.langs[lang];
+  const { title, summary, seo, body } = post.langs[lang];
   const path = ctx.href(postPath(lang, post.slug));
   const url = `${SITE_URL}${path}`;
+  // With the site's name when it still fits in a search result's title
+  const branded = fill(s.postTitle, { title: seo.title });
   const head = headTags({
-    title: fill(s.postTitle, { title }),
-    description: summary,
+    title: branded.length <= SEO_TITLE_MAX ? branded : seo.title,
+    description: seo.description,
     path,
     lang,
     type: 'article',

@@ -33,7 +33,7 @@ const Contact = () => {
 
         <m.div variants={reveal(0.1)} className='h-80 md:h-96 xl:h-auto'>
           <SceneView sectionType='earth' className='h-full w-full'>
-            {/* Contact's globe always mounts (About's is desktop-only), so it warms up the shaders */}
+            {/* Mounts once Contact is a viewport away; it compiles its shaders while it loads */}
             <Earth warmUp />
           </SceneView>
         </m.div>

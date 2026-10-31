@@ -157,7 +157,11 @@
     "runDemoAria": "Lancer la démo : {name}",
     "viewOnGithub": "Voir le code",
     "viewOnGithubAria": "Voir le code : {name} sur GitHub (s’ouvre dans un nouvel onglet)",
-    "demoFailed": "La démo n’a pas pu se charger."
+    "demoFailed": "La démo n’a pas pu se charger.",
+    "tags": {
+      "raycasting": "Lancer de rayons",
+      "isometric": "Projection isométrique"
+    }
   },
   "education": {
     "title": "Formation.",
@@ -182,6 +186,12 @@
     "message": "Message",
     "emailPlaceholder": "vous@exemple.com",
     "messagePlaceholder": "De quoi aimeriez-vous parler ?",
+    "errors": {
+      "nameMissing": "Indiquez votre nom.",
+      "emailMissing": "Indiquez votre adresse e-mail.",
+      "emailInvalid": "Indiquez une adresse e-mail comme nom@exemple.com.",
+      "messageMissing": "Écrivez un message."
+    },
     "send": "Envoyer le message",
     "sending": "Envoi…",
     "sent": "Message envoyé. Je vous répondrai dès que possible.",

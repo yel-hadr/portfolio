@@ -3,9 +3,6 @@ import backend from './backend.webp';
 import creator from './creator.webp';
 import mobile from './mobile.webp';
 import web from './web.webp';
-import github from './github.webp';
-import menu from './menu.svg';
-import close from './close.svg';
 
 import docker from './tech/docker.webp';
 import git from './tech/git.webp';
@@ -29,9 +26,6 @@ export {
   creator,
   mobile,
   web,
-  github,
-  menu,
-  close,
   docker,
   git,
   reactjs,

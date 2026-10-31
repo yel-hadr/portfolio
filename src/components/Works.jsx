@@ -10,6 +10,7 @@ import Spotlight from './Spotlight';
 import { useI18n } from '../i18n/context';
 import CanvasErrorBoundary from './CanvasErrorBoundary';
 import { GithubIcon } from './icons';
+import { tagName } from '../utils/tagName';
 
 // The diagram modal (SVG diagrams + text) loads only when a visitor opens one
 const loadDiagram = () => import('./diagrams/ArchitectureModal');
@@ -73,12 +74,12 @@ const ProjectCard = ({
       <ul className='mt-4 flex flex-wrap gap-2' aria-label={t('works.technologies')}>
         {tags.map((tag) => (
           <li
-            key={tag.name}
-            // Technology names are English, also on the French page
-            lang='en'
+            key={tag.id ?? tag.name}
+            // Product names are English, also on the French page; a technique (`id`) is translated
+            lang={tag.id ? undefined : 'en'}
             className={`rounded-full border border-line bg-surface-raised px-3 py-1 text-sm font-medium ${TAG_COLORS[tag.color] ?? 'text-foreground-muted'}`}
           >
-            {tag.name}
+            {tagName(t, tag)}
           </li>
         ))}
       </ul>

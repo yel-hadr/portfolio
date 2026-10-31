@@ -1,6 +1,8 @@
 ---
 title: Argo CD automated sync neither prunes nor self-heals by default
+seoTitle: Argo CD auto-sync doesn’t prune or self-heal by default
 summary: Automated sync applies new commits, but it keeps resources deleted from Git and ignores manual changes in the cluster. The prune and selfHeal options close those two gaps.
+description: Automated sync applies new commits but keeps resources deleted from Git and ignores manual cluster changes. The prune and selfHeal options close both gaps.
 ---
 
 ## The problem

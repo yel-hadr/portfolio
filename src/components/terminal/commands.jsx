@@ -4,6 +4,7 @@ import { blogPath, blogPosts, feedPath } from 'virtual:blog-posts';
 
 import { education, experiences, person, projects, typingChallenge } from '../../constans';
 import { dictionaries } from '../../i18n/dictionaries';
+import { tagName } from '../../utils/tagName';
 import { closest, completeWord, normalize } from './helpers';
 import { Block, Bullets, Cmd, ErrorLine, ExtLink, Heading, Link, Muted, Rich } from './output';
 
@@ -196,7 +197,7 @@ export const COMMANDS = [
               <p>{t(`works.items.${project.id}.description`)}</p>
               <p>
                 <span className='text-foreground-muted'>{t('terminal.projects.stack')} </span>
-                {project.tags.map((tag) => tag.name).join(' · ')}
+                {project.tags.map((tag) => tagName(t, tag)).join(' · ')}
               </p>
               {/* No source line for a project without a link, as in the Projects section */}
               {project.source_code_link && (

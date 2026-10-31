@@ -1,6 +1,7 @@
 ---
 title: Terraform verrouille l’état S3 sans DynamoDB
 summary: Depuis Terraform 1.10, le backend S3 peut verrouiller l’état avec un objet .tflock placé à côté du fichier d’état (use_lockfile = true). La fonctionnalité est stable depuis la 1.11, qui a rendu obsolète le verrouillage par DynamoDB.
+description: Depuis Terraform 1.10, le backend S3 verrouille l’état avec un objet .tflock (use_lockfile = true). Stable depuis la 1.11, qui rend obsolète le verrou DynamoDB.
 ---
 
 ## Le problème

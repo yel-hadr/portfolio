@@ -20,7 +20,7 @@
   },
   "cloud1": {
     "title": "Cloud-1 architecture",
-    "description": "Terraform provisions the AWS infrastructure, Ansible configures the host over SSH, and Docker Compose runs WordPress behind nginx. Orange arrows follow a visitor's request; violet arrows show provisioning.",
+    "description": "Terraform provisions the AWS infrastructure, Ansible configures the host over SSH, and Docker Compose runs WordPress behind Nginx. Orange arrows follow a visitor's request; violet arrows show provisioning.",
     "legend": {
       "control": "Provisioning"
     },
@@ -80,7 +80,7 @@
       "visitor": {
         "name": "Visitor",
         "role": "Web browser",
-        "description": "Reaches the site by name. Both names resolve to the Elastic IP, and nginx picks the virtual host from the Host header.",
+        "description": "Reaches the site by name. Both names resolve to the Elastic IP, and Nginx picks the virtual host from the Host header.",
         "facts": [
           "https://youssefelhadraoui.tech -> WordPress",
           "https://pma.youssefelhadraoui.tech -> phpMyAdmin"
@@ -107,7 +107,7 @@
         ]
       },
       "nginx": {
-        "name": "nginx",
+        "name": "Nginx",
         "role": "TLS reverse proxy",
         "description": "The only container that publishes ports. Port 80 answers with a 301 redirect to HTTPS (except the ACME challenge); port 443 terminates TLS 1.2/1.3 and routes by name. Unknown names get a 444.",
         "facts": [
@@ -120,7 +120,7 @@
       "wordpress": {
         "name": "WordPress",
         "role": "php-fpm pool",
-        "description": "Publishes no ports: only nginx reaches it, over FastCGI on port 9000. It reads and writes its data in MariaDB over the backend network.",
+        "description": "Publishes no ports: only Nginx reaches it, over FastCGI on port 9000. It reads and writes its data in MariaDB over the backend network.",
         "facts": [
           "Image wordpress:6.8-fpm-alpine",
           "Networks: frontend and backend",
