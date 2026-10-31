@@ -1,8 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { m } from 'framer-motion';
 
 import { navLinks } from '../constans';
 import { logo } from '../assets';
+import { useModalDialog } from '../hooks/useModalDialog';
 import { setMotionPaused, useMotionPaused } from '../hooks/useMotionPaused';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { useI18n } from '../i18n/context';
@@ -10,9 +12,10 @@ import { useTheme } from '../theme/context';
 import { SPRING } from '../utils/motion';
 import { CloseIcon, MenuIcon, MoonIcon, PauseIcon, PlayIcon, SunIcon, TerminalIcon } from './icons';
 
-// No display of its own: each button sets it (`hidden lg:inline-flex` must not meet an inline-flex)
+// No display of its own: each button sets it (`hidden lg:inline-flex` must not meet an inline-flex).
+// Hover lightens the fill and lifts the button a touch (scale 1.05), eased over 200 ms
 const ICON_BUTTON =
-  'h-10 w-10 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground';
+  'relative h-10 w-10 items-center justify-center rounded-full text-foreground-muted transition-[color,background-color,box-shadow,transform] duration-200 ease-out hover:bg-surface-raised hover:text-foreground motion-safe:hover:scale-105';
 
 // EN | FR segmented control. The accessible name ("English") contains the visible text ("EN").
 const LanguageToggle = () => {
@@ -47,6 +50,9 @@ const LanguageToggle = () => {
   );
 };
 
+// The sun turns into the moon and back: both icons stacked, the current one upright, the other
+// rotated away and shrunk (.icon-swap in index.css, a spring-like overshoot; instant under reduced
+// motion)
 const ThemeToggle = () => {
   const { theme, toggleTheme } = useTheme();
   const { t } = useI18n();
@@ -59,13 +65,19 @@ const ThemeToggle = () => {
       title={toLight ? t('nav.themeToLight') : t('nav.themeToDark')}
       className={`inline-flex ${ICON_BUTTON}`}
     >
-      {toLight ? <SunIcon /> : <MoonIcon />}
+      <span aria-hidden='true' className='icon-swap' data-state={toLight ? 'on' : 'off-ccw'}>
+        <SunIcon />
+      </span>
+      <span aria-hidden='true' className='icon-swap' data-state={toLight ? 'off-cw' : 'on'}>
+        <MoonIcon />
+      </span>
     </button>
   );
 };
 
 // Pauses the page's ambient animations (WCAG 2.2.2; useMotionPaused). A toggle button: its name
-// stays the same and aria-pressed carries the state, which the ring shows too
+// stays the same and aria-pressed carries the state. Pressed, it turns orange inside an orange ring
+// with a faint glow (dark only), so the state is more than a color; the icons morph as the theme's do
 const MotionToggle = () => {
   const paused = useMotionPaused();
   const { t } = useI18n();
@@ -75,21 +87,27 @@ const MotionToggle = () => {
       aria-pressed={paused}
       onClick={() => setMotionPaused(!paused)}
       aria-label={t('nav.pauseMotion')}
-      title={paused ? t('nav.playMotion') : t('nav.pauseMotion')}
-      className={`inline-flex ${ICON_BUTTON} ${paused ? 'bg-surface-raised text-foreground ring-1 ring-line-strong' : ''}`}
+      // The same text as the name: a title that changed with the state would be read as a
+      // description contradicting it
+      title={t('nav.pauseMotion')}
+      className={`inline-flex ${ICON_BUTTON} ${paused ? 'bg-primary/15 text-primary-400 ring-1 ring-primary-400 shadow-[0_0_14px_rgb(var(--c-primary)/calc(0.35*var(--glow)))] hover:bg-primary/20 hover:text-primary-400' : ''}`}
     >
-      {paused ? <PlayIcon className='h-4 w-4' /> : <PauseIcon className='h-4 w-4' />}
+      <span aria-hidden='true' className='icon-swap' data-state={paused ? 'off-ccw' : 'on'}>
+        <PauseIcon className='h-4 w-4' />
+      </span>
+      <span aria-hidden='true' className='icon-swap' data-state={paused ? 'on' : 'off-cw'}>
+        <PlayIcon className='h-4 w-4' />
+      </span>
     </button>
   );
 };
 
 // The current link is marked by more than its color: in the desktop track it stands on the sliding
 // pill, which has a ring (>= 3:1 on the track; forced colors drop it, so an underline there); in the
-// mobile menu it is underlined
+// mobile sheet its row is filled and carries an orange bar on its left edge
 const ON_PILL = 'forced-colors:underline forced-colors:underline-offset-4';
-const UNDERLINED = 'underline decoration-primary-400 decoration-2 underline-offset-8';
-const linkClass = (isActive, mark) =>
-  `${isActive ? `text-foreground ${mark}` : 'text-foreground-muted'} ` +
+const linkClass = (isActive) =>
+  `${isActive ? `text-foreground ${ON_PILL}` : 'text-foreground-muted'} ` +
   'font-medium hover:text-foreground transition-colors';
 
 /**
@@ -115,17 +133,154 @@ const usePillPosition = (listRef, active) => {
 };
 
 /**
+ * The page's scroll as the navbar needs it: `scrolled` past the first 10px (its edge fades in),
+ * and `down`, scrolling down past the hero's first 120px (it slides away; any scroll up brings it
+ * back). Read at most once a frame from a passive listener; a re-render only when one flips. Small
+ * moves add up until they pass 4px, so a slow scroll counts as much as a fast one. `holdRef`: until
+ * that time (a jump from the bar's own links, which scrolls down by itself), it stays in view
+ */
+const useNavScroll = (holdRef) => {
+  const [state, setState] = useState({ scrolled: false, down: false });
+  useEffect(() => {
+    let last = window.scrollY;
+    let raf = 0;
+    const read = () => {
+      raf = 0;
+      const y = window.scrollY;
+      const delta = y - last;
+      const moved = Math.abs(delta) > 4;
+      setState((prev) => {
+        const scrolled = y > 10;
+        let down = prev.down;
+        if (y < 120 || performance.now() < holdRef.current) down = false;
+        else if (moved) down = delta > 0;
+        return scrolled === prev.scrolled && down === prev.down ? prev : { scrolled, down };
+      });
+      if (moved || y < 120) last = y;
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(read);
+    };
+    read();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, [holdRef]);
+  return state;
+};
+
+// The sheet's spring: quick, a hint of overshoot, settled in about 0.4 s
+const SHEET_SPRING = { type: 'spring', stiffness: 380, damping: 34 };
+
+/**
+ * The mobile menu: a bottom sheet of frosted glass that springs up over a dimmed, blurred page.
+ * useModalDialog makes the page inert, keeps Tab inside, closes on Escape or a backdrop tap. On
+ * closing it slides back down first; `closing` drives that, and `onClosed` runs at the end.
+ */
+const MobileSheet = ({ id, closing, onClose, onClosed, renderLinks, onTerminal }) => {
+  const { t } = useI18n();
+  const titleId = useId();
+  const { overlayRef, panelRef, close, release, onKeyDown, backdrop } = useModalDialog(onClose);
+
+  useEffect(() => {
+    panelRef.current?.focus();
+  }, [panelRef]);
+
+  // Widened to the desktop layout while open (a rotated tablet): the sheet hides there (lg), so
+  // close it, or the page would stay inert behind nothing
+  const closeOnWide = useEffectEvent(() => close());
+  useEffect(() => {
+    const wide = window.matchMedia('(min-width: 1024px)');
+    const onChange = () => {
+      if (wide.matches) closeOnWide();
+    };
+    wide.addEventListener('change', onChange);
+    return () => wide.removeEventListener('change', onChange);
+  }, []);
+
+  return createPortal(
+    <div
+      ref={overlayRef}
+      className={`fixed inset-0 z-[60] flex items-end bg-background/60 backdrop-blur-sm transition-opacity duration-200 lg:hidden ${closing ? 'opacity-0' : 'motion-safe:animate-backdrop-in'}`}
+      {...backdrop}
+    >
+      <m.div
+        ref={panelRef}
+        id={id}
+        role='dialog'
+        aria-modal='true'
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
+        initial={{ y: '100%' }}
+        animate={{ y: closing ? '100%' : '0%' }}
+        transition={SHEET_SPRING}
+        onAnimationComplete={() => {
+          if (closing) onClosed();
+        }}
+        className='w-full rounded-t-3xl border border-b-0 border-line bg-glass-strong px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 shadow-modal outline-hidden backdrop-blur-xl'
+      >
+        {/* A grab handle, as on a native sheet (decorative: the close button and Escape close it) */}
+        <div aria-hidden='true' className='mx-auto h-1.5 w-10 rounded-full bg-line-strong' />
+        <div className='mt-3 flex items-center justify-between px-2'>
+          <h2 id={titleId} className='text-sm font-semibold uppercase tracking-[0.14em] text-metal'>
+            {t('nav.menu')}
+          </h2>
+          <button
+            type='button'
+            onClick={close}
+            aria-label={t('nav.closeMenu')}
+            className={`inline-flex ${ICON_BUTTON}`}
+          >
+            <CloseIcon className='h-6 w-6' />
+          </button>
+        </div>
+        {/* Large rows (52px), the current one filled with an orange bar on its edge */}
+        {renderLinks(release)}
+        <div className='mt-2 border-t border-line pt-2'>
+          <button
+            type='button'
+            onClick={() => {
+              release();
+              onTerminal();
+            }}
+            aria-haspopup='dialog'
+            className='flex min-h-13 w-full items-center gap-3 rounded-2xl px-4 text-lg font-medium text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground'
+          >
+            <TerminalIcon />
+            {t('nav.openTerminal')}
+          </button>
+        </div>
+      </m.div>
+    </div>,
+    document.body
+  );
+};
+
+/**
  * @param {() => void} onOpenTerminal - opens the terminal overlay (App owns its state)
  */
 const Navbar = ({ onOpenTerminal }) => {
   const { t } = useI18n();
   const [active, setActive] = useState('');
-  const [open, setOpen] = useState(false);
+  // The mobile sheet: 'closed', 'open', or 'closing' (sliding back down)
+  const [sheet, setSheet] = useState('closed');
+  const [focusInside, setFocusInside] = useState(false);
   const toggleRef = useRef(null);
   const linksRef = useRef(null);
   const lastY = useRef(0);
+  // Where focus goes once the sheet has closed: back to its button, unless a link moved it on
+  const returnFocus = useRef(true);
   const reduced = usePrefersReducedMotion();
   const pill = usePillPosition(linksRef, active);
+  // Until when a jump from the bar keeps the bar in view (the smooth scroll it starts goes down)
+  const holdUntil = useRef(0);
+  const { scrolled, down } = useNavScroll(holdUntil);
+  // Slides away while reading down; never under reduced motion, with keyboard focus in the bar
+  // (it must stay in view) or with the sheet up
+  const hidden = down && !reduced && !focusInside && sheet === 'closed';
 
   // Sync the active link with the URL hash (back/forward). On first load, sections mount after
   // the browser tried to scroll to the hash, so scroll a deep link (/#experience) ourselves.
@@ -160,25 +315,28 @@ const Navbar = ({ onOpenTerminal }) => {
     return () => window.removeEventListener('scroll', onScroll);
   }, [active]);
 
-  // Escape closes the mobile menu and returns focus to its button
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setOpen(false);
-        toggleRef.current?.focus();
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open]);
+  // Closing the sheet: it slides down first (instant under reduced motion), then unmounts
+  const finishClose = () => {
+    setSheet('closed');
+    if (returnFocus.current) requestAnimationFrame(() => toggleRef.current?.focus());
+  };
+  const closeSheet = () => {
+    if (reduced) finishClose();
+    else setSheet('closing');
+  };
 
   const goTo = (e, id) => {
     const target = document.getElementById(id);
     if (!target) return; // let the browser handle the hash
     e.preventDefault();
     setActive(id);
-    setOpen(false);
+    // The jump scrolls down by itself: the bar stays, to take the next click
+    holdUntil.current = performance.now() + 1500;
+    if (sheet !== 'closed') {
+      // The link moves focus to its section: the sheet must not hand it back to its button
+      returnFocus.current = false;
+      closeSheet();
+    }
     target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
     // Move focus to the section so keyboard and screen reader users land there too
     target.setAttribute('tabindex', '-1');
@@ -186,15 +344,31 @@ const Navbar = ({ onOpenTerminal }) => {
     window.history.pushState(null, '', `#${id}`);
   };
 
-  const renderLinks = (className, linkPadding = '', listRef = undefined, indicator = null) => (
-    <ul ref={listRef} className={className}>
-      {indicator}
+  // The desktop track: links on a recessed rail, the current one on the sliding pill
+  const desktopLinks = (
+    <ul
+      ref={linksRef}
+      className='relative list-none hidden lg:flex items-center rounded-full bg-surface/80 p-1 shadow-track'
+    >
+      {pill && (
+        // The pill behind the current link: it springs from link to link (motion values on x
+        // and width, measured from the link: the look of a layoutId indicator without framer's
+        // layout bundle on the first paint), and fades out when no section is current. Instant
+        // under reduced motion
+        <m.li
+          aria-hidden='true'
+          className='pointer-events-none absolute inset-y-1 left-0 rounded-full bg-surface-raised ring-1 ring-line-strong'
+          initial={false}
+          animate={{ x: pill.x, width: pill.width, opacity: active ? 1 : 0 }}
+          transition={reduced ? { duration: 0 } : SPRING}
+        />
+      )}
       {navLinks.map((link) => (
         <li key={link.id}>
           <a
             href={`#${link.id}`}
             aria-current={active === link.id ? 'location' : undefined}
-            className={`${linkClass(active === link.id, indicator ? ON_PILL : UNDERLINED)} ${linkPadding}`}
+            className={`${linkClass(active === link.id)} relative z-10 block rounded-full px-3.5 py-1.5`}
             onClick={(e) => goTo(e, link.id)}
           >
             {t(`nav.${link.id}`)}
@@ -204,52 +378,71 @@ const Navbar = ({ onOpenTerminal }) => {
     </ul>
   );
 
-  // The pill behind the current link: it springs from link to link, and fades out when no
-  // section is current. Instant under reduced motion
-  const indicator = pill && (
-    <m.li
-      aria-hidden='true'
-      className='pointer-events-none absolute inset-y-1 left-0 rounded-full bg-surface-raised ring-1 ring-line-strong'
-      initial={false}
-      animate={{ x: pill.x, width: pill.width, opacity: active ? 1 : 0 }}
-      transition={reduced ? { duration: 0 } : SPRING}
-    />
-  );
-
-  const terminalButton = (display = 'inline-flex') => (
-    <button
-      type='button'
-      onClick={() => {
-        setOpen(false);
-        onOpenTerminal();
-      }}
-      aria-haspopup='dialog'
-      aria-keyshortcuts='Control+`'
-      aria-label={t('nav.openTerminal')}
-      title={`${t('nav.openTerminal')} (${t('nav.terminalShortcut')})`}
-      className={`${display} ${ICON_BUTTON}`}
-    >
-      <TerminalIcon />
-    </button>
+  // The sheet's links: full-width rows, the current one filled and marked by an orange bar.
+  // `release` lets the page go first (inert, scroll lock), so the jump can scroll and focus it
+  const sheetLinks = (release) => (
+    <ul className='mt-2 flex list-none flex-col gap-1'>
+      {navLinks.map((link) => {
+        const isActive = active === link.id;
+        return (
+          <li key={link.id}>
+            <a
+              href={`#${link.id}`}
+              aria-current={isActive ? 'location' : undefined}
+              onClick={(e) => {
+                release();
+                goTo(e, link.id);
+              }}
+              className={`relative flex min-h-13 items-center rounded-2xl px-4 text-lg font-medium transition-colors ${
+                isActive
+                  ? 'bg-surface-raised text-foreground before:absolute before:inset-y-3 before:left-0 before:w-1 before:rounded-full before:bg-primary-400 forced-colors:underline'
+                  : 'text-foreground-muted hover:bg-surface-raised hover:text-foreground'
+              }`}
+            >
+              {t(`nav.${link.id}`)}
+            </a>
+          </li>
+        );
+      })}
+    </ul>
   );
 
   return (
     <nav
       aria-label={t('nav.main')}
-      // A floating pill of frosted glass, clear of the page's edges, with a hairline ring inside;
-      // in light a soft shadow under it as well
+      // A floating pill of frosted glass, clear of the page's edges. Never transformed itself: the
+      // pill inside slides, so nothing here becomes a containing block
       className='fixed inset-x-3 top-3 z-50 sm:inset-x-6'
+      onFocus={() => setFocusInside(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setFocusInside(false);
+      }}
     >
-      {/* The transparent border is the pill's edge in forced colors, which drop the ring */}
-      <div className='mx-auto flex max-w-5xl items-center justify-between gap-4 rounded-full border border-transparent bg-background/80 py-1.5 pl-2 pr-2 shadow-card ring-1 ring-edge-ring backdrop-blur-xl light:bg-background/90 light:shadow-raised'>
+      {/* The pill: blurred glass at 80%, slid away while reading down (transform only, so the page
+          never shifts). The transparent border is its edge in forced colors */}
+      <div
+        className={`relative isolate mx-auto flex max-w-5xl items-center justify-between gap-4 rounded-full border border-transparent bg-background/80 py-1.5 pl-2 pr-2 backdrop-blur-xl transition-transform duration-300 ease-out ${hidden ? '-translate-y-[calc(100%+1rem)]' : ''}`}
+      >
+        {/* Its edge: nothing at the top of the page, so it melts into the hero; a hairline (and
+            the dark top highlight, the light shadow) fading in once the page scrolls */}
+        <span
+          aria-hidden='true'
+          className={`pointer-events-none absolute -inset-px -z-10 rounded-full border border-nav-edge shadow-card light:shadow-raised transition-opacity duration-300 ease-out ${scrolled ? 'opacity-100' : 'opacity-0'}`}
+        />
+        {/* The page's film grain inside the glass too (the blur wipes out the page's own), so the
+            pill reads as frosted glass rather than a flat sheet */}
+        <span
+          aria-hidden='true'
+          className='pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-full'
+        >
+          <span className='grain absolute inset-0' />
+        </span>
+
         <a
           href='#top'
           aria-label={t('nav.home')}
           className='flex shrink-0 items-center gap-2'
-          onClick={() => {
-            setActive('');
-            setOpen(false);
-          }}
+          onClick={() => setActive('')}
         >
           <img src={logo} alt='' className='h-9 w-9 object-contain' />
           <span aria-hidden='true' className='hidden text-lg font-bold text-foreground xs:inline'>
@@ -257,66 +450,57 @@ const Navbar = ({ onOpenTerminal }) => {
           </span>
         </a>
 
-        {/* The links in a recessed track, the current one on the sliding pill */}
-        {renderLinks(
-          'relative list-none hidden lg:flex items-center rounded-full bg-surface/80 p-1 shadow-track',
-          'relative z-10 block rounded-full px-3.5 py-1.5',
-          linksRef,
-          indicator
-        )}
+        {desktopLinks}
 
-        <div className='flex items-center gap-4'>
-          <div className='flex items-center gap-1.5'>
-            <LanguageToggle />
-            <ThemeToggle />
-            <MotionToggle />
-            {terminalButton('hidden lg:inline-flex')}
-
-            <div
-              className='relative lg:hidden'
-              onBlur={(e) => {
-                // Close the menu when keyboard focus moves outside it
-                if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
-              }}
-            >
-              <button
-                ref={toggleRef}
-                type='button'
-                aria-expanded={open}
-                aria-controls='mobile-menu'
-                aria-label={open ? t('nav.closeMenu') : t('nav.openMenu')}
-                onClick={() => setOpen((v) => !v)}
-                className={`inline-flex ${ICON_BUTTON}`}
-              >
-                {open ? <CloseIcon className='h-6 w-6' /> : <MenuIcon className='h-6 w-6' />}
-              </button>
-              <div
-                id='mobile-menu'
-                className={`${open ? 'flex' : 'hidden'} absolute right-0 top-full z-50 mt-3 min-w-[12rem] flex-col gap-5 rounded-3xl border border-line bg-surface/95 p-6 backdrop-blur-xl light:shadow-raised`}
-              >
-                {renderLinks('list-none flex flex-col gap-4 items-start')}
-                <div className='border-t border-line pt-4'>
-                  <button
-                    type='button'
-                    onClick={() => {
-                      setOpen(false);
-                      // The menu item disappears with the menu: hand focus to the visible menu
-                      // toggle first, so it is the element focus returns to on close
-                      toggleRef.current?.focus();
-                      onOpenTerminal();
-                    }}
-                    aria-haspopup='dialog'
-                    className='inline-flex items-center gap-2 whitespace-nowrap font-medium text-foreground-muted transition-colors hover:text-foreground'
-                  >
-                    <TerminalIcon />
-                    {t('nav.openTerminal')}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className='flex items-center gap-1.5'>
+          <LanguageToggle />
+          <ThemeToggle />
+          <MotionToggle />
+          <button
+            type='button'
+            onClick={onOpenTerminal}
+            aria-haspopup='dialog'
+            aria-keyshortcuts='Control+`'
+            aria-label={t('nav.openTerminal')}
+            title={`${t('nav.openTerminal')} (${t('nav.terminalShortcut')})`}
+            className={`hidden lg:inline-flex ${ICON_BUTTON}`}
+          >
+            <TerminalIcon />
+          </button>
+          <button
+            ref={toggleRef}
+            type='button'
+            aria-expanded={sheet === 'open'}
+            aria-controls='mobile-menu'
+            aria-haspopup='dialog'
+            aria-label={t('nav.openMenu')}
+            onClick={() => {
+              returnFocus.current = true;
+              setSheet('open');
+            }}
+            className={`inline-flex lg:hidden ${ICON_BUTTON}`}
+          >
+            <MenuIcon className='h-6 w-6' />
+          </button>
         </div>
       </div>
+
+      {sheet !== 'closed' && (
+        <MobileSheet
+          id='mobile-menu'
+          closing={sheet === 'closing'}
+          onClose={closeSheet}
+          onClosed={finishClose}
+          renderLinks={sheetLinks}
+          onTerminal={() => {
+            // The terminal takes over: the sheet goes at once, focus parked on its button (the
+            // element the terminal returns focus to on close)
+            setSheet('closed');
+            toggleRef.current?.focus();
+            onOpenTerminal();
+          }}
+        />
+      )}
     </nav>
   );
 };

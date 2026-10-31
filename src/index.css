@@ -45,6 +45,7 @@
   --color-line: var(--color-line); /* decorative hairlines */
   --color-line-strong: rgb(var(--c-line-strong)); /* control boundaries (>= 3:1) */
   --color-edge-ring: var(--color-edge-ring); /* the floating navbar's inner ring */
+  --color-nav-edge: var(--color-nav-edge); /* the navbar's hairline once the page scrolls */
   /* Depth from tokens: an inner glow on dark cards, soft warm layers in light */
   --shadow-card: var(--shadow-card);
   --shadow-raised: var(--shadow-raised);
@@ -224,6 +225,8 @@
     /* A card's machined top edge, and the floating navbar's inner ring */
     --color-edge: rgb(255 255 255 / 0.1);
     --color-edge-ring: rgb(255 255 255 / 0.1);
+    /* The navbar's edge: none at the top of the page, this hairline once it scrolls (Navbar) */
+    --color-nav-edge: rgb(255 255 255 / 0.08);
     /* The blueprint grid behind the bento's group cards and the 42 demo cards */
     --color-grid: rgb(255 255 255 / 0.035);
     --shadow-track: inset 0 1px 2px rgb(0 0 0 / 0.4);
@@ -314,6 +317,7 @@
     --spot-fill: 0.4;
     --color-edge: rgb(255 255 255 / 0.7);
     --color-edge-ring: rgb(26 26 46 / 0.05);
+    --color-nav-edge: rgb(0 0 0 / 0.06);
     --color-grid: rgb(26 26 46 / 0.045);
     --shadow-track: inset 0 1px 2px rgb(64 42 20 / 0.08);
   }
@@ -342,6 +346,36 @@
       color 0.35s ease,
       fill 0.35s ease,
       box-shadow 0.35s ease !important;
+  }
+
+  /* A two-state icon that morphs (the theme and pause toggles): both icons stacked, the current one
+     upright, the other turned away and shrunk to nothing; a spring-like overshoot between them.
+     More specific than .theme-transition, whose !important transitions would otherwise freeze the
+     swap at the very moment the theme changes. Instant under reduced motion */
+  .icon-swap,
+  .theme-transition .icon-swap {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+      opacity 0.2s ease-out !important;
+  }
+  .icon-swap[data-state='off-cw'] {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+  }
+  .icon-swap[data-state='off-ccw'] {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .icon-swap,
+    .theme-transition .icon-swap {
+      transition: none !important;
+    }
   }
 
   /* scroll-padding-top keeps anchor targets and keyboard-focused elements clear of the
