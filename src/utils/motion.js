@@ -10,10 +10,17 @@ export const REVEAL_SPRING = { type: 'spring', stiffness: 100, damping: 15 };
 
 // No delay key unless one is asked for: an explicit delay (even 0) on the child replaces the
 // stagger its parent container gives it, and the cascade collapses into one step
+// Under reduced motion the content only fades: no offset at all, rather than one MotionConfig
+// would drop a frame after the fade starts. Read when the variants are built (at render)
+const rise = () =>
+  typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
+    ? 0
+    : 24;
+
 export const reveal = (delay = 0) => {
   const wait = delay ? { delay } : {};
   return {
-    hidden: { opacity: 0, y: 24 },
+    hidden: { opacity: 0, y: rise() },
     show: {
       opacity: 1,
       y: 0,

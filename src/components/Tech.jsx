@@ -4,6 +4,7 @@ import { SectionWrapper } from '../hoc';
 import { techGroups, technologies } from '../constans';
 import { reveal, staggerContainer } from '../utils/motion';
 import { requestFrames } from './canvas/viewPresence';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import SectionHeader from './SectionHeader';
 import Spotlight from './Spotlight';
 import { useI18n } from '../i18n/context';
@@ -41,6 +42,8 @@ const TechBall = ({ tech, size, warmUp }) => (
 const Tech = () => {
   const { t } = useI18n();
   const first = technologies[0];
+  // Under reduced motion the cards only fade, so the 3D layer has nothing to follow
+  const follow = usePrefersReducedMotion() ? undefined : followReveal;
   return (
     <>
       <SectionHeader id='tech' title={t('tech.title')} lead={t('tech.lead')} />
@@ -60,7 +63,7 @@ const Tech = () => {
               <m.li
                 key={id}
                 variants={reveal()}
-                onAnimationStart={followReveal}
+                onAnimationStart={follow}
                 data-spotlight
                 className={`${CARD} ${SPAN.small} items-center gap-5 p-6`}
               >
@@ -78,7 +81,7 @@ const Tech = () => {
             <m.li
               key={id}
               variants={reveal()}
-              onAnimationStart={followReveal}
+              onAnimationStart={follow}
               data-spotlight
               className={`${CARD} ${SPAN[size]} flex-col`}
             >

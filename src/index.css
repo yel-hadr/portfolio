@@ -423,10 +423,10 @@
     }
   }
 
-  /* An inline text link's underline that draws in from left to right on hover or focus: a 2px bar
-     (::after) scaled from 0 to 1 along x from the left edge, transform only. The link keeps its
-     resting underline (text-decoration), so it never relies on color alone (WCAG 1.4.1); the
-     bar is the hover state. Instant under reduced motion */
+  /* A link's underline that draws in from left to right on hover or focus: a 2px bar (::after)
+     scaled from 0 to 1 along x from the left edge, transform only. The class gives no resting
+     underline: a link inside running text must also take `underline` (the Contact and footer
+     emails do), so it never relies on color alone (WCAG 1.4.1). Instant under reduced motion */
   .link-draw {
     position: relative;
     text-decoration-thickness: 1px;
