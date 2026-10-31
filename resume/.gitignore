@@ -1,0 +1,5 @@
+# pdflatex output: the published copy is public/Youssef_Elhadraoui_Resume.pdf
+*.aux
+*.log
+*.out
+*.pdf
