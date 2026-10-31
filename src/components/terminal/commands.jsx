@@ -4,7 +4,7 @@ import { blogPath, blogPosts, feedPath } from 'virtual:blog-posts';
 
 import { education, experiences, person, projects, typingChallenge } from '../../constans';
 import { dictionaries } from '../../i18n/dictionaries';
-import { tagName } from '../../utils/tagName';
+import { tagName } from '../../i18n/context';
 import { closest, completeWord, normalize } from './helpers';
 import { Block, Bullets, Cmd, ErrorLine, ExtLink, Heading, Link, Muted, Rich } from './output';
 

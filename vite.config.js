@@ -26,6 +26,11 @@ export default defineConfig({
     // only when the page's 3D layer, a demo or Game Mode needs it, never on the first paint.
     // Splitting it would not shrink what a visitor downloads, so the warning sits just above it
     chunkSizeWarningLimit: 720,
+    // Images are never inlined as base64: src/constans imports every tech icon, and the navbar
+    // and Hero import src/constans, so each icon under Vite's 4 KB limit landed in the
+    // first-paint chunk (about 30 kB of base64 that gzip barely shrinks) though only the Tech
+    // section shows them. As files they are fetched when an image or a ball texture asks
+    assetsInlineLimit: (file) => (/\.(webp|png|jpe?g)$/.test(file) ? false : undefined),
     rollupOptions: {
       // Pages: the portfolio and the /status/ page (its own small React entry)
       input: {
@@ -65,13 +70,16 @@ export default defineConfig({
             return 'vendor-r3f';
           if (/node_modules\/(framer-motion|motion-dom|motion-utils)\//.test(id))
             return 'vendor-motion';
-          // Small helpers shared by the 3D stack and the DOM sections (timeline): keep them with
-          // React, or Rollup puts them in vendor-r3f and the entry then preloads three.js.
+          // Small helpers only lazy code uses (the timeline below the hero, the 3D stack): a chunk
+          // of their own, which no first-paint chunk imports, so it is not preloaded. Left
+          // unassigned, Rollup would put them in vendor-r3f and the timeline would pull three.js
           if (
-            /node_modules\/(react|react-dom|scheduler|react-is|prop-types|@babel\/runtime|classnames|react-intersection-observer|use-sync-external-store)\//.test(
+            /node_modules\/(react-is|prop-types|classnames|react-intersection-observer|use-sync-external-store)\//.test(
               id
             )
           )
+            return 'vendor-shared';
+          if (/node_modules\/(react|react-dom|scheduler|@babel\/runtime)\//.test(id))
             return 'vendor-react';
           return undefined;
         },

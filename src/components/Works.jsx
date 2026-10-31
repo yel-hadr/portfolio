@@ -7,10 +7,9 @@ import { projects } from '../constans';
 import { pressable, reveal } from '../utils/motion';
 import SectionHeader from './SectionHeader';
 import Spotlight from './Spotlight';
-import { useI18n } from '../i18n/context';
+import { tagName, useI18n } from '../i18n/context';
 import CanvasErrorBoundary from './CanvasErrorBoundary';
 import { GithubIcon } from './icons';
-import { tagName } from '../utils/tagName';
 
 // The diagram modal (SVG diagrams + text) loads only when a visitor opens one
 const loadDiagram = () => import('./diagrams/ArchitectureModal');
