@@ -1,6 +1,7 @@
 ---
 title: VXLAN retire 50 octets au MTU de chaque paquet
 summary: VXLAN ajoute 50 octets d’en-têtes à chaque trame, 70 sur IPv6. Sur un underlay à 1500 octets, fixez le MTU de l’overlay à 1450 ou passez aux trames jumbo, sinon les gros transferts bloquent alors que les pings passent.
+description: VXLAN ajoute 50 octets d’en-têtes par trame, 70 en IPv6. Sur un underlay à 1500 octets, réglez l’overlay à 1450 ou en jumbo, sinon les gros transferts bloquent.
 ---
 
 ## Le problème

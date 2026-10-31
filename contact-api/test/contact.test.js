@@ -146,6 +146,21 @@ test('a Resend error is a 502 with its type, never its message', async () => {
   assert.deepEqual(await res.json(), { error: 'send', reason: 'validation_error' });
 });
 
+test('a send that throws is a 502, not an unhandled error', async () => {
+  const handler = createContactHandler({
+    send: async () => {
+      throw new TypeError('fetch failed');
+    },
+    to: 'me@example.com',
+    from: 'Portfolio <onboarding@resend.dev>',
+    origins: [SITE],
+  });
+  const res = await handler(post(valid));
+  assert.equal(res.status, 502);
+  assert.deepEqual(await res.json(), { error: 'send', reason: 'network' });
+  assert.equal(res.headers.get('access-control-allow-origin'), SITE);
+});
+
 test('over the limit: 429 with Retry-After, nothing more sent', async () => {
   const sent = [];
   const handler = createContactHandler({

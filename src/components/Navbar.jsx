@@ -3,11 +3,12 @@ import { m } from 'framer-motion';
 
 import { navLinks } from '../constans';
 import { logo } from '../assets';
+import { setMotionPaused, useMotionPaused } from '../hooks/useMotionPaused';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { useI18n } from '../i18n/context';
 import { useTheme } from '../theme/context';
 import { SPRING } from '../utils/motion';
-import { CloseIcon, MenuIcon, MoonIcon, SunIcon, TerminalIcon } from './icons';
+import { CloseIcon, MenuIcon, MoonIcon, PauseIcon, PlayIcon, SunIcon, TerminalIcon } from './icons';
 
 // No display of its own: each button sets it (`hidden lg:inline-flex` must not meet an inline-flex)
 const ICON_BUTTON =
@@ -59,6 +60,25 @@ const ThemeToggle = () => {
       className={`inline-flex ${ICON_BUTTON}`}
     >
       {toLight ? <SunIcon /> : <MoonIcon />}
+    </button>
+  );
+};
+
+// Pauses the page's ambient animations (WCAG 2.2.2; useMotionPaused). A toggle button: its name
+// stays the same and aria-pressed carries the state, which the ring shows too
+const MotionToggle = () => {
+  const paused = useMotionPaused();
+  const { t } = useI18n();
+  return (
+    <button
+      type='button'
+      aria-pressed={paused}
+      onClick={() => setMotionPaused(!paused)}
+      aria-label={t('nav.pauseMotion')}
+      title={paused ? t('nav.playMotion') : t('nav.pauseMotion')}
+      className={`inline-flex ${ICON_BUTTON} ${paused ? 'bg-surface-raised text-foreground ring-1 ring-line-strong' : ''}`}
+    >
+      {paused ? <PlayIcon className='h-4 w-4' /> : <PauseIcon className='h-4 w-4' />}
     </button>
   );
 };
@@ -249,6 +269,7 @@ const Navbar = ({ onOpenTerminal }) => {
           <div className='flex items-center gap-1.5'>
             <LanguageToggle />
             <ThemeToggle />
+            <MotionToggle />
             {terminalButton('hidden lg:inline-flex')}
 
             <div

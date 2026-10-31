@@ -1,4 +1,4 @@
-import { useActionState, useId, useState } from 'react';
+import { useActionState, useId, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { m } from 'framer-motion';
 
@@ -7,13 +7,27 @@ import { pressable } from '../utils/motion';
 
 const FIELD =
   'w-full rounded-xl border border-line-strong bg-surface-raised px-5 py-4 font-medium text-foreground ' +
-  'placeholder:text-foreground-muted focus:outline-hidden focus-visible:ring-2 focus-visible:ring-focus ' +
+  'aria-invalid:border-danger placeholder:text-foreground-muted focus:outline-hidden focus-visible:ring-2 focus-visible:ring-focus ' +
   'focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 const EMPTY_FORM = { name: '', email: '', message: '' };
 
 // The endpoint's limits (contact-api/lib/contact.js), so the browser stops a message it would refuse
 const MAX = { name: 100, email: 254, message: 5000 };
+// The endpoint's own email check
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const FIELDS = ['name', 'email', 'message'];
+
+/**
+ * The form's own checks, in place of the browser's popups (which speak the browser's language,
+ * not the page's): a locale key per field that fails, under `contact.errors`
+ */
+const check = (name, value) => {
+  const v = value.trim();
+  if (!v) return `contact.errors.${name}Missing`;
+  if (name === 'email' && !EMAIL.test(v)) return 'contact.errors.emailInvalid';
+  return null;
+};
 
 /**
  * Posts the message to the contact endpoint (a Vercel function that sends it through Resend; its
@@ -78,6 +92,10 @@ const ContactForm = () => {
     message: `${uid}message`,
   };
   const { t } = useI18n();
+  // { name: key | null, ... }: shown under each field once a submit found it wrong, and cleared as
+  // soon as it is right
+  const [errors, setErrors] = useState({});
+  const fieldRefs = { name: useRef(null), email: useRef(null), message: useRef(null) };
   // Controlled fields: a failed send keeps what was typed, a sent one clears them
   const [form, setForm] = useState(EMPTY_FORM);
   // { type: 'success' | 'error', key } shown in a live region instead of alert(); a key, not
@@ -93,72 +111,84 @@ const ContactForm = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    // A field marked wrong is checked again as it is typed in, so the message goes once it is right
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: check(name, value) }));
   };
 
-  // One message at a time: a second submit (Enter in a field) while one is sending does nothing
+  // One message at a time: a second submit (Enter in a field) while one is sending does nothing.
+  // A message with a field missing or wrong is not sent: each field says what is wrong, and the
+  // first such field takes focus (its message is read with it)
   const onSubmit = (e) => {
-    if (pending) e.preventDefault();
+    if (pending) {
+      e.preventDefault();
+      return;
+    }
+    const found = Object.fromEntries(FIELDS.map((name) => [name, check(name, form[name])]));
+    setErrors(found);
+    const first = FIELDS.find((name) => found[name]);
+    if (first) {
+      e.preventDefault();
+      fieldRefs[first].current?.focus();
+    }
   };
+
+  // What each field reads besides its label: the required hint, and its error when there is one
+  const fieldProps = (name) => ({
+    id: ids[name],
+    name,
+    ref: fieldRefs[name],
+    maxLength: MAX[name],
+    value: form[name],
+    onChange: handleChange,
+    'aria-invalid': errors[name] ? true : undefined,
+    'aria-describedby': errors[name] ? `${ids[name]}err ${ids.hint}` : ids.hint,
+    required: true,
+  });
+  const fieldError = (name) =>
+    errors[name] && (
+      <p id={`${ids[name]}err`} className='text-sm font-medium text-danger'>
+        {t(errors[name])}
+      </p>
+    );
 
   return (
     <>
+      {/* Read with each field (aria-describedby): a <form> without a name is not announced */}
       <p id={ids.hint} className='mb-6 text-sm text-foreground-muted'>
         {t('contact.required')}
       </p>
-      <form
-        action={sendAction}
-        onSubmit={onSubmit}
-        aria-describedby={ids.hint}
-        className='flex flex-col gap-6'
-      >
+      <form action={sendAction} onSubmit={onSubmit} noValidate className='flex flex-col gap-6'>
         <div className='flex flex-col gap-2'>
           <label htmlFor={ids.name} className='font-medium text-foreground'>
             {t('contact.name')}
           </label>
-          <input
-            id={ids.name}
-            type='text'
-            name='name'
-            autoComplete='name'
-            maxLength={MAX.name}
-            value={form.name}
-            onChange={handleChange}
-            className={FIELD}
-            required
-          />
+          <input {...fieldProps('name')} type='text' autoComplete='name' className={FIELD} />
+          {fieldError('name')}
         </div>
         <div className='flex flex-col gap-2'>
           <label htmlFor={ids.email} className='font-medium text-foreground'>
             {t('contact.email')}
           </label>
           <input
-            id={ids.email}
+            {...fieldProps('email')}
             type='email'
-            name='email'
             autoComplete='email'
-            maxLength={MAX.email}
             placeholder={t('contact.emailPlaceholder')}
-            value={form.email}
-            onChange={handleChange}
             className={FIELD}
-            required
           />
+          {fieldError('email')}
         </div>
         <div className='flex flex-col gap-2'>
           <label htmlFor={ids.message} className='font-medium text-foreground'>
             {t('contact.message')}
           </label>
           <textarea
-            id={ids.message}
+            {...fieldProps('message')}
             rows={6}
-            name='message'
-            maxLength={MAX.message}
             placeholder={t('contact.messagePlaceholder')}
-            value={form.message}
-            onChange={handleChange}
             className={`${FIELD} resize-y`}
-            required
           />
+          {fieldError('message')}
         </div>
 
         {/* A trap for bots, which fill every field: hidden from everyone (display: none keeps it out

@@ -38,7 +38,8 @@ export const Brackets = ({ className = 'text-foreground-muted', size = 'h-2.5 w-
     <span className={`absolute bottom-0 right-0 ${size} border-b border-r border-current`} />
   </span>
 );
-const MENU_BUTTON = 'w-full justify-center font-mono uppercase tracking-widest';
+// Every main and pause menu button: one text style (mono capitals), centered when a label wraps
+const MENU_BUTTON = 'w-full justify-center text-center font-mono uppercase tracking-widest';
 const HUD_BUTTON = `inline-flex h-11 items-center gap-2 rounded-xl ${GLASS} px-3 text-sm font-semibold text-foreground hover:border-foreground-muted ${styles.hudFocus}`;
 
 /** A labeled bar the game loop fills (`barRef`); it turns red under 30% */
@@ -185,10 +186,15 @@ export const GameSettings = ({
   headingLevel = 'h4',
 }) => {
   const id = useId();
-  const toggle = `${styles.buttonGhost} w-full justify-center gap-2`;
+  // Buttons reset text-transform (preflight), so they take the capitals themselves
+  const toggle = `${styles.buttonGhost} w-full justify-center gap-2 uppercase`;
   const Heading = headingLevel;
   return (
-    <section aria-labelledby={id} className='mt-5 space-y-3 border-t border-line pt-4'>
+    // Mono capitals like the menu buttons above it: one text style through the whole menu
+    <section
+      aria-labelledby={id}
+      className='mt-5 space-y-3 border-t border-line pt-4 font-mono uppercase tracking-wider'
+    >
       <Heading id={id} className='text-sm font-semibold text-foreground-muted'>
         {t('demos.game.settings')}
       </Heading>
@@ -926,7 +932,7 @@ export const MainMenu = ({
             <button
               type='button'
               onClick={onTextMode}
-              className={`${styles.buttonGhost} mt-5 w-full justify-center`}
+              className={`${styles.buttonGhost} ${MENU_BUTTON} mt-5`}
             >
               {t('demos.game.menu.skip')}
             </button>

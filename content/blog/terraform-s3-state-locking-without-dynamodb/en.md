@@ -1,6 +1,7 @@
 ---
 title: Terraform can lock S3 state without DynamoDB
 summary: Since Terraform 1.10, the S3 backend can lock state with a .tflock object next to the state file (use_lockfile = true). It has been generally available since 1.11, which deprecated DynamoDB locking.
+description: Since Terraform 1.10 the S3 backend can lock state with a .tflock object (use_lockfile = true). GA since 1.11, which deprecated DynamoDB locking.
 ---
 
 ## The problem

@@ -132,7 +132,6 @@ const technologies = [
   },
 ];
 
-// Dates are left empty until they are confirmed; the timeline hides an empty date.
 // Title, dates and points: experience.items.<id>, newest first
 const experiences = [
   {
@@ -246,7 +245,8 @@ const projects = [
     tags: [
       { name: 'C', color: 'blue-text-gradient' },
       { name: 'MLX42', color: 'green-text-gradient' },
-      { name: 'Raycasting', color: 'orange-text-gradient' },
+      // A technique rather than a product: its name is translated (works.tags.<id>)
+      { id: 'raycasting', color: 'orange-text-gradient' },
     ],
     source_code_link: 'https://github.com/yel-hadr/cub3D_42',
     demo: 'cub3d',
@@ -256,18 +256,15 @@ const projects = [
     tags: [
       { name: 'C', color: 'blue-text-gradient' },
       { name: 'MiniLibX', color: 'green-text-gradient' },
-      { name: 'Isometric projection', color: 'orange-text-gradient' },
+      { id: 'isometric', color: 'orange-text-gradient' },
     ],
     source_code_link: 'https://github.com/yel-hadr/my_fdf_42',
     demo: 'fdf',
   },
 ];
 
-// Degree, date and points: education.items.<id>
-const education = [
-  { id: 'paris42', school: '42 Paris' },
-  { id: 'school1337', school: '1337 Coding School' },
-];
+// School, degree, date and points: education.items.<id> (the school's name differs in French)
+const education = [{ id: 'school1337' }];
 
 // Terminal challenge (`game` in the terminal): the commands to type, by difficulty. Plain text
 // only, rendered as text nodes; edit freely.

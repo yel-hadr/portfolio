@@ -1,7 +1,7 @@
 {
   "close": "Fermer la démo",
-  "source": "Code source",
-  "sourceAria": "Voir le code source de {name} sur GitHub (s’ouvre dans un nouvel onglet)",
+  "source": "Voir le code",
+  "sourceAria": "Voir le code : {name} sur GitHub (s’ouvre dans un nouvel onglet)",
   "noWebgl": "Cette démo a besoin de WebGL 2, que ce navigateur ou cet appareil ne propose pas.",
   "cub3d": {
     "name": "cub3D",
@@ -133,7 +133,7 @@
   },
   "loading": "Lancement de la démo…",
   "failed": "Cette démo n’a pas pu démarrer sur cet appareil.",
-  "sourceHint": "Le lien Code source en haut de cette fenêtre montre le projet.",
+  "sourceHint": "Le lien Voir le code en haut de cette fenêtre montre le projet.",
   "game": {
     "title": "Mode Jeu",
     "description": "Le portfolio en mission à la première personne, construit sur cub3D : six salles, une par section du profil, des menaces à neutraliser entre elles et des terminaux qui ouvrent les démos.",
@@ -169,7 +169,7 @@
       "time": "Temps",
       "threats": "Menaces neutralisées",
       "contact": "Me contacter",
-      "resume": "Télécharger le CV",
+      "resume": "Télécharger mon CV",
       "github": "Voir sur GitHub",
       "keepExploring": "Continuer à explorer",
       "accuracy": "Précision",

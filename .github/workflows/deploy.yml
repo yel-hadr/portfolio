@@ -88,11 +88,12 @@ jobs:
           VITE_GRAFANA_DASHBOARD_URL: ${{ vars.VITE_GRAFANA_DASHBOARD_URL }}
 
       - name: Check asset paths
-        # Every URL in index.html must start with /assets/ (base '/'); a /portfolio/ prefix
-        # would mean a stale base path and a broken live site. The <noscript> fallback is
-        # skipped: its links are pages (resume, blog, mailto), not assets.
+        # Every URL in index.html must start with /assets/ (base '/') or name a file the build
+        # copied from public/ (the apple-touch-icon); a /portfolio/ prefix would mean a stale
+        # base path and a broken live site. The <noscript> fallback is skipped: its links are
+        # pages (resume, blog, mailto), not assets.
         run: |
-          bad=$(sed '/<noscript>/,/<\/noscript>/d' dist/index.html | grep -oE '(src|href)="[^"]+"' | grep -vE '"(/assets/|https://)' || true)
+          bad=$(sed '/<noscript>/,/<\/noscript>/d' dist/index.html | grep -oE '(src|href)="[^"]+"' | grep -vE '"(/assets/|https://)' | while read -r url; do path=${url#*\"}; path=${path%\"}; [ -f "dist$path" ] || echo "$url"; done || true)
           if [ -n "$bad" ]; then echo "Unexpected asset URLs:"; echo "$bad"; exit 1; fi
 
       - name: Upload build

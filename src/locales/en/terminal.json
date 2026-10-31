@@ -119,7 +119,7 @@
       },
       {
         "label": "DevOps & cloud",
-        "items": "Docker, Kubernetes (k3s), Argo CD / GitOps, GitHub Actions, NGINX, Gunicorn, Linux · AWS, DigitalOcean, Terraform, Ansible"
+        "items": "Docker, Kubernetes (K3s), Argo CD / GitOps, GitHub Actions, Nginx, Gunicorn, Linux · AWS, DigitalOcean, Terraform, Ansible"
       },
       {
         "label": "Observability",

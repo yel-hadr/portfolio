@@ -1,6 +1,8 @@
 ---
 title: Le pooling par transaction de PgBouncer casse django-tenants
+seoTitle: PgBouncer en mode transaction casse django-tenants
 summary: django-tenants choisit le tenant avec un SET search_path de session, que le mode transaction de PgBouncer ne conserve pas. Pourquoi des requêtes visent le mauvais schéma, et deux solutions.
+description: django-tenants choisit le tenant par un SET search_path de session, que le mode transaction de PgBouncer ne garde pas. Le risque, et deux solutions.
 ---
 
 ## Le problème

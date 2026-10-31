@@ -60,7 +60,8 @@ const Hero = ({ onEnterGame }) => {
             {t('person.title')}
           </m.p>
 
-          <m.div variants={reveal()} className='mt-10 flex flex-wrap gap-4'>
+          {/* On a phone the calls to action stack at one width; from xs they sit in a row */}
+          <m.div variants={reveal()} className='mt-10 grid gap-3 xs:flex xs:flex-wrap xs:gap-4'>
             <Magnetic>
               <m.a href='#works' className={styles.buttonPrimary} {...pressable}>
                 {t('hero.seeProjects')}
@@ -79,7 +80,7 @@ const Hero = ({ onEnterGame }) => {
                 aria-haspopup='dialog'
                 onClick={onEnterGame}
                 {...pressable}
-                className='inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-primary-400 bg-glass px-6 py-[0.625rem] font-bold text-foreground backdrop-blur-md transition-colors hover:bg-primary/15'
+                className='inline-flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary-400 bg-glass px-6 py-[0.625rem] font-bold text-foreground backdrop-blur-md transition-colors hover:bg-primary/15'
               >
                 <CrosshairIcon className='h-5 w-5 text-primary-400' />
                 {t('gameMode')}

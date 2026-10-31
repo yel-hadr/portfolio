@@ -4,19 +4,23 @@ import { View } from '@react-three/drei';
 
 import LoadingProgress from '../LoadingProgress';
 import ReleaseContext from './ReleaseContext';
-import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
+import { useStillMotion } from '../../hooks/useMotionPaused';
+import { useViewsOnScreen } from './viewPresence';
 
 const AMBIENT_FPS = 30;
 
 /**
  * Drives the demand frameloop. Scroll and resize redraw at full rate so every View keeps up
  * with its DOM box (2 frames: drei draws a view one frame after it reports entering the
- * screen). Ambient motion (rotation, Float, stars) ticks at ~30 fps, and pointer moves redraw
- * at full rate for the hero parallax. With reduced motion only scroll and resize redraw.
+ * screen). Ambient motion (the globe's rotation, the balls' Float) ticks at ~30 fps; no scene
+ * follows the pointer, so pointer moves draw nothing. Still (reduced motion, or the navbar's
+ * pause switch), or with no 3D view on the screen (viewPresence): only scroll and resize redraw.
  * Hidden tabs cost nothing: requestAnimationFrame pauses.
  */
 const FrameDriver = ({ reduced }) => {
   const invalidate = useThree((state) => state.invalidate);
+  // No ambient frames while no 3D view is in sight: the layer then draws only on scroll
+  const inSight = useViewsOnScreen();
   const again = useRef(false);
 
   // The second frame after a scroll or resize. invalidate(2) from the handlers added 2 per event
@@ -36,7 +40,6 @@ const FrameDriver = ({ reduced }) => {
     };
     window.addEventListener('scroll', redraw, { passive: true });
     window.addEventListener('resize', redraw);
-    if (!reduced) window.addEventListener('pointermove', redraw, { passive: true });
 
     let raf = 0;
     let last = 0;
@@ -47,15 +50,14 @@ const FrameDriver = ({ reduced }) => {
         invalidate();
       }
     };
-    if (!reduced) raf = requestAnimationFrame(tick);
+    if (!reduced && inSight) raf = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('scroll', redraw);
       window.removeEventListener('resize', redraw);
-      window.removeEventListener('pointermove', redraw);
     };
-  }, [invalidate, reduced]);
+  }, [invalidate, reduced, inSight]);
 
   return null;
 };
@@ -87,8 +89,13 @@ const LAYER = CLIP
     'pointer-events-none absolute inset-x-0 top-0 z-20 h-[125vh] will-change-transform'
   : 'pointer-events-none fixed inset-0 z-20';
 
-const followScroll = (el) => {
-  if (el && CLIP) el.style.transform = `translate3d(0, ${window.scrollY}px, 0)`;
+// The last position written, so an ambient frame with no scroll writes no style
+let followedY = NaN;
+const followScroll = (el, force = false) => {
+  const y = window.scrollY;
+  if (!el || !CLIP || (y === followedY && !force)) return;
+  followedY = y;
+  el.style.transform = `translate3d(0, ${y}px, 0)`;
 };
 
 const ScrollSync = ({ layer }) => {
@@ -99,7 +106,7 @@ const ScrollSync = ({ layer }) => {
     // measurement can land mid-scroll, e.g. right after a deep link jumps down the page.
     // Correct it here; this only sets state when the stored offset is wrong.
     const { size } = state;
-    if (size.top !== 0 || size.left !== 0) state.setSize(size.width, size.height, size.updateStyle);
+    if (size.top !== 0 || size.left !== 0) state.setSize(size.width, size.height, 0, 0);
   }, -1);
   return null;
 };
@@ -110,11 +117,11 @@ const ScrollSync = ({ layer }) => {
  * and follows the scroll position (ScrollSync), on its own compositor layer (will-change).
  */
 const Scene3D = () => {
-  const reduced = usePrefersReducedMotion();
+  const reduced = useStillMotion();
   const layer = useRef(null);
   // Place the layer before R3F measures the canvas (its measuring effect runs after layout
   // effects), so a page that loads already scrolled (a deep link) measures it at the top.
-  useLayoutEffect(() => followScroll(layer.current), []);
+  useLayoutEffect(() => followScroll(layer.current, true), []);
 
   return (
     <>

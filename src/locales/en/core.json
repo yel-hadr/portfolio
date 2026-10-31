@@ -19,6 +19,8 @@
     "switchToFrench": "Passer en français",
     "themeToLight": "Switch to light mode",
     "themeToDark": "Switch to dark mode",
+    "pauseMotion": "Pause animations",
+    "playMotion": "Play animations",
     "openTerminal": "Open terminal",
     "terminalShortcut": "Shortcut: Ctrl + `",
     "blog": "Blog"
@@ -39,11 +41,11 @@
   "eyebrows": {
     "about": "Profile",
     "experience": "Career",
-    "tech": "Stack",
-    "works": "Featured projects",
-    "education": "Studies",
+    "tech": "Toolbox",
+    "works": "Selected work",
+    "education": "Peer learning",
     "blog": "Writing",
-    "contact": "Get in touch"
+    "contact": "Let's talk"
   },
   "about": {
     "title": "About me.",
@@ -153,21 +155,21 @@
     },
     "runDemo": "Run live demo",
     "runDemoAria": "Run live demo: {name}",
-    "viewOnGithub": "View on GitHub",
-    "viewOnGithubAria": "View on GitHub: {name} source code (opens in a new tab)",
-    "demoFailed": "The demo could not load."
+    "viewOnGithub": "View source",
+    "viewOnGithubAria": "View source: {name} on GitHub (opens in a new tab)",
+    "demoFailed": "The demo could not load.",
+    "tags": {
+      "raycasting": "Raycasting",
+      "isometric": "Isometric projection"
+    }
   },
   "education": {
     "title": "Education.",
     "items": {
-      "paris42": {
-        "degree": "RNCP Level 7, Network & Information Systems Architecture",
-        "date": "September 2026",
-        "points": []
-      },
       "school1337": {
-        "degree": "Common Core",
-        "date": "2022 – 2024",
+        "school": "1337 / UM6P (42 Network)",
+        "degree": "RNCP Level 7, Software Engineering",
+        "date": "2022 – 2027 (Expected)",
         "points": [
           "Peer-to-peer, project-based curriculum: C and C++, UNIX processes and signals, networking, graphics and containers with Docker."
         ]
@@ -177,12 +179,19 @@
   "contact": {
     "title": "Contact me.",
     "lead": "Have a question or an opportunity? Send me a message.",
+    "emailLead": "Prefer email?",
     "required": "All fields are required.",
     "name": "Name",
     "email": "Email",
     "message": "Message",
     "emailPlaceholder": "you@example.com",
     "messagePlaceholder": "What would you like to talk about?",
+    "errors": {
+      "nameMissing": "Enter your name.",
+      "emailMissing": "Enter your email address.",
+      "emailInvalid": "Enter an email address like name@example.com.",
+      "messageMissing": "Write a message."
+    },
     "send": "Send message",
     "sending": "Sending…",
     "sent": "Message sent. I'll get back to you as soon as possible.",
@@ -193,10 +202,12 @@
   "footer": {
     "nav": "Footer",
     "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "email": "Email: {email}",
     "newTab": " (opens in a new tab)",
     "backToTop": "Back to top",
     "rights": "© {year} {name}",
-    "games": "Play games"
+    "games": "Play a game"
   },
   "webgl": {
     "title": "3D scenes are turned off",
@@ -216,7 +227,17 @@
     "title": "The {section} section failed to load",
     "body": "Reload the section to try again.",
     "reload": "Reload section",
-    "details": "Error details (for developers)"
+    "details": "Error details (for developers)",
+    "sections": {
+      "hero": "Intro",
+      "about": "About",
+      "experience": "Experience",
+      "tech": "Tech stack",
+      "works": "Projects",
+      "education": "Education",
+      "blog": "Blog",
+      "contact": "Contact"
+    }
   },
   "loading": "Loading 3D scenes",
   "gameMode": "Enter Game Mode"

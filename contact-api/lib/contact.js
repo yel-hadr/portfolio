@@ -104,7 +104,15 @@ export const createContactHandler =
     }
 
     const { subject, html, text } = renderContactEmail(fields, { site: origin });
-    const { error } = await send({ from, to, replyTo: fields.email, subject, html, text });
+    // A thrown error (the network to Resend down, a timeout, the SDK failing) is a clean 502 too,
+    // not an unhandled exception the platform answers with a bare 500
+    let error;
+    try {
+      ({ error } = await send({ from, to, replyTo: fields.email, subject, html, text }));
+    } catch (thrown) {
+      console.error('Sending through Resend failed:', thrown?.name, thrown?.message);
+      return reply(502, { error: 'send', reason: 'network' });
+    }
     if (error) {
       console.error('Resend refused the message:', error.name, error.message);
       // Resend's error type (validation_error, invalid_api_key…) says what to fix; never its

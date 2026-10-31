@@ -10,11 +10,11 @@ Built with Vite 6, React 19 (with the React Compiler), React Three Fiber 9 and d
 ## Features
 
 - **English / French.** Use the EN | FR toggle in the navbar. All text, content included, comes from JSON dictionaries in `src/locales/`.
-- **Dark / light mode.** The theme toggle in the navbar switches every color, which come from CSS variables. Dark is "Midnight Obsidian" (slate, amber and ice cyan); in light mode the glass becomes cream and the waves turn pastel. The color tokens are chosen for WCAG AA contrast in both.
+- **Dark / light mode.** Dark by default, on purpose, for every visitor (the saved choice wins). The theme toggle in the navbar switches every color, which come from CSS variables. Dark is "Midnight Obsidian" (slate, amber and ice cyan); in light mode the glass becomes cream and the waves turn pastel. The color tokens are chosen for WCAG AA contrast in both.
 - **Game Mode.** "Enter Game Mode" in the Hero (or the footer) opens a first-person tour of the portfolio, built on the author's 42 cub3D raycaster: six rooms, one profile section each, threats to neutralize, crew to talk to, a radar and a mission tracker. It has a text-only mode, a pause menu, graphics, Reduce flashing and high-contrast settings, and follows reduced motion. Desktop only (phones get a message and the text version).
 - **Live demos.** The cub3D and FdF project cards have a "Run live demo" button: the original 42 raycaster map, and six FdF wireframe maps (Julia and Mandelbrot sets, a landscape…) in isometric or perspective view.
-- **Mini-games.** "Play games" in the footer: Packet Snake (keyboard, swipe or D-pad) and a terminal typing challenge, with best scores kept in the browser.
-- **Contact form.** Validated in the browser and again by the endpoint, which rate-limits senders and drops bots; messages arrive as a laid-out email you can reply to.
+- **Mini-games.** "Play a game" in the footer: Packet Snake (keyboard, swipe or D-pad) and a terminal typing challenge, with best scores kept in the browser.
+- **Contact form.** Checked by the form itself, with messages under each field in the page's language, and again by the endpoint, which rate-limits senders and drops bots; messages arrive as a laid-out email you can reply to.
 - **Terminal.** Press <kbd>Ctrl</kbd>+<kbd>`</kbd> or use the terminal button, then type `help`. Commands like `whoami`, `projects`, `skills`, `experience`, `contact`, `resume`, `goto <section>`, `lang fr` and `theme light` navigate the site and read the resume in terminal format.
 - **Architecture diagrams.** The Cloud-1 and Inception-of-Things cards have a "View architecture" button that opens an interactive diagram of how the system works.
 - **System status.** The footer shows the latest CI/CD deploy (linked to its run) and recent commits, live from the GitHub API.
@@ -22,6 +22,10 @@ Built with Vite 6, React 19 (with the React Compiler), React Three Fiber 9 and d
 - **SEO.** Open Graph and Twitter cards (with a 1200x630 social image), JSON-LD for the profile (`ProfilePage`/`Person`), blog posts (`BlogPosting`), a sitemap and `robots.txt`.
 - **Privacy-friendly analytics.** [Umami](https://umami.is/): no cookies, Do Not Track respected, and never active on localhost. It is off until you configure it (see below).
 - **System status.** [/status/](https://yel-hadr.github.io/status/) shows uptime, response times and CI/CD pipeline health. A GitHub Actions monitor checks every 30 minutes, and the JSON endpoint [/status.json](https://yel-hadr.github.io/status.json) returns the same data for scripts. The footer widget shows the latest deploy and links to that page.
+
+## Browser support
+
+Tested in Chromium (Chrome, Edge) and Firefox, on desktop and on phone-sized viewports. **WebKit (Safari, and every browser on iOS) is untested.** The page has fallbacks for older engines (a fixed 3D canvas without `overflow: clip`, static images without WebGL2), but nothing has been checked on a real Safari yet.
 
 ## Run locally
 

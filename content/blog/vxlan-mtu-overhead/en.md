@@ -1,6 +1,7 @@
 ---
 title: VXLAN takes 50 bytes off every packet's MTU
 summary: VXLAN adds 50 bytes of headers to every frame, 70 over IPv6. On a 1500-byte underlay, set the overlay MTU to 1450 or use jumbo frames, or large transfers stall while pings work.
+description: VXLAN adds 50 bytes of headers per frame, 70 over IPv6. On a 1500-byte underlay, set the overlay MTU to 1450 or use jumbo frames, or large transfers stall.
 ---
 
 ## The problem
