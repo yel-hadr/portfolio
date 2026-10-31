@@ -158,5 +158,13 @@ export const createSfx = (volume = 0.7) => {
     },
     // A line of dialogue starting
     talk: () => tone('triangle', 440, 660, 0.08, 0.3),
+    // The command hub coming online: two soft rising chimes, "access granted"
+    access: () => {
+      tone('sine', 660, 880, 0.12, 0.3);
+      tone('sine', 990, 1320, 0.16, 0.26, 0.11);
+      tone('triangle', 1980, 1980, 0.06, 0.06, 0.11);
+    },
+    // A dossier typing out: a very quiet, short key tick (throttled by the caller)
+    tick: () => tone('square', 1500, 1300, 0.012, 0.04),
   };
 };

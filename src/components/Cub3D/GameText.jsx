@@ -163,6 +163,12 @@ const GameText = ({ t, details, canPlay, returnTo, onRunDemo, onBack, onExit }) 
         </div>
         <p className='mt-3 text-foreground-muted'>{t('demos.game.textIntro')}</p>
 
+        {/* The command hub's briefing, as the game's hub terminal shows it */}
+        <section className='mt-8 border-t border-line pt-6'>
+          <h4 className='text-xl font-bold text-primary-400'>{t('demos.game.panels.hub')}</h4>
+          <p className='mt-3 leading-relaxed'>{t('demos.game.story')}</p>
+        </section>
+
         {SECTIONS.map((id) => (
           <section key={id} className='mt-8 border-t border-line pt-6'>
             <h4 className='text-xl font-bold text-primary-400'>{t(`demos.game.rooms.${id}`)}</h4>

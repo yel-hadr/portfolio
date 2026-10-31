@@ -30,7 +30,7 @@ import { useLiveRef } from '../../hooks/useLiveRef';
 import { rgb } from '../../utils/themeColors';
 import { readGameTheme } from './gameTheme';
 import { frozen } from './freeze';
-import { ENEMIES, ICON_Y, NPCS, THREAT_TYPES, iconSpot } from './rooms';
+import { ENEMIES, ICON_Y, MOVE_SPEED, NPCS, THREAT_TYPES, iconSpot } from './rooms';
 import { toColor } from './toColor';
 
 // Game Mode's layer inside the Canvas: the threats (low-poly "glitch" entities drifting toward
@@ -706,7 +706,10 @@ const TechIcons = ({ icons, reduced, hitStop }) => {
  * Per frame: the weapon's bob (from the distance walked), sway (behind the turning) and recoil,
  * kept in `motion` for the 3D gauntlet; the crosshair's spread (wider while moving or just after
  * a shot) on `crosshairRef`; and a short screen shake after a shot. `motion` is shared with
- * Cub3DWorld: a shot sets `recoil` and `shake` (each weapon its own amount). Then
+ * Cub3DWorld: a shot adds to `kick` and sets `shake` (each weapon its own amount); `recoil` is a
+ * spring toward `kick`: it snaps up within a few frames, then `kick` settles back slowly, the
+ * weapon's weight. The bob's size follows the speed the player moves at (slowed: a smaller bob).
+ * Then
  * `onTick(camera, dt)`: the aim, the radar, energy, integrity and automatic fire
  */
 const GameMotion = ({ crosshairRef, motionRef, reduced, noFlash, hitStop, onTick }) => {
@@ -736,7 +739,10 @@ const GameMotion = ({ crosshairRef, motionRef, reduced, noFlash, hitStop, onTick
     l.x = camera.position.x;
     l.z = camera.position.z;
     l.yaw = camera.rotation.y;
-    m.recoil = MathUtils.damp(m.recoil, 0, 9, dt);
+    // Recoil: a fast spring up to the kick (half-life about 18 ms), the kick itself settling back
+    // more slowly (about 120 ms): sharp, then heavy
+    m.kick = MathUtils.damp(m.kick ?? 0, 0, 5.8, dt);
+    m.recoil = MathUtils.damp(m.recoil ?? 0, m.kick, 38, dt);
     m.shake = MathUtils.damp(m.shake, 0, 20, dt);
     const moving = walked > 0;
     if (reduced) {
@@ -746,7 +752,9 @@ const GameMotion = ({ crosshairRef, motionRef, reduced, noFlash, hitStop, onTick
     } else {
       const rate = dt > 0 ? turned / dt : 0;
       l.phase += walked * 4;
-      l.amp = MathUtils.damp(l.amp, moving ? 1 : 0, 10, dt);
+      // The bob's size: the share of full walking speed this frame moved at
+      const speed = dt > 0 ? walked / dt : 0;
+      l.amp = MathUtils.damp(l.amp, MathUtils.clamp(speed / MOVE_SPEED, 0, 1), 10, dt);
       l.sway = MathUtils.damp(l.sway, MathUtils.clamp(rate * 0.35, -1, 1), 8, dt);
       m.bobX = Math.sin(l.phase) * l.amp;
       m.bobY = Math.abs(Math.cos(l.phase)) * l.amp;

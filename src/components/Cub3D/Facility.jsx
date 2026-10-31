@@ -696,6 +696,8 @@ const Facility = ({
   discovered,
   targetRef,
   guideRef,
+  hitStopRef,
+  hubLitRef,
 }) => {
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
@@ -711,6 +713,11 @@ const Facility = ({
   const lampMesh = useRef(null);
   const laserMesh = useRef(null);
   const holo = useRef(null);
+  // The hub's brightness last set (1 at rest), so the colors change only when it does
+  const hubShown = useRef({ level: 1, res: null });
+  // Whether the game is paused (frames on demand: a dialog, the menu), read from the root's state
+  // each frame: the viewmodel sits in the camera's portal, whose state does not follow it
+  const pausedRef = useRef(false);
   const roomLight = useRef(null);
   const lit = useRef(null);
   const lampsOn = useRef([]);
@@ -845,6 +852,9 @@ const Facility = ({
       depthWrite: false,
     });
     holoLabel.color = toColor(t['primary-400'], flat ? 1 : 2.2);
+    // Their resting colors: the hologram brightens from these when aimed at or opened
+    holoRing.userData.base = holoRing.color.clone();
+    holoShell.userData.base = holoShell.color.clone();
     // The flashlight: the theme's light tone, warmed a touch toward the brand orange
     const flashlight = toColor(c.light).lerp(toColor(t.primary), 0.06);
     const beam = flat
@@ -1084,6 +1094,7 @@ const Facility = ({
   const resRef = useLiveRef(res);
 
   useFrame((state, delta) => {
+    pausedRef.current = state.frameloop !== 'always';
     const dt = Math.min(delta, 0.1);
     clock.current += dt;
     const r = resRef.current;
@@ -1187,6 +1198,17 @@ const Facility = ({
         holo.current.rotation.y = time * 0.6;
         holo.current.position.y = 0.48 + Math.sin(time * 1.3) * 0.03;
       }
+    }
+
+    // The command hub answers the crosshair: brighter while aimed at, brightest (and solid) while
+    // its dossier is open. A step, not an animation, so it holds with reduced motion too
+    const hubLevel = hubLitRef?.current ? 2 : targetRef.current === 'hub' ? 1.5 : 1;
+    // (and again for new materials: high contrast and a language switch rebuild them)
+    if (hubLevel !== hubShown.current.level || r !== hubShown.current.res) {
+      hubShown.current = { level: hubLevel, res: r };
+      r.holoRing.color.copy(r.holoRing.userData.base).multiplyScalar(hubLevel);
+      r.holoShell.color.copy(r.holoShell.userData.base).multiplyScalar(hubLevel);
+      r.holoShell.opacity = hubLevel > 1 ? 1 : 0.8;
     }
 
     // One fill light, for the room the player is in (lights cost every lit pixel, in range or not)
@@ -1333,6 +1355,9 @@ const Facility = ({
             flat={flat}
             colors={res.c}
             flashlight={res.flashlight}
+            hitStopRef={hitStopRef}
+            pausedRef={pausedRef}
+            world={scene}
           />
         </>,
         camera
