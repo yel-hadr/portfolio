@@ -20,7 +20,8 @@ const Contact = () => {
         {t('contact.emailLead')}{' '}
         <a
           href={`mailto:${person.email}`}
-          className='font-semibold text-primary-400 underline decoration-2 underline-offset-4 transition-colors hover:text-foreground'
+          // A resting underline, and a full one drawing in from the left on hover (.link-draw)
+          className='link-draw inline-block max-w-full break-all font-semibold text-primary-400 underline decoration-primary-400/50 transition-colors hover:text-foreground'
         >
           {person.email}
         </a>

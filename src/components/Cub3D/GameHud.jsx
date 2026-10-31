@@ -538,7 +538,7 @@ export const MissionComplete = ({
   return createPortal(
     <div
       ref={overlayRef}
-      className='scheme-dark fixed inset-0 z-[70] flex bg-background/70 p-4'
+      className='scheme-dark fixed inset-0 z-[70] flex bg-background/70 p-4 backdrop-blur-sm motion-safe:animate-backdrop-in'
       {...backdrop}
     >
       <div
@@ -621,7 +621,7 @@ export const PauseMenu = ({ t, onResume, onRestart, onMenu, settings }) => {
   return createPortal(
     <div
       ref={overlayRef}
-      className='scheme-dark fixed inset-0 z-[70] flex bg-background/70 p-4'
+      className='scheme-dark fixed inset-0 z-[70] flex bg-background/70 p-4 backdrop-blur-sm motion-safe:animate-backdrop-in'
       {...backdrop}
     >
       <div
@@ -685,7 +685,10 @@ export const SystemFailure = ({ t, onReboot, onMenu }) => {
   }, []);
 
   return createPortal(
-    <div ref={overlayRef} className='scheme-dark fixed inset-0 z-[70] flex bg-background/80 p-4'>
+    <div
+      ref={overlayRef}
+      className='scheme-dark fixed inset-0 z-[70] flex bg-background/80 p-4 backdrop-blur-sm motion-safe:animate-backdrop-in'
+    >
       <div
         ref={panelRef}
         role='alertdialog'
@@ -763,7 +766,7 @@ export const GameInfo = ({
     <div
       ref={overlayRef}
       // Game Mode's dialogs portal out of its dark island: they take it back (`dark`)
-      className={`${dark ? 'scheme-dark ' : ''}fixed inset-0 z-[70] flex bg-background/60 p-4`}
+      className={`${dark ? 'scheme-dark ' : ''}fixed inset-0 z-[70] flex bg-background/60 p-4 backdrop-blur-sm motion-safe:animate-backdrop-in`}
       {...backdrop}
     >
       <div
@@ -919,7 +922,7 @@ export const MainMenu = ({
 
   return (
     // Scrolls on short or zoomed screens, so every button stays reachable
-    <div className='absolute inset-0 z-40 flex overflow-y-auto bg-background/70 p-4 backdrop-blur-xs'>
+    <div className='absolute inset-0 z-40 flex overflow-y-auto bg-background/70 p-4 backdrop-blur-sm motion-safe:animate-backdrop-in'>
       <div ref={panel} className='card-glass m-auto w-full max-w-md p-6 shadow-raised'>
         {screen === 'menu' && (
           <>

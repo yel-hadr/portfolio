@@ -24,3 +24,18 @@ export const useViewsOnScreen = () =>
     () => onScreen > 0,
     () => false
   );
+
+// Frames on request: something in the DOM that moves a 3D view's box (a bento card's spring
+// reveal) asks the frame loop to keep drawing for a while, so the scene follows its box even with
+// the ambient ticks off (the pause switch). FrameDriver (Scene3D) listens
+const frameListeners = new Set();
+
+/** Ask the 3D layer to redraw every frame for `ms` milliseconds */
+export const requestFrames = (ms) => {
+  for (const listener of frameListeners) listener(ms);
+};
+
+export const onFrameRequest = (listener) => {
+  frameListeners.add(listener);
+  return () => frameListeners.delete(listener);
+};

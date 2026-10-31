@@ -1829,10 +1829,11 @@ const Cub3DWorld = ({
         ? [{ opacity: 1 }, { opacity: 1, offset: 0.7 }, { opacity: 0 }]
         : [
             { opacity: 1, transform: 'scale(0.6)' },
-            { opacity: 1, transform: 'scale(1.15)', offset: 0.45 },
-            { opacity: 0, transform: 'scale(1.3)' },
+            { opacity: 1, transform: 'scale(1.2)', offset: 0.35 },
+            { opacity: 0, transform: 'scale(1.35)' },
           ],
-      280
+      // Under 150 ms: a punch, then gone (an overshoot to 1.2 at a third of the way)
+      { duration: 140, easing: 'cubic-bezier(0.2, 0.9, 0.3, 1)' }
     );
     // Reduced motion draws on demand: the hidden threat must be redrawn away
     invalidateRef.current();
@@ -2631,7 +2632,7 @@ const Cub3DWorld = ({
       )}
       {!started && !game && (
         // Scrolls on short or zoomed screens, so Start is always reachable
-        <div className='absolute inset-0 z-40 flex overflow-y-auto bg-background/70 p-4 backdrop-blur-xs'>
+        <div className='absolute inset-0 z-40 flex overflow-y-auto bg-background/70 p-4 backdrop-blur-sm motion-safe:animate-backdrop-in'>
           <div className='m-auto w-full max-w-lg rounded-3xl border border-line bg-glass-strong p-6 shadow-raised'>
             <h3 className='text-2xl font-black text-foreground'>
               {t('demos.cub3d.welcome.title')}

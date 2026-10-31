@@ -5,7 +5,7 @@ import { View } from '@react-three/drei';
 import LoadingProgress from '../LoadingProgress';
 import ReleaseContext from './ReleaseContext';
 import { useStillMotion } from '../../hooks/useMotionPaused';
-import { useViewsOnScreen } from './viewPresence';
+import { onFrameRequest, useViewsOnScreen } from './viewPresence';
 
 const AMBIENT_FPS = 30;
 
@@ -71,15 +71,20 @@ const FrameDriver = ({ reduced }) => {
       invalidate();
       raf = t < until ? requestAnimationFrame(follow) : 0;
     };
-    const onRun = (e) => {
-      if (e.propertyName !== 'translate') return;
-      until = performance.now() + 500;
+    const keepDrawing = (ms) => {
+      until = Math.max(until, performance.now() + ms);
       if (!raf) raf = requestAnimationFrame(follow);
     };
+    const onRun = (e) => {
+      if (e.propertyName === 'translate') keepDrawing(500);
+    };
     document.addEventListener('transitionrun', onRun);
+    // A JS-driven move of a view's box (requestFrames: the bento cards' spring reveal)
+    const stopRequests = onFrameRequest(keepDrawing);
     return () => {
       cancelAnimationFrame(raf);
       document.removeEventListener('transitionrun', onRun);
+      stopRequests();
     };
   }, [invalidate]);
 

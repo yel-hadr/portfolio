@@ -2,7 +2,8 @@ import { m } from 'framer-motion';
 
 import { SectionWrapper } from '../hoc';
 import { techGroups, technologies } from '../constans';
-import { reveal } from '../utils/motion';
+import { reveal, staggerContainer } from '../utils/motion';
+import { requestFrames } from './canvas/viewPresence';
 import SectionHeader from './SectionHeader';
 import Spotlight from './Spotlight';
 import { useI18n } from '../i18n/context';
@@ -23,6 +24,8 @@ const BALL = {
   small: 'h-16 w-16 sm:h-20 sm:w-20',
 };
 const CARD = 'card-glass relative flex';
+// A card's reveal spring settles within a second; the 3D layer redraws meanwhile
+const followReveal = () => requestFrames(1200);
 
 const TechBall = ({ tech, size, warmUp }) => (
   // The visible name labels the ball, so the 3D view itself is decorative
@@ -41,8 +44,10 @@ const Tech = () => {
   return (
     <>
       <SectionHeader id='tech' title={t('tech.title')} lead={t('tech.lead')} />
+      {/* The cards cascade in one after another (0.1 s apart), each on the reveal spring; a card's
+          balls ride along, the 3D layer drawing every frame while it moves (requestFrames) */}
       <m.ul
-        variants={reveal()}
+        variants={staggerContainer(0.1)}
         className='mt-12 grid list-none gap-4 sm:grid-cols-2 lg:grid-cols-6'
       >
         {techGroups.map(({ id, size }) => {
@@ -52,8 +57,10 @@ const Tech = () => {
           if (size === 'small') {
             const [tech] = tools;
             return (
-              <li
+              <m.li
                 key={id}
+                variants={reveal()}
+                onAnimationStart={followReveal}
                 data-spotlight
                 className={`${CARD} ${SPAN.small} items-center gap-5 p-6`}
               >
@@ -63,12 +70,18 @@ const Tech = () => {
                   <h3 className='text-lg font-bold tracking-tight text-foreground'>{title}</h3>
                   <p className='text-sm text-foreground-muted'>{text}</p>
                 </div>
-              </li>
+              </m.li>
             );
           }
           const large = size === 'large';
           return (
-            <li key={id} data-spotlight className={`${CARD} ${SPAN[size]} flex-col`}>
+            <m.li
+              key={id}
+              variants={reveal()}
+              onAnimationStart={followReveal}
+              data-spotlight
+              className={`${CARD} ${SPAN[size]} flex-col`}
+            >
               <Spotlight />
               {/* A console tab over the card: its path and how many tools it holds */}
               <div
@@ -94,7 +107,7 @@ const Tech = () => {
                   ))}
                 </ul>
               </div>
-            </li>
+            </m.li>
           );
         })}
       </m.ul>

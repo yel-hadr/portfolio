@@ -10,6 +10,7 @@ import {
 import { createPortal } from 'react-dom';
 import { m } from 'framer-motion';
 
+import { useLiveRef } from '../../hooks/useLiveRef';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import { useI18n } from '../../i18n/context';
 import { registerNamespace } from '../../i18n/dictionaries';
@@ -339,9 +340,35 @@ const Terminal = ({ onClose, initialCommand = null }) => {
     (playing ? gameInputRef : inputRef).current?.focus({ preventScroll: true });
   };
 
+  // A quick command types itself into the prompt, a key at a time with a slightly uneven rhythm
+  // (45 to 115 ms), then runs: it reads as typed, not pasted. At once under reduced motion; a key
+  // the visitor presses meanwhile takes over (onChange cancels it). The run is read through a ref,
+  // so a command that lands after a re-render runs with the latest history
+  const typing = useRef(0);
+  const runLatest = useLiveRef(run);
+  useEffect(() => () => clearTimeout(typing.current), []);
   const runQuick = (name) => {
-    run(name);
+    clearTimeout(typing.current);
     inputRef.current?.focus({ preventScroll: true });
+    if (reduced) {
+      runLatest.current(name);
+      return;
+    }
+    let typed = 0;
+    const key = () => {
+      typed += 1;
+      setValue(name.slice(0, typed));
+      if (typed < name.length) {
+        typing.current = setTimeout(key, 45 + Math.random() * 70);
+        return;
+      }
+      typing.current = setTimeout(() => {
+        setValue('');
+        runLatest.current(name);
+      }, 160);
+    };
+    setValue('');
+    typing.current = setTimeout(key, 60);
   };
 
   const fade = reduced ? false : { opacity: 0 };
@@ -353,9 +380,10 @@ const Terminal = ({ onClose, initialCommand = null }) => {
       ref={overlayRef}
       initial={fade}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.15 }}
+      // The backdrop dims and blurs in over 200 ms, as behind every dialog
+      transition={{ duration: 0.2, ease: 'easeOut' }}
       style={viewport ? { top: viewport.top, height: viewport.height, bottom: 'auto' } : undefined}
-      className='fixed inset-0 z-[60] flex bg-background/80 md:items-center md:justify-center md:p-6'
+      className='fixed inset-0 z-[60] flex bg-background/80 backdrop-blur-sm md:items-center md:justify-center md:p-6'
       // Backdrop click closes (only reachable on larger screens; phones are full screen). The
       // press must start on the backdrop too, so a text selection dragged out does not close it.
       onPointerDown={(e) => {
@@ -457,6 +485,7 @@ const Terminal = ({ onClose, initialCommand = null }) => {
                   type='text'
                   value={value}
                   onChange={(e) => {
+                    clearTimeout(typing.current);
                     setValue(e.target.value);
                     browse.current.index = null;
                   }}
@@ -467,7 +496,7 @@ const Terminal = ({ onClose, initialCommand = null }) => {
                   autoCorrect='off'
                   spellCheck={false}
                   enterKeyHint='send'
-                  className='min-w-0 flex-1 bg-transparent text-foreground caret-primary outline-hidden focus-visible:outline-hidden'
+                  className='min-w-0 flex-1 bg-transparent text-foreground caret-primary [caret-shape:block] outline-hidden focus-visible:outline-hidden'
                 />
               </div>
             </div>
