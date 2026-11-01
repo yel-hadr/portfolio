@@ -93,7 +93,7 @@ const Tech = () => {
                 className='flex items-center justify-between border-b border-line px-6 py-3 font-mono text-xs text-foreground-muted sm:px-8'
               >
                 <span>~/stack/{id}</span>
-                <span className={large ? 'text-secondary' : undefined}>
+                <span className={large ? 'text-primary-400' : undefined}>
                   {t('tech.tools', { count: tools.length })}
                 </span>
               </div>
