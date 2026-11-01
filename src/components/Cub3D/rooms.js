@@ -8,7 +8,15 @@ export const SECTIONS = ['about', 'skills', 'projects', 'experience', 'education
 
 // Rooms as cell rectangles [x0, z0, x1, z1] (inclusive), each with the corridor beyond its door
 export const ROOMS = [
-  { id: 'about', rects: [[1, 10, 13, 15]] },
+  // Each shortcut corridor splits as Projects' does: the door's row and the one below belong to the
+  // room south of it, the row above to the room north, so the door joins two rooms
+  {
+    id: 'about',
+    rects: [
+      [1, 10, 13, 15],
+      [2, 8, 3, 9],
+    ],
+  },
   { id: 'skills', rects: [[14, 10, 29, 15]] },
   {
     id: 'projects',
@@ -22,7 +30,13 @@ export const ROOMS = [
     rects: [[27, 1, 43, 7]],
   },
   { id: 'education', rects: [[12, 1, 26, 6]] },
-  { id: 'contact', rects: [[1, 1, 11, 6]] },
+  {
+    id: 'contact',
+    rects: [
+      [1, 1, 11, 6],
+      [2, 7, 3, 7],
+    ],
+  },
 ];
 
 export const roomAt = (x, z) =>
@@ -58,13 +72,16 @@ export const THREAT_TYPES = {
 // reach is also in reach of a shot, even against a rack or a crate (point-blank)
 export const THREAT_STOP = 1.2;
 export const THREAT_REACH = THREAT_STOP + 0.35;
+// cells: a Memory Leak slows the player this close (Enemies.jsx), and the lit path keeps this far
+// from a live one (Cub3DWorld.jsx)
+export const SLOW_RANGE = 2.5;
 
-// Threats just past the doors: each door has one on its far side, in the next room's entry (e4
+// Threats just past the chain's doors: each has one on its far side, in the next room's entry (e4
 // in Projects', e8 in Education's, away from the crew there). None in the spawn room (About).
-// The Memory Leak (e5) sits in Projects' south-west corner, 3 cells or more from the lit path's
-// routes through the room (Skills to Projects, Projects to Experience) and from every terminal, so
-// following the chevrons is never slowed (its pull reaches 2.5 cells). Each carries its own fact (`fact`: demos.game.facts.<fact> in the
-// locales), shown when it is neutralized
+// The Memory Leak (e5) sits by Projects' south wall, 3 cells or more from every terminal; no
+// cell in that room is clear of every route through it, so the lit path steers round its pull
+// (SLOW_RANGE) while it is alive. Each carries its own fact (`fact`: demos.game.facts.<fact> in
+// the locales), shown when it is neutralized
 export const ENEMIES = [
   { id: 'e1', type: 'ddos', cell: [14, 13], fact: 'helm' },
   { id: 'e2', type: 'sql', cell: [19, 13], fact: 'tenants' },

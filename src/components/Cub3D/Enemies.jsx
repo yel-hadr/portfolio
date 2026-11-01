@@ -37,6 +37,7 @@ import {
   MOVE_SPEED,
   NPCS,
   PROP_BOXES,
+  SLOW_RANGE,
   THREAT_REACH,
   THREAT_STOP,
   THREAT_TYPES,
@@ -67,9 +68,8 @@ const LIGHTS = 2; // threats lighting their surroundings at once (the nearest on
 const THREAT_COLORS = Object.fromEntries(
   Object.entries(THREAT_TYPES).map(([type, { color }]) => [type, color])
 );
-// A Memory Leak slows the player within SLOW_RANGE cells, down to SLOWEST of the walking speed
-// at SLOW_FULL cells or closer
-const SLOW_RANGE = 2.5;
+// A Memory Leak slows the player within SLOW_RANGE cells (rooms.js), down to SLOWEST of the
+// walking speed at SLOW_FULL cells or closer
 const SLOW_FULL = 1.2;
 const SLOWEST = 0.45;
 // A Zero-Day shows only in the flashlight's beam: the spot's angle and range (Facility.jsx), its
