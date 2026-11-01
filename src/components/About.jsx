@@ -10,7 +10,15 @@ import { useI18n } from '../i18n/context';
 
 const ServiceItem = ({ title, icon }) => (
   <li className='flex items-center gap-4 border-t border-line py-4 first:border-t-0 first:pt-0 last:pb-0'>
-    <img src={icon} alt='' loading='lazy' decoding='async' className='h-10 w-10 shrink-0' />
+    <img
+      src={icon}
+      alt=''
+      width={40}
+      height={40}
+      loading='lazy'
+      decoding='async'
+      className='h-10 w-10 shrink-0'
+    />
     <span className='text-lg font-semibold text-foreground'>{title}</span>
   </li>
 );

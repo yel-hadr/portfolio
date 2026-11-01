@@ -19,9 +19,9 @@
    pair meets WCAG AA in both themes (checked by script):
      dark:  foreground 14.2:1, muted 6.2:1, primary-400 6.9:1, secondary 6.4:1 on every surface;
             dark text on primary 6.9:1; line-strong >= 3.2:1 on surfaces.
-     light: foreground 16.0:1, muted 7.1:1, primary-400 5.7:1, secondary 5.9:1 on the warm
-            background (>= 4.5 on every surface, glass and the footer band); dark text on
-            primary 4.9:1 (hover 4.5:1); focus ring >= 3.0:1; line-strong >= 3.2:1. */
+     light: foreground 16.0:1, muted 7.1:1, primary-400 5.3:1, secondary 5.9:1 on the warm
+            background (>= 4.5 on every surface, glass and the footer band); white text on
+            primary 5.2:1 (hover 7.3:1); focus ring >= 3.0:1; line-strong >= 3.2:1. */
 @theme inline {
   --color-background: rgb(var(--c-background)); /* page */
   --color-surface: rgb(var(--c-surface)); /* opaque panels */
@@ -32,11 +32,14 @@
   --color-primary: rgb(var(--c-primary)); /* brand orange: button fill */
   --color-primary-400: rgb(var(--c-primary-400)); /* orange text on the page background */
   --color-primary-hover: rgb(var(--c-primary-hover)); /* button fill on hover */
-  --color-on-primary: rgb(var(--c-on-primary)); /* text on primary fills (dark in both themes) */
+  --color-on-primary: rgb(
+    var(--c-on-primary)
+  ); /* text on primary fills: dark on dark, white on light */
   --color-secondary: rgb(var(--c-secondary)); /* ice cyan on dark, indigo on light: tech, data */
   --color-tertiary: rgb(var(--c-tertiary)); /* blue: decorative */
   --color-success: rgb(var(--c-success)); /* form sent, operational status */
-  --color-danger: rgb(var(--c-danger)); /* form errors, failed status */
+  --color-danger: rgb(var(--c-danger)); /* form errors, failed status: red in both themes */
+  --color-timeline-past: rgb(var(--c-timeline-past)); /* the timeline's dots for past jobs */
   --color-info: rgb(var(--c-info)); /* tags */
   --color-focus: rgb(var(--c-focus)); /* keyboard focus rings */
   --color-night: rgb(var(--c-night)); /* the dark background in both themes: FdF's file colors */
@@ -66,7 +69,7 @@
      jumping at breakpoints. Mostly rem with a vw slope, so page zoom still enlarges them (at 200%
      zoom about 1.5x, double by 300-400%: max/min stays under 2.5, WCAG 1.4.4); tight tracking at
      display sizes. text-eyebrow is the small label over a section heading */
-  --text-display: clamp(2.75rem, 2.2rem + 2.6vw, 4.5rem);
+  --text-display: clamp(2.75rem, 2.2rem + 2.6vw, 5.5rem);
   --text-display--line-height: 1.02;
   --text-display--letter-spacing: -0.02em;
   --text-h2: clamp(2.25rem, 1.6rem + 2.6vw, 3.75rem);
@@ -190,7 +193,9 @@
     --c-secondary: 6 182 212;
     --c-tertiary: 59 130 246;
     --c-success: 16 185 129;
-    --c-danger: 251 113 133;
+    --c-danger: 248 113 113;
+    /* Past jobs' dots: slate, 3.6:1 on the page (the date in text says which job is current) */
+    --c-timeline-past: 100 116 139;
     --c-info: 103 232 249;
     --c-line-strong: 107 114 134;
     /* FdF altitude gradient, low to high: ocean blue, cyan-green, the brand orange. Every point
@@ -224,7 +229,8 @@
     /* The hero portrait's ember glow: dark only (light mode has no glows) */
     --glow: 1;
     /* The keyboard focus ring: the amber on dark; on light a deeper burnt orange that holds
-       >= 3.5:1 even where the frosted navbar is over a dark photo or an orange button */
+       >= 3.5:1 even where the frosted navbar is over a dark photo. Against the light theme's orange
+       fill it is close (1.2:1): the ring's offset keeps a page-colored gap between them */
     --c-focus: 249 115 22;
     /* Film grain over the background (.grain), and the cards' cursor spotlight ([data-spotlight]):
        on dark an amber rim light along the border with a faint fill under the content */
@@ -260,9 +266,9 @@
 
   /* Light theme: its own language, not the dark one inverted. A warm off-white ground, cream
      glass that lifts off it with soft warm shadows instead of glowing hairlines, near-black ink,
-     warm stone greys, a deeper orange that carries dark text, a rich indigo accent, and pastel
+     warm stone greys, a deep orange that carries white text, a rich indigo accent, and pastel
      waves. Ratios on the background (and >= on every surface, glass and the footer band): ink
-     16.0, muted 7.1, orange text 5.7, indigo 5.9; dark text on orange 4.9 (on hover 4.5);
+     16.0, muted 7.1, orange text 5.3, indigo 5.9; white text on orange 5.2 (on hover 7.3);
      line-strong 3.2+ and the focus ring 3.0+ as UI boundaries */
   :root[data-theme='light'] {
     color-scheme: light;
@@ -271,16 +277,18 @@
     --c-surface-raised: 243 238 231;
     --c-foreground: 26 26 46;
     --c-foreground-muted: 87 83 78;
-    /* Eyebrows in the deep orange text color (5.6:1 on the page) */
-    --c-eyebrow: 168 67 0;
-    --c-primary: 232 93 4;
-    --c-primary-400: 168 67 0;
-    --c-primary-hover: 224 88 4;
-    --c-on-primary: 26 26 46;
+    /* Eyebrows in the deep orange text color (5.3:1 on the page) */
+    --c-eyebrow: 180 65 12;
+    /* A deep orange under white text (5.18:1), darker on hover (7.31:1) */
+    --c-primary: 194 65 12;
+    --c-primary-400: 180 65 12;
+    --c-primary-hover: 154 52 18;
+    --c-on-primary: 255 255 255;
     --c-secondary: 79 70 229;
     --c-tertiary: 37 99 235;
     --c-success: 4 120 87;
-    --c-danger: 190 24 93;
+    --c-danger: 185 28 28;
+    --c-timeline-past: 140 131 122;
     --c-info: 3 105 161;
     --c-line-strong: 140 131 122;
     /* Indigo, teal, burnt crimson: deep inks that hold >= 4.5:1 on the light glass */

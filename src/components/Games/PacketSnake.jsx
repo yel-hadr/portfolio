@@ -207,8 +207,9 @@ const draw = (ctx, view, colors, game, pulse) => {
   }
   if (!game) return;
 
-  // Firewalls: filled cells with a brick pattern, so they read without color
-  ctx.fillStyle = rgb(colors.danger, 0.9);
+  // Firewalls: filled cells with a brick pattern, so they read without color; in ink, apart from
+  // the orange snake (danger is a red close to the light theme's orange)
+  ctx.fillStyle = rgb(colors.foreground, 0.85);
   ctx.strokeStyle = rgb(colors.background, 0.9);
   ctx.lineWidth = Math.max(1, cell / 10);
   game.firewalls.forEach((id) => {
@@ -316,7 +317,7 @@ const Swatch = ({ kind }) => (
     )}
     {kind === 'firewall' && (
       <>
-        <rect x='1' y='1' width='14' height='14' rx='2' className='fill-danger' />
+        <rect x='1' y='1' width='14' height='14' rx='2' className='fill-foreground/85' />
         <path
           d='M1 8h14M8 1v7M4.5 8v7M11.5 8v7'
           className='stroke-background'

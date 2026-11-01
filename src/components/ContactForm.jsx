@@ -175,7 +175,13 @@ const ContactForm = () => {
           <label htmlFor={ids.name} className='font-medium text-foreground'>
             {t('contact.name')}
           </label>
-          <input {...fieldProps('name')} type='text' autoComplete='name' className={FIELD} />
+          <input
+            {...fieldProps('name')}
+            type='text'
+            autoComplete='name'
+            placeholder={t('contact.namePlaceholder')}
+            className={FIELD}
+          />
           {fieldError('name')}
         </div>
         <div className='flex flex-col gap-2'>

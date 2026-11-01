@@ -24,8 +24,9 @@ const RESOLVED_VIRTUAL_ID = `\0${VIRTUAL_ID}`;
 const ENTRY = 'src/blog/entry.js';
 const POSTS_FILE = 'src/constans/posts.js';
 const CONTENT_DIR = 'content/blog';
-// Tag chip colors, cycled per post as on the home page (AA on the glass card in both themes)
-const TAG_COLORS = ['text-info', 'text-success', 'text-primary-400'];
+// Tag chip colors as on the home page (tagColor in src/styles.js): the first tag in the brand
+// orange, the rest in slate (AA on the glass card in both themes)
+const tagColor = (index) => (index === 0 ? 'text-primary-400' : 'text-foreground-muted');
 // Words per minute for the reading time
 const WPM = 200;
 
@@ -358,7 +359,7 @@ const ICONS = {
 
 const tagList = (tags, label) =>
   `<ul class="flex flex-wrap gap-2" aria-label="${escapeHtml(label)}">${tags
-    .map((tag, i) => `<li class="tag ${TAG_COLORS[i % TAG_COLORS.length]}">${escapeHtml(tag)}</li>`)
+    .map((tag, i) => `<li class="tag ${tagColor(i)}">${escapeHtml(tag)}</li>`)
     .join('')}</ul>`;
 
 const postMeta = (post, lang, s) => {

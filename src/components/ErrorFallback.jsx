@@ -11,7 +11,7 @@ const ErrorFallback = ({ error, resetErrorBoundary, sectionName, reloadPage = fa
     <section
       id={sectionName}
       aria-labelledby={`${sectionName}-error`}
-      className='max-w-7xl mx-auto my-10 min-h-[25rem] p-8 bg-surface border border-line rounded-3xl flex'
+      className='max-w-7xl 2xl:max-w-[90rem] mx-auto my-10 min-h-[25rem] p-8 bg-surface border border-line rounded-3xl flex'
     >
       <div role='alert' className='m-auto flex flex-col items-center justify-center'>
         <Heading id={`${sectionName}-error`} className='text-2xl font-bold text-foreground mb-4'>

@@ -2,8 +2,12 @@
 // and the rest Tailwind's default scale; colors come from the tokens in the @theme of
 // src/index.css. Avoid arbitrary px values in components.
 const styles = {
-  container: 'max-w-7xl mx-auto px-6 sm:px-10 lg:px-16',
-  section: 'py-20 sm:py-28',
+  // The content column; the navbar's column (navColumn) is the same less the pill's inner edge:
+  // change them together
+  container: 'max-w-7xl 2xl:max-w-[90rem] mx-auto px-6 sm:px-10 lg:px-16',
+  navColumn:
+    'max-w-7xl 2xl:max-w-[90rem] mx-auto px-[calc(--spacing(6)-9px)] sm:px-[calc(--spacing(10)-9px)] lg:px-[calc(--spacing(16)-9px)]',
+  section: 'py-16 sm:py-20',
 
   heroHeadText: 'font-black text-foreground text-display',
   heroSubText:
@@ -18,7 +22,8 @@ const styles = {
   cardTitle: 'text-foreground text-h3 font-bold',
   card: 'card-glass p-6 sm:p-8',
 
-  // Primary: dark text on orange (dark 6.8:1, light 5.0:1), with a lit top edge on dark
+  // Primary: dark text on the dark theme's orange (6.9:1), white on the light theme's (5.2:1), with
+  // a lit top edge on dark
   // (--shadow-button). Ghost: glass with a strong border (>= 3:1, a control boundary, so it
   // stays opaque grey rather than a faint white hairline). Both ease their colors over 200 ms
   buttonPrimary:
@@ -36,3 +41,7 @@ const styles = {
 };
 
 export { styles };
+
+// A tag's color: one brand accent, the first tag (the project's or post's lead technology) in
+// orange and the rest in slate, so tags never borrow the status colors (red read as an error)
+export const tagColor = (index) => (index === 0 ? 'text-primary-400' : 'text-foreground-muted');

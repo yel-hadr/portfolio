@@ -133,6 +133,7 @@ const technologies = [
 ];
 
 // Title, dates and points: experience.items.<id>, newest first
+// The timeline's dot: the brand orange for the current job, slate for past ones
 const experiences = [
   {
     id: 'legaliox',
@@ -142,12 +143,12 @@ const experiences = [
   {
     id: 'wepartner',
     company_name: 'WePartner Consulting',
-    iconBg: 'var(--color-secondary)',
+    iconBg: 'var(--color-timeline-past)',
   },
   {
     id: 'infinitivebyte',
     company_name: 'Infinitive Byte',
-    iconBg: 'var(--color-tertiary)',
+    iconBg: 'var(--color-timeline-past)',
   },
 ];
 
@@ -158,37 +159,30 @@ const projects = [
     tags: [
       {
         name: 'BGP EVPN',
-        color: 'blue-text-gradient',
       },
       {
         name: 'VXLAN',
-        color: 'green-text-gradient',
       },
       {
         name: 'FRRouting',
-        color: 'pink-text-gradient',
       },
     ],
-    source_code_link: '',
+    source_code_link: 'https://github.com/yel-hadr/Bgp-At-Doors-of-Autonomous-Systems-',
   },
   {
     id: 'cloud1',
     tags: [
       {
         name: 'AWS',
-        color: 'orange-text-gradient',
       },
       {
         name: 'Terraform',
-        color: 'blue-text-gradient',
       },
       {
         name: 'Ansible',
-        color: 'pink-text-gradient',
       },
       {
         name: 'WordPress / MariaDB',
-        color: 'green-text-gradient',
       },
     ],
     source_code_link: 'https://github.com/yel-hadr/cloud-1_42',
@@ -199,23 +193,18 @@ const projects = [
     tags: [
       {
         name: 'Vagrant',
-        color: 'blue-text-gradient',
       },
       {
         name: 'K3s',
-        color: 'green-text-gradient',
       },
       {
         name: 'Traefik',
-        color: 'pink-text-gradient',
       },
       {
         name: 'K3d',
-        color: 'green-text-gradient',
       },
       {
         name: 'Argo CD',
-        color: 'orange-text-gradient',
       },
     ],
     source_code_link: 'https://github.com/yel-hadr/-Inception-of-Things',
@@ -226,15 +215,12 @@ const projects = [
     tags: [
       {
         name: 'React',
-        color: 'blue-text-gradient',
       },
       {
         name: 'Three.js',
-        color: 'pink-text-gradient',
       },
       {
         name: 'Tailwind CSS',
-        color: 'green-text-gradient',
       },
     ],
     source_code_link: 'https://github.com/yel-hadr/portfolio',
@@ -243,21 +229,17 @@ const projects = [
   {
     id: 'cub3d',
     tags: [
-      { name: 'C', color: 'blue-text-gradient' },
-      { name: 'MLX42', color: 'green-text-gradient' },
+      { name: 'C' },
+      { name: 'MLX42' },
       // A technique rather than a product: its name is translated (works.tags.<id>)
-      { id: 'raycasting', color: 'orange-text-gradient' },
+      { id: 'raycasting' },
     ],
     source_code_link: 'https://github.com/yel-hadr/cub3D_42',
     demo: 'cub3d',
   },
   {
     id: 'fdf',
-    tags: [
-      { name: 'C', color: 'blue-text-gradient' },
-      { name: 'MiniLibX', color: 'green-text-gradient' },
-      { id: 'isometric', color: 'orange-text-gradient' },
-    ],
+    tags: [{ name: 'C' }, { name: 'MiniLibX' }, { id: 'isometric' }],
     source_code_link: 'https://github.com/yel-hadr/my_fdf_42',
     demo: 'fdf',
   },

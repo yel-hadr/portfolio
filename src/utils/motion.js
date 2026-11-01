@@ -17,15 +17,19 @@ const rise = () =>
     ? 0
     : 24;
 
-export const reveal = (delay = 0) => {
+// `fade: false` keeps the rise and drops the fade: for the hero portrait, the page's largest
+// paint, which the browser does not count as painted while it is transparent (LCP)
+export const reveal = (delay = 0, { fade = true } = {}) => {
   const wait = delay ? { delay } : {};
+  const y = { ...REVEAL_SPRING, ...wait };
+  if (!fade) return { hidden: { y: rise() }, show: { y: 0, transition: { y } } };
   return {
     hidden: { opacity: 0, y: rise() },
     show: {
       opacity: 1,
       y: 0,
       transition: {
-        y: { ...REVEAL_SPRING, ...wait },
+        y,
         opacity: { duration: 0.45, ease: EASE_OUT, ...wait },
       },
     },

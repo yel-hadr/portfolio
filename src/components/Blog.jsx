@@ -3,7 +3,7 @@ import { m } from 'framer-motion';
 // src/constans/posts.js. The posts themselves are static pages under /blog/ and /fr/blog/.
 import { blogPath, blogPosts, feedPath } from 'virtual:blog-posts';
 
-import { styles } from '../styles';
+import { styles, tagColor } from '../styles';
 import { SectionWrapper } from '../hoc';
 import { pressable, reveal } from '../utils/motion';
 import SectionHeader from './SectionHeader';
@@ -11,10 +11,6 @@ import { useI18n } from '../i18n/context';
 
 // How many of the newest posts the home page shows; the rest are on /blog/
 const LATEST = 4;
-
-// Tag colors are theme tokens with AA contrast on the glass card in both themes, cycled as on
-// the blog pages
-const TAG_COLORS = ['text-info', 'text-success', 'text-primary-400'];
 
 const DATE_LOCALES = { en: 'en-GB', fr: 'fr-FR' };
 
@@ -82,7 +78,7 @@ const PostCard = ({ slug, date, tags, title, summary }) => {
         {tags.map((tag, i) => (
           <li
             key={tag}
-            className={`rounded-full border border-line bg-surface-raised px-3 py-1 text-sm font-medium ${TAG_COLORS[i % TAG_COLORS.length]}`}
+            className={`rounded-full border border-line bg-surface-raised px-3 py-1 text-sm font-medium ${tagColor(i)}`}
           >
             {tag}
           </li>

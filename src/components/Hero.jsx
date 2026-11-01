@@ -50,7 +50,9 @@ const Hero = ({ onEnterGame }) => {
     <section
       id='hero'
       aria-labelledby='hero-title'
-      className='relative flex min-h-screen w-full items-center'
+      // Not a full screen: the next section's top peeks in, so the hero's content sits higher and
+      // the page reads on rather than ending under the buttons
+      className='relative flex min-h-[88svh] w-full items-center'
     >
       {/* The page's one orchestrated entrance: portrait, name, headline, then the actions. */}
       <m.div
@@ -62,7 +64,7 @@ const Hero = ({ onEnterGame }) => {
         className={`${styles.container} grid w-full items-center gap-10 pb-16 pt-28 md:grid-cols-[1fr_auto] md:gap-10 lg:gap-16 short:grid-cols-[1fr_auto] short:gap-8 short:pb-6 short:pt-20`}
       >
         <m.figure
-          variants={reveal()}
+          variants={reveal(0, { fade: false })}
           className='relative w-40 sm:w-52 md:order-last md:w-48 lg:w-80 short:order-last short:w-28'
         >
           {/* The parallax layer (transform only) inside the figure, whose own transform is the
@@ -83,9 +85,7 @@ const Hero = ({ onEnterGame }) => {
                 alt={t('hero.portraitAlt')}
                 width={640}
                 height={800}
-                // React 18 has no fetchPriority prop; the lowercase attribute passes through as-is
-                // eslint-disable-next-line react/no-unknown-property
-                fetchpriority='high'
+                fetchPriority='high'
                 decoding='async'
                 className='aspect-[4/5] w-full rounded-[1.25rem] object-cover'
               />
