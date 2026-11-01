@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
+import { person } from '../../constans';
 import { styles } from '../../styles';
 import ContactForm from '../ContactForm';
 import { GameInfo } from './GameHud';
@@ -115,6 +116,11 @@ const GameText = ({ t, details, canPlay, returnTo, onRunDemo, onBack, onExit }) 
     education: <Entries entries={details.education.entries} />,
     contact: (
       <>
+        {details.contact.lines.map((line) => (
+          <p key={line} className='mt-2 leading-relaxed'>
+            {line}
+          </p>
+        ))}
         <div className='mt-3 flex flex-wrap gap-3'>
           <button
             ref={contactButton}
@@ -153,6 +159,10 @@ const GameText = ({ t, details, canPlay, returnTo, onRunDemo, onBack, onExit }) 
               {t('demos.game.backToGame')}
             </button>
           )}
+          {/* The resume, always in reach */}
+          <a href={person.resume} download className={styles.buttonGhost}>
+            {t('demos.game.mission.resume')}
+          </a>
           <button
             type='button'
             onClick={onExit}
@@ -163,10 +173,33 @@ const GameText = ({ t, details, canPlay, returnTo, onRunDemo, onBack, onExit }) 
         </div>
         <p className='mt-3 text-foreground-muted'>{t('demos.game.textIntro')}</p>
 
-        {/* The command hub's briefing, as the game's hub terminal shows it */}
+        {/* The command hub's briefing, as the game's hub terminal shows it: the story, the
+            objective and where to find the owner */}
         <section className='mt-8 border-t border-line pt-6'>
           <h4 className='text-xl font-bold text-primary-400'>{t('demos.game.panels.hub')}</h4>
           <p className='mt-3 leading-relaxed'>{t('demos.game.story')}</p>
+          <p className='mt-3 leading-relaxed'>{t('demos.game.objective')}</p>
+          <h5 className='mt-4 font-bold'>{t('demos.game.hub.links')}</h5>
+          <ul className='mt-2 flex flex-wrap gap-3'>
+            <li>
+              <a href={person.resume} download className={styles.buttonGhost}>
+                {t('demos.game.mission.resume')}
+              </a>
+            </li>
+            {details.contact.links.map(({ href, label }) => (
+              <li key={href}>
+                <a
+                  href={href}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className={styles.buttonGhost}
+                >
+                  {label}
+                  <span className='sr-only'>{t('footer.newTab')}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
         </section>
 
         {SECTIONS.map((id) => (

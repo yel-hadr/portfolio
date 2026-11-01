@@ -131,6 +131,21 @@ const RADAR_LEGEND = [
     shape: <rect x='1' y='1' width='8' height='8' fill='currentColor' />,
   },
   {
+    key: 'doorsOpen',
+    color: 'text-info',
+    shape: (
+      <rect
+        x='1.5'
+        y='1.5'
+        width='7'
+        height='7'
+        fill='none'
+        stroke='currentColor'
+        strokeWidth='1.5'
+      />
+    ),
+  },
+  {
     key: 'objective',
     color: 'text-success',
     shape: <circle cx='5' cy='5' r='3.6' fill='none' stroke='currentColor' strokeWidth='2' />,
@@ -1011,7 +1026,7 @@ const dossierKicker = (t, id, game) => {
 };
 // The command hub's dossier: the owner's briefing, the mission's progress (live, from the sections
 // read so far, the next one marked), the controls, and where to find the owner
-const hubDetail = (t, sections) => {
+const hubDetail = (t, sections, keys) => {
   const next = sections.find(({ found }) => !found)?.id;
   return {
     lines: [t('demos.game.story'), t('demos.game.objective')],
@@ -1022,7 +1037,7 @@ const hubDetail = (t, sections) => {
       notYet: t('demos.game.mission.notYet'),
       next: t('demos.game.mission.next'),
     },
-    controls: { heading: t('demos.game.hub.controls'), items: t('demos.game.keys') },
+    controls: { heading: t('demos.game.hub.controls'), items: keys },
     linksHeading: t('demos.game.hub.links'),
     links: [
       { href: person.resume, label: t('demos.game.mission.resume') },
@@ -1152,8 +1167,8 @@ const Cub3DWorld = ({
   const world = game ? GAME_WORLD : DEMO_WORLD;
   const { W, H, walkable: WALKABLE, isFloor } = world;
   let keysKey = 'demos.cub3d.welcome.keys';
-  if (touch) keysKey = 'demos.cub3d.welcome.keysTouch';
-  else if (game) keysKey = 'demos.game.keys';
+  if (game) keysKey = touch ? 'demos.game.keysTouch' : 'demos.game.keys';
+  else if (touch) keysKey = 'demos.cub3d.welcome.keysTouch';
   // A snapshot, or Restart from the pause menu, skips the main menu
   const [started, setStarted] = useState(!!initialState || autostart);
   // Game Mode's main menu: 'menu', 'story' (Play) or 'info'
@@ -1258,6 +1273,8 @@ const Cub3DWorld = ({
   const crosshairRef = useRef(null);
   const energyBar = useRef(null);
   const integrityBar = useRef(null);
+  // The status bar's slim integrity meter, where the weapon card is hidden (a phone, a touch screen)
+  const integritySlimBar = useRef(null);
   const hitRef = useRef(null);
   // Energy: each shot costs some (WEAPON_FX), refilled shortly after the last one. Integrity:
   // worn down while threats are close (`pressure`, counted by the threats), restored after
@@ -1708,6 +1725,7 @@ const Cub3DWorld = ({
       }
       writeBar(energyBar.current, en.value);
       writeBar(integrityBar.current, hp.value);
+      writeBar(integritySlimBar.current, hp.value);
       // A Memory Leak's drag: shown (and said once) as it starts, with a margin so its edge does
       // not flicker
       const dragged = slowedRef.current ? slow.current < 0.99 : slow.current < 0.95;
@@ -2160,7 +2178,11 @@ const Cub3DWorld = ({
   };
   const wheelAt = useRef(0);
   const onWheel = (e) => {
-    if (!game || !started || openPanel || talk || timeNow() - wheelAt.current < 200) return;
+    // Only over the view itself during play: a wheel over a dialog portaled out of it (the pause
+    // menu, MISSION COMPLETE, SYSTEM FAILURE) bubbles here through React, and must not switch
+    const held = openPanel || talk || complete || pauseOpen || failed || access;
+    if (!game || !started || held || !e.currentTarget.contains(e.target)) return;
+    if (timeNow() - wheelAt.current < 200) return;
     wheelAt.current = timeNow();
     switchWeapon(weapon + (e.deltaY > 0 ? 1 : -1));
   };
@@ -2269,9 +2291,13 @@ const Cub3DWorld = ({
     onFlash: toggleFlash,
     contrast: flat,
     onContrast: toggleContrast,
+    sound,
+    onSound: toggleSound,
     volume,
     onVolume: changeVolume,
   };
+  // Back to the view after a pointer click on a HUD control, so the keys move the player again
+  const focusView = () => wrapperRef.current?.focus({ preventScroll: true });
 
   // Escape (or the mouse let go by the browser's Escape) during play: the pause menu
   const pause = () => {
@@ -2283,10 +2309,15 @@ const Cub3DWorld = ({
   };
   const resume = () => {
     setPauseOpen(false);
-    requestAnimationFrame(() => wrapperRef.current?.focus({ preventScroll: true }));
+    // Back to the crew member's line if it is still open (it is modal), else to the view
+    requestAnimationFrame(() =>
+      (wrapperRef.current?.querySelector('[data-dialogue]') ?? wrapperRef.current)?.focus({
+        preventScroll: true,
+      })
+    );
     // Resume is a click: the mouse can be captured again (the browser may still refuse it right
-    // after an Escape; the Mouse look button stays then)
-    if (wasLocked.current && lockable) {
+    // after an Escape; the Mouse look button stays then). Not under a crew member's line
+    if (wasLocked.current && lockable && !talk) {
       lockRef.current?.domElement?.requestPointerLock()?.catch?.(() => {});
     }
     wasLocked.current = false;
@@ -2309,6 +2340,7 @@ const Cub3DWorld = ({
     slow.current = 1;
     if (hitRef.current) hitRef.current.style.opacity = '';
     writeBar(integrityBar.current, 100);
+    writeBar(integritySlimBar.current, 100);
     writeBar(energyBar.current, 100);
     respawnRef.current?.();
     failedRef.current = false;
@@ -2713,7 +2745,11 @@ const Cub3DWorld = ({
             className='rounded-md border border-line-strong'
             style={{ width: W * RADAR_CELL, height: H * RADAR_CELL }}
           />
-          <p className='mt-1 flex justify-end gap-3 rounded-md bg-background px-2 py-0.5 text-xs text-foreground'>
+          {/* As wide as the radar at most: it wraps (French runs longer) */}
+          <p
+            className='ml-auto mt-1 flex flex-wrap justify-end gap-x-3 gap-y-0.5 rounded-md bg-background px-2 py-0.5 text-xs text-foreground'
+            style={{ maxWidth: W * RADAR_CELL }}
+          >
             {RADAR_LEGEND.map(({ key, color, shape }) => (
               <span key={key} className='inline-flex items-center gap-1'>
                 <svg viewBox='0 0 10 10' className={`h-2.5 w-2.5 ${color}`}>
@@ -2775,7 +2811,9 @@ const Cub3DWorld = ({
 
       {touch && started && (
         <div
-          className={`absolute right-3 z-30 grid grid-cols-3 gap-1.5 ${game ? 'bottom-12' : 'bottom-16'}`}
+          // Game Mode: bottom left, under the left thumb, clear of the radar (the radar and the
+          // weapon card hold the right; there is no Mouse look button on touch)
+          className={`absolute z-30 grid grid-cols-3 gap-1.5 ${game ? 'bottom-12 left-3' : 'bottom-16 right-3'}`}
           role='group'
           aria-label={t('demos.cub3d.touch.label')}
         >
@@ -2797,6 +2835,17 @@ const Cub3DWorld = ({
           >
             {t(game ? 'demos.game.use' : 'demos.cub3d.touch.door')}
           </button>
+          {game && (
+            // The next weapon (keys 1 to 3, Q and the wheel on a computer)
+            <button
+              type='button'
+              aria-label={t('demos.game.switchWeapon')}
+              onClick={() => switchWeapon(weapon + 1)}
+              className={`${TOUCH_BUTTON} col-start-3 row-start-1 w-auto px-1 text-xs`}
+            >
+              {t('demos.game.weaponButton')}
+            </button>
+          )}
         </div>
       )}
 
@@ -2809,7 +2858,8 @@ const Cub3DWorld = ({
           lockable={lockable}
           onStart={start}
           onStartLook={lookWithMouse}
-          onTextMode={() => onTextMode(snapshot())}
+          // No run yet: back from the text, the world opens on this menu again
+          onTextMode={() => onTextMode(null)}
           onExit={onExit}
           settings={settings}
           focusOnMount={rerun}
@@ -2858,20 +2908,17 @@ const Cub3DWorld = ({
           weapon={weapon}
           toast={toast}
           access={access}
-          sound={sound}
-          onSound={toggleSound}
           onTextMode={() => onTextMode(snapshot())}
           onExit={onExit}
+          confirmExit={touch}
+          onPointerDone={focusView}
           crosshairRef={crosshairRef}
           hitMarkerRef={hitMarkerRef}
           energyBar={energyBar}
           integrityBar={integrityBar}
+          integritySlimBar={integritySlimBar}
           hitRef={hitRef}
           slowed={slowed}
-          contrast={flat}
-          onContrast={toggleContrast}
-          volume={volume}
-          onVolume={changeVolume}
           onPause={pause}
           hubFlash={hubFlash}
           noFlash={noFlash}
@@ -2883,6 +2930,7 @@ const Cub3DWorld = ({
           onResume={resume}
           onRestart={() => onRestart(true)}
           onMenu={() => onRestart(false)}
+          resumeHref={person.resume}
           settings={settings}
         />
       )}
@@ -2902,7 +2950,7 @@ const Cub3DWorld = ({
           dark={game}
           title={panelTitle(t, openPanel, game)}
           kicker={dossierKicker(t, openPanel, game)}
-          detail={openPanel === HUB.id ? hubDetail(t, sectionList) : details[openPanel]}
+          detail={openPanel === HUB.id ? hubDetail(t, sectionList, t(keysKey)) : details[openPanel]}
           onClose={closePanel}
           // Game Mode's dossiers are terminals: typed out (with a quiet tick when sound is on), a
           // scan-line overlay, and a Close terminal button

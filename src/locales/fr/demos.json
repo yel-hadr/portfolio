@@ -337,9 +337,10 @@
       "you": "Vous",
       "threats": "Menaces",
       "crew": "Équipe",
-      "doors": "Portes",
+      "doors": "Portes fermées",
       "objective": "Section suivante",
-      "leak": "Fuite mémoire"
+      "leak": "Fuite mémoire",
+      "doorsOpen": "Portes ouvertes"
     },
     "weaponRoles": [
       "Fusil : un tir, longue portée",
@@ -369,6 +370,17 @@
     "flashing": "Réduire les flashs",
     "slowed": "Ralenti : fuite mémoire",
     "slowedSay": "Une fuite mémoire vous ralentit. Éloignez-vous ou neutralisez-la.",
-    "vaultOpen": "La grille laser de la salle forte est désactivée."
+    "vaultOpen": "La grille laser de la salle forte est désactivée.",
+    "keysTouch": [
+      "Glissez la vue pour tourner · touchez-la pour tirer",
+      "▲ ▼ marcher, ◀ ▶ pas de côté, ↺ ↻ tourner",
+      "Arme : changer d’arme",
+      "Ouvrir : parler, lire un terminal ou ouvrir la porte devant vous",
+      "Pause : le menu pause, avec le son et les autres réglages",
+      "Fuite mémoire : vous ralentit · Zero-day : visible seulement dans le faisceau de votre lampe"
+    ],
+    "weaponButton": "Arme",
+    "switchWeapon": "Changer d’arme",
+    "exitConfirm": "Touchez encore pour quitter"
   }
 }
