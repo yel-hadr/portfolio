@@ -55,6 +55,7 @@ import {
   NPCS,
   PROP_BOXES,
   SECTIONS,
+  THREAT_REACH,
   THREAT_TYPES,
   WEAPON_COUNT,
   WEAPON_FX,
@@ -113,6 +114,10 @@ const DEPLOY_HOLD_MS = 700;
 // The lit path to the next section: this many cells of it, from the player on
 const GUIDE_LENGTH = 14;
 const AIM_RADIUS = 0.9; // cells from a panel's center that still count as aiming at it
+// The flashlight's side probe: radians to the left of the view (toward the lens, on the left
+// shoulder), and how near a wall must be there to dim it
+const LENS_PROBE = 0.3;
+const LENS_PROBE_REACH = 1.2;
 const STRIDE = 0.75; // cells walked per footstep sound
 const ENEMY_RADIUS = 0.25; // cells from a threat's center that still count as a hit
 const NPC_RADIUS = 0.3; // cells, the same for the crew
@@ -175,6 +180,7 @@ const RADAR_LEGEND = [
 ]; // cells: how close a closed door shows where it leads
 const DOOR_REACH = [0.8, 1.6]; // cells ahead where E (or Space) finds a door
 const TOAST_MS = 8000; // long enough to read the fact (it is also in the text-only mode)
+const TOAST_QUEUED_MS = 4000; // each fact's time while others wait (a blast's three kills: 12 s)
 // Canvas options, made once (R3F re-applies `gl` whenever it is a new object)
 const GAME_DPR = [1, 1.5];
 // Game Mode's resolution follows the frame rate (PerformanceMonitor), down to this: 44% fewer
@@ -342,17 +348,18 @@ const GAME_WORLD = makeWorld(GAME_CUB);
 // Infinity
 const propAlong = (x, z, dx, dz) => {
   let best = Infinity;
-  PROP_BOXES.forEach(([x0, z0, x1, z1]) => {
+  // A plain loop: this runs every frame (the aim, the flashlight) and per threat in a blast
+  for (const [x0, z0, x1, z1] of PROP_BOXES) {
+    if (dx === 0 && (x < x0 || x > x1)) continue;
+    if (dz === 0 && (z < z0 || z > z1)) continue;
     const tx0 = dx ? (x0 - x) / dx : -Infinity;
     const tx1 = dx ? (x1 - x) / dx : Infinity;
     const tz0 = dz ? (z0 - z) / dz : -Infinity;
     const tz1 = dz ? (z1 - z) / dz : Infinity;
     const near = Math.max(Math.min(tx0, tx1), Math.min(tz0, tz1));
     const far = Math.min(Math.max(tx0, tx1), Math.max(tz0, tz1));
-    if (dx === 0 && (x < x0 || x > x1)) return;
-    if (dz === 0 && (z < z0 || z > z1)) return;
     if (near <= far && far > 0) best = Math.min(best, Math.max(near, 0));
-  });
+  }
   return best;
 };
 const propAhead = (x, z, yaw) => propAlong(x, z, -Math.sin(yaw), -Math.cos(yaw));
@@ -518,6 +525,7 @@ const Scene = memo(function Scene({
   lockable,
   lockRef,
   onLockChange,
+  onControls,
   spawn,
   reduced,
   facility,
@@ -527,6 +535,7 @@ const Scene = memo(function Scene({
   postFx,
   hologramLabel,
   discovered,
+  vaultOpen,
   targetRef,
   guideRef,
   noFlash,
@@ -541,6 +550,12 @@ const Scene = memo(function Scene({
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
   const size = useThree((s) => s.size);
+  // The pointer-lock controls are mounted (their ref is set before this effect runs): a world back
+  // from a demo captures the mouse again now, not on a guess at when they would be
+  const controlsReady = useEffectEvent(() => onControls?.());
+  useEffect(() => {
+    if (lockable) controlsReady();
+  }, [lockable]);
   const invalidate = useThree((s) => s.invalidate);
   // R3F's live state: effects move the camera through it (the frame loop through its own state)
   const get = useThree((s) => s.get);
@@ -651,11 +666,14 @@ const Scene = memo(function Scene({
 
   const blocked = (x, z) => solid(Math.floor(x), Math.floor(z));
   // Game Mode's racks and crates are in the way too
-  const onProp = (x, z) =>
-    facility &&
-    PROP_BOXES.some(
-      ([x0, z0, x1, z1]) => x > x0 - RADIUS && x < x1 + RADIUS && z > z0 - RADIUS && z < z1 + RADIUS
-    );
+  // Plain loops: these run for every step, every frame
+  const onProp = (x, z) => {
+    if (!facility) return false;
+    for (const [x0, z0, x1, z1] of PROP_BOXES) {
+      if (x > x0 - RADIUS && x < x1 + RADIUS && z > z0 - RADIUS && z < z1 + RADIUS) return true;
+    }
+    return false;
+  };
   const free = (x, z) =>
     !blocked(x - RADIUS, z - RADIUS) &&
     !blocked(x + RADIUS, z - RADIUS) &&
@@ -830,6 +848,7 @@ const Scene = memo(function Scene({
             hologramLabel={hologramLabel}
             panels={panels}
             discovered={discovered}
+            vaultOpen={vaultOpen}
             targetRef={targetRef}
             guideRef={guideRef}
             noFlash={noFlash}
@@ -951,7 +970,8 @@ const castRay = (x, z, angle, solid) => {
 
 // What is in the crosshair: the nearest live threat (within the weapon's `reach`) or crew member
 // on the view's center line, closer than the wall it meets, else the panel hanging where that line
-// meets the wall. Returns an id or null
+// meets the wall. Returns an id or null. `ray`: the wall's hit point on that line, if the caller
+// cast it already (the frame loop also needs it for the flashlight)
 const aimAt = (
   camera,
   solid,
@@ -960,11 +980,12 @@ const aimAt = (
   npcs = [],
   panelRange = AIM_RANGE,
   reach = AIM_RANGE,
-  objects = []
+  objects = [],
+  ray = null
 ) => {
   const { x, z } = camera.position;
   const yaw = camera.rotation.y;
-  const [hx, hz] = castRay(x, z, yaw, solid);
+  const [hx, hz] = ray ?? castRay(x, z, yaw, solid);
   const wall = Math.hypot(hx - x, hz - z);
   const dx = -Math.sin(yaw);
   const dz = -Math.cos(yaw);
@@ -982,7 +1003,12 @@ const aimAt = (
     hit = thing.id;
     nearest = along;
   };
-  enemies.forEach((enemy) => targetable(enemy) && consider(enemy, ENEMY_RADIUS, reach, 0, prop));
+  // A threat close enough to hurt is close enough to hit, whatever prop it stands against
+  for (const enemy of enemies) {
+    if (!targetable(enemy)) continue;
+    const pointBlank = Math.hypot(enemy.x - x, enemy.z - z) < THREAT_REACH;
+    consider(enemy, ENEMY_RADIUS, reach, 0, pointBlank ? Infinity : prop);
+  }
   npcs.forEach((npc) => consider(npc, NPC_RADIUS, AIM_RANGE, 0, prop));
   // Things that stand in a room and answer like a terminal (the command hub): within panel range
   objects.forEach((object) => consider(object, object.radius, panelRange, object.cone));
@@ -1013,7 +1039,8 @@ const inCone = (camera, enemies, solid, { cone, range }) => {
     const bearing = Math.atan2(-(enemy.x - x), -(enemy.z - z));
     const off = Math.abs(MathUtils.euclideanModulo(bearing - yaw + Math.PI, 2 * Math.PI) - Math.PI);
     if (d >= range || off >= cone || !clearLine(x, z, enemy.x, enemy.z, solid)) return false;
-    return propAlong(x, z, (enemy.x - x) / d, (enemy.z - z) / d) >= d;
+    // Point-blank (close enough to hurt): no prop shields it, as in the crosshair (aimAt)
+    return d < THREAT_REACH || propAlong(x, z, (enemy.x - x) / d, (enemy.z - z) / d) >= d;
   });
 };
 
@@ -1088,9 +1115,13 @@ const hubDetail = (t, sections, keys) => {
 };
 // What the crosshair is on (a threat, a crew member or a panel id), as the HUD shows and
 // announces it
-const aimText = (t, enemies, id) => {
+// `far`: a threat past the weapon in hand's range, named with "out of range" and no shoot hint
+const aimText = (t, enemies, id, far = false) => {
   const enemy = enemies.find((e) => e.id === id);
-  if (enemy) return t('demos.game.aimEnemy', { name: t(`demos.game.enemies.${enemy.type}`) });
+  if (enemy) {
+    const name = t(`demos.game.enemies.${enemy.type}`);
+    return t(far ? 'demos.game.aimEnemyFar' : 'demos.game.aimEnemy', { name });
+  }
   if (NPC_IDS.has(id)) return t('demos.game.aimNpc', { name: t(`demos.game.npcs.${id}.name`) });
   return t('demos.game.aimPanel', { name: panelTitle(t, id, true) });
 };
@@ -1266,6 +1297,9 @@ const Cub3DWorld = ({
     () => (game ? SECTIONS.filter((id) => read.includes(id)) : []),
     [game, read]
   );
+  // The vault's laser grid goes down as the Projects dossier closes, in view (read before this
+  // world mounted, back from a demo: already down)
+  const [vaultOpen, setVaultOpen] = useState(!!initialState?.read?.includes('projects'));
   const [missionDone, setMissionDone] = useState(initialState?.missionDone ?? false);
   const missionDoneRef = useRef(missionDone);
   // MISSION COMPLETE, open: how it ended ('sections', all six read, or 'threats', every one
@@ -1316,6 +1350,8 @@ const Cub3DWorld = ({
   const [toast, setToast] = useState(null);
   // Facts waiting their turn: a blast that neutralizes several shows each, one after the other
   const factQueue = useRef([]);
+  // When the fact on show appeared (it gives way sooner once another waits)
+  const factAt = useRef(0);
   // The threat in the crosshair is past the weapon in hand's range
   const [far, setFar] = useState(false);
   const farRef = useRef(false);
@@ -1349,7 +1385,8 @@ const Cub3DWorld = ({
     at: 0,
     pulse: 0,
     warned: false,
-    since: null,
+    // ms of play spent with a threat in reach (the wind-up before it hurts)
+    windup: 0,
   });
   const pressure = useRef(0);
   // The chromatic aberration's pulse (Facility eases it back)
@@ -1760,13 +1797,16 @@ const Cub3DWorld = ({
       if (en.warned && en.value >= 100) en.warned = false;
       // Threats close by wear integrity down, in pulses (a hit flash and aberration, a sound)
       const hp = integrity.current;
-      const hurt = pressure.current;
+      // Nothing hurts while the game is held (the threats' count is kept for when it comes back)
+      const hurt = paused.current ? 0 : pressure.current;
       // A wind-up once a threat comes into reach: brushing past one costs nothing. Frames keep
       // coming meanwhile, even on demand (reduced motion), or standing still would cost nothing
       if (hurt) invalidateRef.current();
-      if (hurt && hp.since === null) hp.since = now;
-      if (!hurt) hp.since = null;
-      if (hurt && now - hp.since >= HARM_WINDUP_MS) {
+      // Counted in play time, and kept while the game is held, so pausing over and over does not
+      // dodge the damage
+      if (hurt) hp.windup += dt * 1000;
+      else if (!paused.current) hp.windup = 0;
+      if (hurt && hp.windup >= HARM_WINDUP_MS) {
         hp.value = Math.max(0, hp.value - HARM_RATE * hurt * dt);
         hp.at = now;
         hp.pulse -= dt;
@@ -1850,13 +1890,18 @@ const Cub3DWorld = ({
           announce(t('demos.game.doorNear', { place: name }));
         }
       }
-      // The nearest surface straight ahead: a wall or closed door (the DDA), or a prop's box
-      {
-        const { x, z } = camera.position;
-        const yaw = camera.rotation.y;
-        const [hx, hz] = castRay(x, z, yaw, solid);
-        nearAhead.current = Math.min(Math.hypot(hx - x, hz - z), propAhead(x, z, yaw));
-      }
+      // The nearest surface ahead, for the flashlight: a wall or closed door straight ahead (the
+      // DDA, the same ray the aim takes), one a little to the left where the lens is (the left
+      // shoulder, counted only up close), or a prop's box
+      const yaw = camera.rotation.y;
+      const ray = castRay(x, z, yaw, solid);
+      const lens = castRay(x, z, yaw + LENS_PROBE, solid);
+      const side = Math.hypot(lens[0] - x, lens[1] - z);
+      nearAhead.current = Math.min(
+        Math.hypot(ray[0] - x, ray[1] - z),
+        side < LENS_PROBE_REACH ? side : Infinity,
+        propAhead(x, z, yaw)
+      );
       const aimed = aimAt(
         camera,
         solid,
@@ -1865,7 +1910,8 @@ const Cub3DWorld = ({
         npcs.current,
         PANEL_RANGE,
         AIM_REACH,
-        HUB_OBJECTS
+        HUB_OBJECTS,
+        ray
       );
       // A threat past the weapon in hand's range: the HUD dims its label and says so
       const enemy = aimed && enemies.current.find((e) => e.id === aimed);
@@ -1873,11 +1919,13 @@ const Cub3DWorld = ({
         !!enemy &&
         Math.hypot(enemy.x - camera.position.x, enemy.z - camera.position.z) >
           WEAPON_FX[weaponState.current].range;
-      if (outOfRange !== farRef.current) {
+      // Said again when it changes for the same threat too: a weapon switch, or walking into range
+      const rangeChanged = outOfRange !== farRef.current;
+      if (rangeChanged) {
         farRef.current = outOfRange;
         setFar(outOfRange);
       }
-      if (aimed === targetRef.current) return;
+      if (aimed === targetRef.current && !rangeChanged) return;
       targetRef.current = aimed;
       setTarget(aimed);
       window.clearTimeout(aimTimer.current);
@@ -1885,8 +1933,7 @@ const Cub3DWorld = ({
         setAimSaid('');
         return;
       }
-      const named = aimText(t, enemies.current, aimed);
-      const text = outOfRange ? `${named}. ${t('demos.game.outOfRange')}` : named;
+      const text = aimText(t, enemies.current, aimed, outOfRange);
       aimTimer.current = window.setTimeout(() => setAimSaid(text), 300);
     },
     [announce, solid, t, drawRadar, doorCells, reduced, W, noFlashRef, radarShownRef, startedRef]
@@ -2052,7 +2099,7 @@ const Cub3DWorld = ({
     const grade = gradeOf({ time, kills: done, threats: ENEMIES.length, shots: fired });
     setComplete({ by, time, shots: fired, grade: grade.grade, best: recordRun(time, grade) });
   };
-  // The fact at the head of the queue, for TOAST_MS, then the next
+  // The fact at the head of the queue, for TOAST_MS (shorter while others wait), then the next
   const showFact = () => {
     const [enemy] = factQueue.current;
     if (!enemy) {
@@ -2060,6 +2107,7 @@ const Cub3DWorld = ({
       return;
     }
     // A threat's fact, or a card with its own words (the all clear)
+    factAt.current = timeNow();
     setToast({
       key: enemy.id,
       title: enemy.title ?? t(`demos.game.facts.${enemy.fact}.title`),
@@ -2071,8 +2119,27 @@ const Cub3DWorld = ({
         factQueue.current = factQueue.current.slice(1);
         showFact();
       },
-      TOAST_MS
+      factQueue.current.length > 1 ? TOAST_QUEUED_MS : TOAST_MS
     );
+  };
+  // A fact (or the all clear) in line: shown now if none is, else after the one on show, which
+  // then keeps TOAST_QUEUED_MS rather than its whole TOAST_MS
+  const queueFact = (item) => {
+    factQueue.current = [...factQueue.current, item];
+    if (factQueue.current.length === 1) {
+      showFact();
+      return;
+    }
+    if (factQueue.current.length === 2) {
+      later(
+        'toast',
+        () => {
+          factQueue.current = factQueue.current.slice(1);
+          showFact();
+        },
+        Math.max(0, TOAST_QUEUED_MS - (timeNow() - factAt.current))
+      );
+    }
   };
 
   const neutralize = (enemy) => {
@@ -2113,10 +2180,9 @@ const Cub3DWorld = ({
     // Reduced motion draws on demand: the hidden threat must be redrawn away
     invalidateRef.current();
     setKills((n) => n + 1);
-    // Its own fact shows in the HUD's own live region, which announces it; one already showing
-    // keeps its time, and this one follows
-    factQueue.current = [...factQueue.current, enemy];
-    if (factQueue.current.length === 1) showFact();
+    // Its own fact shows in the HUD's own live region, which announces it; after the one already
+    // showing, if any (queueFact)
+    queueFact(enemy);
     const allDown = enemies.current.every((e) => !e.alive);
     // The last threat: the mission is complete too (once), after a moment to see the kill
     if (!missionDoneRef.current && allDown) {
@@ -2135,15 +2201,11 @@ const Cub3DWorld = ({
       );
     } else if (allDown) {
       // The optional hunt after the mission is over: an all-clear card after the last fact
-      factQueue.current = [
-        ...factQueue.current,
-        {
-          id: 'all-clear',
-          title: t('demos.game.hunt.clearTitle'),
-          body: t('demos.game.hunt.clearBody'),
-        },
-      ];
-      if (factQueue.current.length === 1) showFact();
+      queueFact({
+        id: 'all-clear',
+        title: t('demos.game.hunt.clearTitle'),
+        body: t('demos.game.hunt.clearBody'),
+      });
       updateGuide(cameraRef.current, true);
     } else if (missionDoneRef.current) {
       // The lit path moves on to the next nearest threat
@@ -2154,8 +2216,11 @@ const Cub3DWorld = ({
   // Before a dialog or a talk: the mouse is freed, keys let go, and no recoil or shake is left
   // frozen mid-way while the view pauses
   const holdView = () => {
-    // Whether the mouse was captured: closing what opens now captures it again (`relock`)
-    relockRef.current = !!document.pointerLockElement;
+    // Whether the mouse was captured: closing what opens now captures it again (`relock`). A flag
+    // already set is kept: one hold after another (the sixth dossier, then the finale and MISSION
+    // COMPLETE; MISSION COMPLETE, then Contact me's dossier) finds the mouse already freed by the
+    // first, and play still captures it again at the end
+    relockRef.current = relockRef.current || !!document.pointerLockElement;
     // The unlock that follows is the game's own, not the player's Escape (cleared by the next
     // lock, so it never outlives a release that did not happen)
     freeing.current = true;
@@ -2176,9 +2241,19 @@ const Cub3DWorld = ({
   // back: after a dossier, a crew member's line, Reboot, MISSION COMPLETE or a demo
   const relock = () => {
     if (!relockRef.current || !lockable) return;
+    const target = lockRef.current?.domElement;
+    // The controls not mounted yet (a world back from a demo): the flag waits for them
+    // (`onControls`)
+    if (!target) return;
     relockRef.current = false;
-    lockRef.current?.domElement?.requestPointerLock()?.catch?.(() => {});
+    target.requestPointerLock()?.catch?.(() => {});
   };
+  const controlsMounted = useRef(() => {});
+  useLayoutEffect(() => {
+    controlsMounted.current = relock;
+  });
+  // Stable for the memoized Scene
+  const onControls = useCallback(() => controlsMounted.current(), []);
 
   // A crew member talks: the threats hold still until the dialogue closes
   const talkTo = (id) => {
@@ -2210,8 +2285,9 @@ const Cub3DWorld = ({
   // talks, a panel opens (its text, the contact form, or after "Access granted" a terminal's live
   // demo). Nothing in the crosshair works the door ahead
   const interact = () => {
-    // The last threat just fell: MISSION COMPLETE is on its way, nothing may open over it
-    if (missionPending.current) return;
+    // The last threat just fell: MISSION COMPLETE is on its way, nothing may open over it. Nor
+    // during Access granted's hand-off to a demo (a second press would restart it)
+    if (missionPending.current || access) return;
     const id = targetRef.current;
     if (!id) {
       toggleDoor();
@@ -2278,7 +2354,8 @@ const Cub3DWorld = ({
     const cfg = WEAPON_FX[weaponState.current];
     const now = timeNow();
     const camera = cameraRef.current;
-    if (!camera || (!press && !cfg.auto)) return;
+    // Not during Access granted's hand-off to a demo: no shot, no energy spent
+    if (!camera || access || (!press && !cfg.auto)) return;
     // A press on a terminal uses it, whatever the weapon's cooldown. A crew member in the sights:
     // hold fire (E talks)
     const id = targetRef.current;
@@ -2448,9 +2525,11 @@ const Cub3DWorld = ({
           count,
           total: SECTIONS.length,
         });
-        // Projects read: the vault's laser grid goes down (Facility fades it out)
+        // Projects read: the vault's laser grid goes down now that the dossier is closed and the
+        // player can watch it (Facility fades it out)
         if (found === 'projects') {
           said = `${said} ${t('demos.game.vaultOpen')}`;
+          setVaultOpen(true);
           play('lasers');
         }
         // The kit: a new weapon, or integrity hardened (filled by the difference)
@@ -2488,6 +2567,12 @@ const Cub3DWorld = ({
     requestAnimationFrame(() => wrapperRef.current?.focus({ preventScroll: true }));
   };
 
+  // MISSION COMPLETE's Contact me: the Contact dossier, read as at its wall (Contact is ticked
+  // off); closing it captures the mouse again if play had it (holdView keeps the flag)
+  const contactMe = () => {
+    setComplete(null);
+    readPanel('contact');
+  };
   const closeComplete = () => {
     setComplete(null);
     // Threats left: the optional hunt (the tracker counts them, the lit path leads to them)
@@ -2516,9 +2601,10 @@ const Cub3DWorld = ({
       if (!soundRef.current || !wrapperRef.current) return;
       if (!sfx.current) sfx.current = createSfx(volumeRef.current);
       sfx.current.resume();
-      // The facility's low server hum, under everything (quieter while the game is held)
+      // The facility's low server hum, under everything (quieter while the game is held), from
+      // Start on: not in the main menu
       sfx.current.duck(heldRef.current);
-      if (game) sfx.current.hum(true);
+      if (game && startedRef.current) sfx.current.hum(true);
       sfx.current.blip();
     });
   };
@@ -2562,6 +2648,14 @@ const Cub3DWorld = ({
   };
   // Back to the view after a pointer click on a HUD control, so the keys move the player again
   const focusView = () => wrapperRef.current?.focus({ preventScroll: true });
+  // The HUD's Text-only and Exit wait while MISSION COMPLETE is on its way: the snapshot would
+  // already say the mission is done, and the dialog would never show
+  const leaveForText = () => {
+    if (!missionPending.current) onTextMode(snapshot());
+  };
+  const exitGame = () => {
+    if (!missionPending.current) onExit();
+  };
 
   // Escape (or the mouse let go by the browser's Escape) during play: the pause menu
   const pause = () => {
@@ -2601,7 +2695,7 @@ const Cub3DWorld = ({
   // Reboot: back in the first room, integrity and energy full; the mission's progress is kept
   const reboot = () => {
     const hpMax = maxIntegrity(readRef.current);
-    integrity.current = { value: hpMax, at: 0, pulse: 0, warned: false, since: null };
+    integrity.current = { value: hpMax, at: 0, pulse: 0, warned: false, windup: 0 };
     energy.current = { value: 100, at: 0, warned: false };
     pressure.current = 0;
     slow.current = 1;
@@ -2636,15 +2730,16 @@ const Cub3DWorld = ({
         if (!wrapperRef.current) return;
         if (!sfx.current) sfx.current = createSfx(volumeRef.current);
         sfx.current.duck(heldRef.current);
-        if (game) sfx.current.hum(true);
+        if (game && startedRef.current) sfx.current.hum(true);
       });
     }
     if (initialState || autostart) wrapperRef.current?.focus({ preventScroll: true });
     // Back from a demo with the mouse captured before: capture it again (the click that closed
-    // the demo still counts as the player's; if the browser refuses, the Mouse look button stays)
+    // the demo still counts as the player's; if the browser refuses, the Mouse look button stays).
+    // Asked for as soon as the controls are mounted (here, or when Scene says so)
     if (initialState?.locked) {
       relockRef.current = true;
-      later('relock', relock, 120);
+      relock();
     }
     // Left during the finale (the text-only mode): it runs again, then MISSION COMPLETE
     const allRead = SECTIONS.every((id) => initialState?.read?.includes(id));
@@ -2732,7 +2827,7 @@ const Cub3DWorld = ({
       if (!e.repeat) switchWeapon(weapon + 1, 1);
     } else if (game && (e.key === 'm' || e.key === 'M')) {
       if (e.repeat) return;
-      // The button shows the state; from the keyboard, focus stays on the view, so say it
+      // Focus stays on the view: say it (the status bar's speaker shows it too)
       toggleSound();
       announce(
         `${t('demos.game.sound')} ${t(soundRef.current ? 'demos.game.on' : 'demos.game.off')}`
@@ -2757,7 +2852,7 @@ const Cub3DWorld = ({
   };
   const onPointerDown = (e) => {
     pointerType.current = e.pointerType;
-    if (talk || !e.currentTarget.contains(e.target) || onControl(e)) return;
+    if (talk || access || !e.currentTarget.contains(e.target) || onControl(e)) return;
     if (e.pointerType !== 'mouse') {
       drag.current = e.clientX;
       return;
@@ -2782,6 +2877,10 @@ const Cub3DWorld = ({
     setStarted(true);
     wrapperRef.current?.focus({ preventScroll: true });
   };
+  // The hum starts with play (sound turned on in the main menu leaves it for Start)
+  useEffect(() => {
+    if (game && started && soundRef.current) sfx.current?.hum(true);
+  }, [game, started]);
   const lookWithMouse = () => {
     start();
     // Requested here rather than through the controls' lock(), so a refusal (pointer lock asked
@@ -2804,6 +2903,7 @@ const Cub3DWorld = ({
     if (
       !game ||
       talk ||
+      access ||
       !started ||
       pointerType.current === 'mouse' ||
       !e.currentTarget.contains(e.target) ||
@@ -2996,6 +3096,7 @@ const Cub3DWorld = ({
           lockable={lockable}
           lockRef={lockRef}
           onLockChange={onLockChange}
+          onControls={onControls}
           spawn={initialState}
           reduced={reduced}
           facility={game}
@@ -3005,6 +3106,7 @@ const Cub3DWorld = ({
           postFx={postFx}
           hologramLabel={t('demos.game.hologram')}
           discovered={discovered}
+          vaultOpen={vaultOpen}
           targetRef={targetRef}
           guideRef={guideRef}
           noFlash={noFlash}
@@ -3048,10 +3150,11 @@ const Cub3DWorld = ({
       {/* HUD */}
       {game ? (
         // The tactical radar: the whole map, with threats and crew seen through walls. A visual
-        // aid (its legend too): the same places and people are announced and in the text-only mode
+        // aid (its legend too): the same places and people are announced and in the text-only mode.
+        // On a short screen (a phone held sideways) it is drawn smaller and without its legend
         <div
           aria-hidden='true'
-          className='pointer-events-none absolute right-3 top-44 z-30 hidden sm:top-16 sm:block'
+          className='pointer-events-none absolute right-3 top-44 z-30 hidden origin-top-right sm:top-16 sm:block [@media(max-height:26rem)]:scale-[0.6]'
         >
           <canvas
             ref={radarRef}
@@ -3060,7 +3163,7 @@ const Cub3DWorld = ({
           />
           {/* As wide as the radar at most: it wraps (French runs longer) */}
           <p
-            className='ml-auto mt-1 flex flex-wrap justify-end gap-x-3 gap-y-0.5 rounded-md bg-background px-2 py-0.5 text-xs text-foreground'
+            className='ml-auto mt-1 flex flex-wrap justify-end gap-x-3 gap-y-0.5 rounded-md bg-background px-2 py-0.5 text-xs text-foreground [@media(max-height:26rem)]:hidden'
             style={{ maxWidth: W * RADAR_CELL }}
           >
             {RADAR_LEGEND.map(({ key, color, shape }) => (
@@ -3211,20 +3314,24 @@ const Cub3DWorld = ({
       {game && started && (
         <GameHud
           t={t}
-          aim={target && !KIND[target] ? aimText(t, ENEMIES, target) : null}
+          aim={target && !KIND[target] ? aimText(t, ENEMIES, target, far) : null}
           aimFar={far}
           prompt={target && KIND[target] ? panelTitle(t, target, true) : null}
-          promptKeyOnly={KIND[target] === 'section' || KIND[target] === 'terminal'}
+          promptKeyOnly={
+            (KIND[target] === 'section' || KIND[target] === 'terminal') && !read.includes(target)
+          }
           sections={sectionList}
           kills={kills}
           threats={ENEMIES.length}
           room={room}
           weapon={weapon}
+          sound={sound}
           toast={toast}
           access={access}
-          onTextMode={() => onTextMode(snapshot())}
-          onExit={onExit}
+          onTextMode={leaveForText}
+          onExit={exitGame}
           confirmExit={touch}
+          onExitAsk={() => announce(t('demos.game.exitConfirm'))}
           onPointerDone={focusView}
           crosshairRef={crosshairRef}
           hitMarkerRef={hitMarkerRef}
@@ -3314,10 +3421,7 @@ const Cub3DWorld = ({
           resume={person.resume}
           github={person.github}
           // The Contact dossier, read as at its wall: Contact is ticked off
-          onContact={() => {
-            setComplete(null);
-            readPanel('contact');
-          }}
+          onContact={contactMe}
           onClose={closeComplete}
         />
       )}

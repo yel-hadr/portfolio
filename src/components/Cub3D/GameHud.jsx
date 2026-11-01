@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useEffectEvent, useId, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useModalDialog } from '../../hooks/useModalDialog';
@@ -331,11 +331,13 @@ export const GameHud = ({
   threats,
   room,
   weapon,
+  sound = false,
   toast,
   access,
   onTextMode,
   onExit,
   confirmExit = false,
+  onExitAsk,
   onPointerDone,
   crosshairRef,
   hitMarkerRef,
@@ -452,7 +454,6 @@ export const GameHud = ({
           className={`pointer-events-none absolute left-1/2 top-[calc(50%+1.75rem)] z-30 -translate-x-1/2 whitespace-nowrap rounded-md ${SOLID} px-3 py-1 font-mono text-xs font-semibold uppercase tracking-wider ${aimFar ? 'text-foreground-muted' : 'text-foreground'}`}
         >
           {aim}
-          {aimFar && <span> · {t('demos.game.outOfRange')}</span>}
         </p>
       )
     )}
@@ -482,11 +483,12 @@ export const GameHud = ({
       />
     </div>
 
-    {/* Facts from a neutralized threat: a live region that is always there, filled for 8 s */}
+    {/* Facts from a neutralized threat: a live region that is always there, filled for 8 s (4 s
+        while more wait) */}
     <div
       role='status'
       // Below the stacked HUD buttons on phones
-      className='pointer-events-none absolute left-1/2 top-44 z-30 w-[min(36rem,calc(100%-1.5rem))] -translate-x-1/2 sm:top-20'
+      className='pointer-events-none absolute left-1/2 top-44 z-30 w-[min(36rem,calc(100%-1.5rem))] -translate-x-1/2 sm:top-20 sm:[@media(max-height:26rem)]:w-[min(36rem,calc(100%-26rem))]'
     >
       {toast && (
         <p
@@ -573,6 +575,8 @@ export const GameHud = ({
       className={`absolute inset-x-0 bottom-0 z-30 flex min-h-9 flex-wrap items-center gap-x-3 border-x-0 border-b-0 ${GLASS} px-3 font-mono text-xs uppercase tracking-wider text-foreground`}
     >
       <span aria-hidden='true' className='h-2 w-2 shrink-0 rounded-full bg-success' />
+      {/* Items after the first are set off by a rule on their left, so a wrapped line never
+          starts or ends on a lone separator */}
       {[
         t('demos.game.status.system'),
         room && t('demos.game.status.room', { name: t(`demos.game.rooms.${room}`) }),
@@ -580,15 +584,22 @@ export const GameHud = ({
       ]
         .filter(Boolean)
         .map((item, i) => (
-          <Fragment key={item}>
-            {i > 0 && <span aria-hidden='true'>|</span>}
-            <span>{item}</span>
-          </Fragment>
+          <span key={item} className={i > 0 ? 'border-l border-line-strong pl-3' : undefined}>
+            {item}
+          </span>
         ))}
+      <span aria-hidden='true' className='ml-auto flex items-center gap-3'>
+        {/* Sound on or muted (M toggles it during play, and says so) */}
+        <SoundGlyph on={sound} />
+        {/* The weapon in hand, where the weapon card is hidden (a phone, a touch screen) */}
+        <span className='[@media(min-width:40rem)_and_(pointer:fine)]:hidden'>
+          {t('demos.game.weaponsShort')[weapon]}
+        </span>
+      </span>
       <span
         aria-hidden='true'
         data-meter=''
-        className='ml-auto flex items-center gap-2 [@media(min-width:40rem)_and_(pointer:fine)]:hidden'
+        className='flex items-center gap-2 [@media(min-width:40rem)_and_(pointer:fine)]:hidden'
       >
         {t('demos.game.integrity')}
         <span className='tabular-nums'>
@@ -619,34 +630,73 @@ export const GameHud = ({
           {t('demos.game.escKey')}
         </kbd>
       </button>
-      <ExitButton t={t} confirm={confirmExit} onExit={onExit} onPointerDone={onPointerDone} />
+      <ExitButton
+        t={t}
+        confirm={confirmExit}
+        onExit={onExit}
+        onAsk={onExitAsk}
+        onPointerDone={onPointerDone}
+      />
     </div>
   </>
+);
+
+// A speaker, with sound waves while sound is on and a cross while it is muted
+const SoundGlyph = ({ on }) => (
+  <svg
+    viewBox='0 0 24 24'
+    className='h-4 w-4 shrink-0'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='2'
+    strokeLinecap='round'
+    strokeLinejoin='round'
+    data-sound={on ? 'on' : 'off'}
+  >
+    <path d='M4 9h4l5-4v14l-5-4H4z' fill='currentColor' />
+    {on ? (
+      <path d='M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12' />
+    ) : (
+      <path d='M17 9l5 6M22 9l-5 6' />
+    )}
+  </svg>
 );
 
 const EXIT_CONFIRM_MS = 4000;
 /**
  * Exit Game Mode. On a touch screen (`confirm`) the first tap asks to confirm, for a few seconds,
- * since a thumb meant for the view can land on it. A pointer click gives the keys back to the view
- * (`onPointerDone`), so Space does not press it again; a key press keeps focus here
+ * since a thumb meant for the view can land on it: it says so (`onAsk`, the view's live region)
+ * and keeps focus for the second tap. If that tap does not come, a pointer tap gives the keys back
+ * to the view (`onPointerDone`), so Space does not press it again; a key press keeps focus here
  */
-const ExitButton = ({ t, confirm, onExit, onPointerDone }) => {
+const ExitButton = ({ t, confirm, onExit, onAsk, onPointerDone }) => {
   const [asking, setAsking] = useState(false);
+  const buttonRef = useRef(null);
+  const tapped = useRef(false);
+  const expire = useEffectEvent(() => {
+    setAsking(false);
+    if (tapped.current && document.activeElement === buttonRef.current) onPointerDone?.();
+  });
   useEffect(() => {
     if (!asking) return undefined;
-    const timer = window.setTimeout(() => setAsking(false), EXIT_CONFIRM_MS);
+    const timer = window.setTimeout(expire, EXIT_CONFIRM_MS);
     return () => window.clearTimeout(timer);
   }, [asking]);
   const onClick = (e) => {
     if (confirm && !asking) {
       setAsking(true);
-      if (e.detail > 0) onPointerDone?.();
+      tapped.current = e.detail > 0;
+      // A tap does not always focus a button (iOS): focus it, so the second tap and a screen
+      // reader stay on it
+      e.currentTarget.focus({ preventScroll: true });
+      onAsk?.();
       return;
     }
     onExit();
   };
   return (
     <button
+      ref={buttonRef}
       type='button'
       onClick={onClick}
       className={`${HUD_BUTTON} ${asking ? 'border-danger' : ''}`}
@@ -757,9 +807,11 @@ export const MissionComplete = ({
 }) => {
   const titleId = useId();
   const armed = useArmed();
-  const { overlayRef, panelRef, close, onKeyDown, backdrop } = useModalDialog(() => {
-    if (armed.current) onClose();
-  });
+  // Escape and the backdrop wait too: the page stays inert until the dialog really closes
+  const { overlayRef, panelRef, close, onKeyDown, backdrop } = useModalDialog(
+    onClose,
+    () => armed.current
+  );
   const heading = useRef(null);
   // A click too soon after it opened does nothing (a link does not follow)
   const guard = (action) => (e) => {
@@ -959,7 +1011,11 @@ export const SystemFailure = ({ t, onReboot, onMenu }) => {
   const titleId = useId();
   const bodyId = useId();
   const armed = useArmed();
-  const { overlayRef, panelRef, close, release, onKeyDown } = useModalDialog(onReboot);
+  // Escape reboots, but not in the first moment either (`armed`)
+  const { overlayRef, panelRef, close, release, onKeyDown } = useModalDialog(
+    onReboot,
+    () => armed.current
+  );
   const reboot = useRef(null);
   // Exit to the main menu ends the run: a second press confirms it
   const [confirming, setConfirming] = useState(false);
@@ -1003,7 +1059,7 @@ export const SystemFailure = ({ t, onReboot, onMenu }) => {
           aria-hidden='true'
           className='mt-3 font-mono text-sm uppercase tracking-wider text-foreground'
         >
-          {t('demos.game.integrity')}: 0%
+          {t('demos.game.integrityValue', { value: t('demos.game.percent', { value: 0 }) })}
         </p>
         <p id={bodyId} className='mt-4 leading-relaxed'>
           {t('demos.game.failure.body')}
@@ -1012,7 +1068,7 @@ export const SystemFailure = ({ t, onReboot, onMenu }) => {
           <button
             ref={reboot}
             type='button'
-            onClick={() => armed.current && close()}
+            onClick={close}
             className={`${styles.buttonPrimary} ${MENU_BUTTON}`}
           >
             {t('demos.game.failure.reboot')}

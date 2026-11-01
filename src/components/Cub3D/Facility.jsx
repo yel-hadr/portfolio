@@ -516,6 +516,8 @@ const Terminals = memo(function Terminals({
       bezel: new BoxGeometry(...BEZEL),
       screen: new PlaneGeometry(...SCREEN),
       edge: new PlaneGeometry(BEZEL[0] + 0.035, BEZEL[1] + 0.035),
+      // High contrast: the aimed terminal's edge
+      aimedEdge: toColor(res.c.light),
       // The walls' own dark paneling, a little lighter, so the bezel reads as part of the wall
       // (in high contrast a dark frame on the light wall, its accent edge around it)
       body: flat
@@ -602,11 +604,11 @@ const Terminals = memo(function Terminals({
     items.forEach((item) => {
       const on = item.id === id;
       // High contrast has no tone mapping: a brighter screen would clip its text to white, so
-      // there the aimed terminal shows by its edge alone (full, the others dimmed)
+      // there the aimed terminal shows by its edge alone, turned to the foreground color (the
+      // others keep their accent edge at full strength)
       item.screen.color.setScalar(on && !flat ? glow : 1);
-      let edge = on ? glow + 0.6 : 0.9;
-      if (flat) edge = on ? 1 : 0.55;
-      item.edge.color.copy(item.accent).multiplyScalar(edge);
+      if (flat) item.edge.color.copy(on ? shared.aimedEdge : item.accent);
+      else item.edge.color.copy(item.accent).multiplyScalar(on ? glow + 0.6 : 0.9);
     });
   });
 
@@ -734,6 +736,7 @@ const Facility = ({
   hologramLabel,
   panels,
   discovered,
+  vaultOpen = false,
   targetRef,
   guideRef,
   hitStopRef,
@@ -765,7 +768,7 @@ const Facility = ({
   const lampsOn = useRef([]);
   // The vault's laser grid: 1 standing, fading to 0 once Projects is read (already 0 if it was
   // read before this world mounted, back from a demo)
-  const laserFade = useRef(discovered.includes('projects') ? 0 : 1);
+  const laserFade = useRef(vaultOpen ? 0 : 1);
   const spot = useRef(null);
   const spotTarget = useRef(null);
   const aberration = useRef(null);
@@ -1221,9 +1224,9 @@ const Facility = ({
       moving = true;
     }
 
-    // The vault opens once Projects is read: its laser grid fades out over 0.6 s (at once with
-    // reduced motion or in high contrast, or if it was read before this world mounted)
-    const vaultOpen = discovered.includes('projects');
+    // The vault opens once the Projects dossier closes (`vaultOpen`): its laser grid fades out
+    // over 0.6 s (at once with reduced motion or in high contrast, or if it opened before this
+    // world mounted)
     const vault = laserMesh.current;
     if (vault?.visible && vaultOpen) {
       laserFade.current = reduced || flat ? 0 : Math.max(0, laserFade.current - dt / 0.6);
