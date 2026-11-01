@@ -5,7 +5,7 @@ import { blogPath, blogPosts, feedPath } from 'virtual:blog-posts';
 
 import { styles } from '../styles';
 import { SectionWrapper } from '../hoc';
-import { SPRING, pressable, reveal } from '../utils/motion';
+import { pressable, reveal } from '../utils/motion';
 import SectionHeader from './SectionHeader';
 import { useI18n } from '../i18n/context';
 
@@ -42,6 +42,18 @@ const RssIcon = () => (
   </svg>
 );
 
+// A hyphenated name in a title (django-tenants, self-heals) never splits at its hyphen
+const keepHyphenated = (text) =>
+  text.split(/(\S+-\S+)/).map((part, i) =>
+    i % 2 ? (
+      <span key={i} className='whitespace-nowrap'>
+        {part}
+      </span>
+    ) : (
+      part
+    )
+  );
+
 const PostCard = ({ slug, date, tags, title, summary }) => {
   const { t, lang } = useI18n();
   const text = (field) => field[lang] ?? field.en;
@@ -49,18 +61,17 @@ const PostCard = ({ slug, date, tags, title, summary }) => {
   return (
     <m.li
       variants={reveal()}
-      // The whole card is its link (stretched): a press gives a little, like a button
-      whileTap={{ scale: 0.98 }}
-      transition={SPRING}
-      className={`${styles.card} relative flex min-w-0 flex-col gap-4 transition-colors hover:border-line-strong`}
+      // The whole card is its link (stretched): a press on it gives a little, like a button. In CSS
+      // (the link pressed), not framer's whileTap, which makes the card itself a tab stop
+      className={`${styles.card} relative flex min-w-0 flex-col gap-4 transition-[color,background-color,border-color,box-shadow,translate,scale] duration-300 hover:border-line-strong motion-safe:has-[a:active]:scale-[0.98]`}
     >
-      <h3 className={styles.cardTitle}>
+      <h3 className={`${styles.cardTitle} text-pretty`}>
         {/* The link covers the whole card (one link per card); its focus ring is drawn there */}
         <a
           href={blogPath(lang, slug)}
           className='underline-offset-4 after:absolute after:inset-0 after:rounded-3xl hover:underline focus-visible:outline-hidden focus-visible:after:outline-2 focus-visible:after:outline-offset-[3px] focus-visible:after:outline-focus'
         >
-          {text(title)}
+          {keepHyphenated(text(title))}
         </a>
       </h3>
       <p className='text-sm text-foreground-muted'>

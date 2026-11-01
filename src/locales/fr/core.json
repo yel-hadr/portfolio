@@ -227,6 +227,9 @@
     "title": "La section {section} n’a pas pu se charger",
     "body": "Rechargez la section pour réessayer.",
     "reload": "Recharger la section",
+    "pageTitle": "Le reste de la page n’a pas pu se charger",
+    "pageBody": "Vérifiez votre connexion, puis rechargez la page.",
+    "reloadPage": "Recharger la page",
     "details": "Détails de l’erreur (pour les développeurs)",
     "sections": {
       "hero": "Accueil",

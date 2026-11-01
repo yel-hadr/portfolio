@@ -224,7 +224,8 @@ const MobileSheet = ({ id, closing, onClose, onClosed, renderLinks, onTerminal }
         onAnimationComplete={() => {
           if (closing) onClosed();
         }}
-        className='w-full rounded-t-3xl border border-b-0 border-line bg-glass-strong px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 shadow-modal outline-hidden backdrop-blur-xl'
+        // Never taller than the screen (a phone held sideways): it scrolls inside, Close in view
+        className='max-h-[100dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl border border-b-0 border-line bg-glass-strong px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 shadow-modal outline-hidden backdrop-blur-xl'
       >
         {/* A grab handle, as on a native sheet (decorative: the close button and Escape close it) */}
         <div aria-hidden='true' className='mx-auto h-1.5 w-10 rounded-full bg-line-strong' />
@@ -251,7 +252,7 @@ const MobileSheet = ({ id, closing, onClose, onClosed, renderLinks, onTerminal }
               onTerminal();
             }}
             aria-haspopup='dialog'
-            className='flex min-h-13 w-full items-center gap-3 rounded-2xl px-4 text-lg font-medium text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground'
+            className='flex min-h-13 w-full items-center gap-3 short:min-h-11 rounded-2xl px-4 text-lg font-medium text-foreground-muted transition-colors hover:bg-surface-raised hover:text-foreground'
           >
             <TerminalIcon />
             {t('nav.openTerminal')}
@@ -274,7 +275,6 @@ const Navbar = ({ onOpenTerminal }) => {
   const [focusInside, setFocusInside] = useState(false);
   const toggleRef = useRef(null);
   const linksRef = useRef(null);
-  const lastY = useRef(0);
   // Where focus goes once the sheet has closed: back to its button, unless a link moved it on
   const returnFocus = useRef(true);
   const reduced = usePrefersReducedMotion();
@@ -286,10 +286,15 @@ const Navbar = ({ onOpenTerminal }) => {
   // (it must stay in view) or with the sheet up
   const hidden = down && !reduced && !focusInside && sheet === 'closed';
 
-  // Sync the active link with the URL hash (back/forward). On first load, sections mount after
-  // the browser tried to scroll to the hash, so scroll a deep link (/#experience) ourselves.
+  // Sync the active link with the URL hash (back/forward, and the page's own #links: the hero's,
+  // the footer's), held like a jump from the bar so the scroll spy does not flick through the
+  // sections on the way. On first load, sections mount after the browser tried to scroll to the
+  // hash, so scroll a deep link (/#experience) ourselves.
   useEffect(() => {
-    const syncFromHash = () => setActive(window.location.hash.slice(1));
+    const syncFromHash = () => {
+      holdUntil.current = performance.now() + 1500;
+      setActive(window.location.hash.slice(1));
+    };
     syncFromHash();
     const initial = window.location.hash.slice(1);
     if (initial)
@@ -305,19 +310,47 @@ const Navbar = ({ onOpenTerminal }) => {
     return () => window.removeEventListener('hashchange', syncFromHash);
   }, []);
 
-  // Back at the top of the page, no section is current any more. Only clear on an upward
-  // scroll: a nav jump from the top scrolls down through the first 200px, however slowly.
+  // The link follows the reading: the section crossing a line 40% down the viewport is current (the
+  // hero, back at the top, clears it; a section with no link, such as the tech stack or the blog, hides the pill).
+  // Not while a jump from the bar scrolls (holdUntil): the clicked link stays current on the way.
+  // The sections below the hero mount later (a lazy chunk), so new ones are observed as they come
   useEffect(() => {
-    if (!active) return undefined;
-    lastY.current = window.scrollY;
-    const onScroll = () => {
-      const y = window.scrollY;
-      if (y < 200 && y < lastY.current) setActive('');
-      lastY.current = y;
+    const main = document.getElementById('main');
+    if (!main || typeof IntersectionObserver === 'undefined') return undefined;
+    // The last section to cross the line, applied at once, or when a jump's hold ends (a reader
+    // who scrolls on during the hold is caught up with, not left on the jump's link)
+    let latest = null;
+    let timer = 0;
+    const apply = () => {
+      timer = 0;
+      const wait = holdUntil.current - performance.now();
+      if (wait > 0) {
+        timer = setTimeout(apply, wait + 50);
+        return;
+      }
+      if (latest !== null) setActive(latest === 'hero' ? '' : latest);
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [active]);
+    const spy = new IntersectionObserver(
+      (entries) => {
+        const crossing = entries.filter((entry) => entry.isIntersecting).at(-1);
+        if (!crossing) return;
+        latest = crossing.target.id;
+        if (!timer) apply();
+      },
+      { rootMargin: '-40% 0px -59% 0px' }
+    );
+    // The sections are main's own children (BelowFold renders a fragment): only those are watched
+    const watch = () =>
+      main.querySelectorAll(':scope > section[id]').forEach((s) => spy.observe(s));
+    watch();
+    const added = new MutationObserver(watch);
+    added.observe(main, { childList: true });
+    return () => {
+      clearTimeout(timer);
+      added.disconnect();
+      spy.disconnect();
+    };
+  }, []);
 
   // Closing the sheet: it slides down first (instant under reduced motion), then unmounts
   const finishClose = () => {
@@ -397,7 +430,7 @@ const Navbar = ({ onOpenTerminal }) => {
                 release();
                 goTo(e, link.id);
               }}
-              className={`relative flex min-h-13 items-center rounded-2xl px-4 text-lg font-medium transition-colors ${
+              className={`relative flex min-h-13 items-center rounded-2xl short:min-h-11 px-4 text-lg font-medium transition-colors ${
                 isActive
                   ? 'bg-surface-raised text-foreground before:absolute before:inset-y-3 before:left-0 before:w-1 before:rounded-full before:bg-primary-400 forced-colors:underline'
                   : 'text-foreground-muted hover:bg-surface-raised hover:text-foreground'
@@ -416,76 +449,84 @@ const Navbar = ({ onOpenTerminal }) => {
       aria-label={t('nav.main')}
       // A floating pill of frosted glass, clear of the page's edges. Never transformed itself: the
       // pill inside slides, so nothing here becomes a containing block
-      className='fixed inset-x-3 top-3 z-50 sm:inset-x-6'
+      className='fixed inset-x-0 top-3 z-50'
       onFocus={() => setFocusInside(true)}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) setFocusInside(false);
       }}
     >
-      {/* The pill: blurred glass at 80%, slid away while reading down (transform only, so the page
-          never shifts). The transparent border is its edge in forced colors */}
-      <div
-        className={`relative isolate mx-auto flex max-w-5xl items-center justify-between gap-4 rounded-full border border-transparent bg-background/80 py-1.5 pl-2 pr-2 backdrop-blur-xl transition-transform duration-300 ease-out ${hidden ? '-translate-y-[calc(100%+1rem)]' : ''}`}
-      >
-        {/* Its edge: nothing at the top of the page, so it melts into the hero; a hairline (and
+      {/* The page's column (styles.container) less the pill's inner edge (8 px padding and its
+          1 px border), so the logo lines up with the content's left edge at every width */}
+      <div className='mx-auto max-w-7xl px-[calc(--spacing(6)-9px)] sm:px-[calc(--spacing(10)-9px)] lg:px-[calc(--spacing(16)-9px)]'>
+        {/* The pill: blurred glass at 80%, slid away while reading down (transform only, so the
+            page never shifts). The transparent border is its edge in forced colors */}
+        <div
+          className={`relative isolate flex items-center justify-between gap-4 rounded-full border border-transparent bg-background/80 py-1.5 pl-2 pr-2 backdrop-blur-xl transition-transform duration-300 ease-out ${hidden ? '-translate-y-[calc(100%+1rem)]' : ''}`}
+        >
+          {/* Its edge: nothing at the top of the page, so it melts into the hero; a hairline (and
             the dark top highlight, the light shadow) fading in once the page scrolls */}
-        <span
-          aria-hidden='true'
-          className={`pointer-events-none absolute -inset-px -z-10 rounded-full border border-nav-edge shadow-card light:shadow-raised transition-opacity duration-300 ease-out ${scrolled ? 'opacity-100' : 'opacity-0'}`}
-        />
-        {/* The page's film grain inside the glass too (the blur wipes out the page's own), so the
+          <span
+            aria-hidden='true'
+            className={`pointer-events-none absolute -inset-px -z-10 rounded-full border border-nav-edge shadow-card light:shadow-raised transition-opacity duration-300 ease-out ${scrolled ? 'opacity-100' : 'opacity-0'}`}
+          />
+          {/* The page's film grain inside the glass too (the blur wipes out the page's own), so the
             pill reads as frosted glass rather than a flat sheet */}
-        <span
-          aria-hidden='true'
-          className='pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-full'
-        >
-          <span className='grain absolute inset-0' />
-        </span>
-
-        <a
-          href='#top'
-          aria-label={t('nav.home')}
-          className='flex shrink-0 items-center gap-2'
-          onClick={() => setActive('')}
-        >
-          <img src={logo} alt='' className='h-9 w-9 object-contain' />
-          <span aria-hidden='true' className='hidden text-lg font-bold text-foreground xs:inline'>
-            Youssef El Hadraoui
+          <span
+            aria-hidden='true'
+            className='pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-full'
+          >
+            <span className='grain absolute inset-0' />
           </span>
-        </a>
 
-        {desktopLinks}
+          <a
+            href='#top'
+            aria-label={t('nav.home')}
+            className='flex shrink-0 items-center gap-2'
+            onClick={() => setActive('')}
+          >
+            <img src={logo} alt='' className='h-9 w-9 object-contain' />
+            {/* Not beside the desktop links until xl: from lg to xl the column leaves them no room */}
+            <span
+              aria-hidden='true'
+              className='hidden text-lg font-bold text-foreground xs:inline lg:hidden xl:inline'
+            >
+              Youssef El Hadraoui
+            </span>
+          </a>
 
-        <div className='flex items-center gap-1.5'>
-          <LanguageToggle />
-          <ThemeToggle />
-          <MotionToggle />
-          <button
-            type='button'
-            onClick={onOpenTerminal}
-            aria-haspopup='dialog'
-            aria-keyshortcuts='Control+`'
-            aria-label={t('nav.openTerminal')}
-            title={`${t('nav.openTerminal')} (${t('nav.terminalShortcut')})`}
-            className={`hidden lg:inline-flex ${ICON_BUTTON}`}
-          >
-            <TerminalIcon />
-          </button>
-          <button
-            ref={toggleRef}
-            type='button'
-            aria-expanded={sheet === 'open'}
-            aria-controls='mobile-menu'
-            aria-haspopup='dialog'
-            aria-label={t('nav.openMenu')}
-            onClick={() => {
-              returnFocus.current = true;
-              setSheet('open');
-            }}
-            className={`inline-flex lg:hidden ${ICON_BUTTON}`}
-          >
-            <MenuIcon className='h-6 w-6' />
-          </button>
+          {desktopLinks}
+
+          <div className='flex items-center gap-1.5'>
+            <LanguageToggle />
+            <ThemeToggle />
+            <MotionToggle />
+            <button
+              type='button'
+              onClick={onOpenTerminal}
+              aria-haspopup='dialog'
+              aria-keyshortcuts='Control+`'
+              aria-label={t('nav.openTerminal')}
+              title={`${t('nav.openTerminal')} (${t('nav.terminalShortcut')})`}
+              className={`hidden lg:inline-flex ${ICON_BUTTON}`}
+            >
+              <TerminalIcon />
+            </button>
+            <button
+              ref={toggleRef}
+              type='button'
+              aria-expanded={sheet === 'open'}
+              aria-controls='mobile-menu'
+              aria-haspopup='dialog'
+              aria-label={t('nav.openMenu')}
+              onClick={() => {
+                returnFocus.current = true;
+                setSheet('open');
+              }}
+              className={`inline-flex lg:hidden ${ICON_BUTTON}`}
+            >
+              <MenuIcon className='h-6 w-6' />
+            </button>
+          </div>
         </div>
       </div>
 

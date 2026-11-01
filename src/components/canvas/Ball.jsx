@@ -1,5 +1,13 @@
+import { useContext } from 'react';
 import { Decal, Float, Preload, useTexture } from '@react-three/drei';
 import { useStillMotion } from '../../hooks/useMotionPaused';
+import { ThemeContext } from '../../theme/context';
+
+// Light mode: the cream base under this lighting read grey on the cream page, so the ball turns
+// white and glows a little on its own (its faces turned from the light no longer go dark). The
+// glow is the ball's alone: the logo decal keeps its colors
+const BASE = { dark: '#fff8eb', light: '#ffffff' };
+const GLOW = { dark: 0, light: 0.7 };
 
 // Rendered through a SceneView, so it shares the root camera (fov 75 at z=5), like the old per-icon Canvas.
 // No continuous spin: the logo decal is only on the front face, so the ball floats in place.
@@ -15,6 +23,8 @@ const paceOf = (key) => {
 const Ball = ({ imgUrl, warmUp = false }) => {
   const decal = useTexture(imgUrl);
   const reduced = useStillMotion();
+  // The theme through the context the Canvas bridges (null-safe here, inside the 3D tree)
+  const theme = useContext(ThemeContext)?.theme === 'light' ? 'light' : 'dark';
 
   return (
     <>
@@ -29,7 +39,9 @@ const Ball = ({ imgUrl, warmUp = false }) => {
         <mesh scale={2.75}>
           <icosahedronGeometry args={[1, 1]} />
           <meshStandardMaterial
-            color='#fff8eb'
+            color={BASE[theme]}
+            emissive={BASE[theme]}
+            emissiveIntensity={GLOW[theme]}
             polygonOffset
             polygonOffsetFactor={-5}
             flatShading

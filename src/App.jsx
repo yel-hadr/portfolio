@@ -217,12 +217,13 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
 
             {/* A lazy chunk that fails to load (a flaky network; a stale tab after a deploy is
                 reloaded by main.jsx) drops only what it holds: an uncaught lazy() rejection
-                would unmount the whole root and leave a blank page */}
-            <CanvasErrorBoundary sectionType='sections'>
+                would unmount the whole root and leave a blank page. The sections say so, with a
+                page reload (rendering again cannot fetch the chunk) */}
+            <ErrorBoundary sectionName='sections' reloadPage>
               <Suspense fallback={null}>
                 <BelowFold onReady={() => setSectionsReady(true)} />
               </Suspense>
-            </CanvasErrorBoundary>
+            </ErrorBoundary>
           </main>
         </Near3DContext.Provider>
 

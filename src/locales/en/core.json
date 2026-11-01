@@ -227,6 +227,9 @@
     "title": "The {section} section failed to load",
     "body": "Reload the section to try again.",
     "reload": "Reload section",
+    "pageTitle": "The rest of this page failed to load",
+    "pageBody": "Check your connection, then reload the page.",
+    "reloadPage": "Reload the page",
     "details": "Error details (for developers)",
     "sections": {
       "hero": "Intro",
