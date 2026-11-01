@@ -57,9 +57,14 @@ const Hero = ({ onEnterGame }) => {
         variants={staggerContainer(0.12, 0.1)}
         initial='hidden'
         animate='show'
-        className={`${styles.container} grid w-full items-center gap-10 pb-16 pt-28 lg:grid-cols-[1fr_auto] lg:gap-16`}
+        // Two columns from md (a tablet has room beside the name); on a short, wide screen (a phone
+        // held sideways) a small portrait and tighter spacing keep the name and actions in view
+        className={`${styles.container} grid w-full items-center gap-10 pb-16 pt-28 md:grid-cols-[1fr_auto] md:gap-10 lg:gap-16 short:grid-cols-[1fr_auto] short:gap-8 short:pb-6 short:pt-20`}
       >
-        <m.figure variants={reveal()} className='relative w-40 sm:w-52 lg:order-last lg:w-80'>
+        <m.figure
+          variants={reveal()}
+          className='relative w-40 sm:w-52 md:order-last md:w-48 lg:w-80 short:order-last short:w-28'
+        >
           {/* The parallax layer (transform only) inside the figure, whose own transform is the
               entrance reveal */}
           <div ref={depth} className='relative'>
@@ -74,7 +79,7 @@ const Hero = ({ onEnterGame }) => {
                 // Pre-cropped to the frame's 4:5; 320w for phones, 640w for the 304px desktop frame at 2x
                 src={profile640}
                 srcSet={`${profile320} 320w, ${profile640} 640w`}
-                sizes='(min-width: 1024px) 304px, (min-width: 640px) 192px, 144px'
+                sizes='(min-width: 1024px) 304px, (min-width: 768px) 176px, (min-width: 640px) 192px, 144px'
                 alt={t('hero.portraitAlt')}
                 width={640}
                 height={800}
@@ -116,36 +121,43 @@ const Hero = ({ onEnterGame }) => {
               ({person.alias})
             </m.span>
           </m.h1>
-          <m.p variants={reveal()} className={`${styles.heroSubText} mt-6`}>
+          <m.p variants={reveal()} className={`${styles.heroSubText} mt-6 text-pretty short:mt-3`}>
             {t('person.title')}
           </m.p>
 
-          {/* On a phone the calls to action stack at one width; from xs they sit in a row */}
-          <m.div variants={reveal()} className='mt-10 grid gap-3 xs:flex xs:flex-wrap xs:gap-4'>
-            <Magnetic>
-              <m.a href='#works' className={styles.buttonPrimary} {...pressable}>
-                {t('hero.seeProjects')}
-              </m.a>
-            </Magnetic>
-            <Magnetic>
-              <ResumeLink />
-            </Magnetic>
-            <m.a href='#contact' className={`${styles.buttonGhost} shimmer`} {...pressable}>
-              {t('hero.getInTouch')}
-            </m.a>
-            {/* The way into Game Mode: dashed like a HUD frame, so it reads as something else */}
-            <Magnetic>
-              <m.button
-                type='button'
-                aria-haspopup='dialog'
-                onClick={onEnterGame}
-                {...pressable}
-                className='inline-flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary-400 bg-glass px-6 py-[0.625rem] font-bold text-foreground backdrop-blur-md transition-colors hover:bg-primary/15'
+          {/* Two buttons, the projects first, and a plain link to get in touch beside them, or under
+              them where the column is too narrow. The pair never splits: stacked at one width on a
+              phone, side by side from sm. Game Mode is a small dashed chip under them, a side door
+              rather than a fourth call to action */}
+          <m.div variants={reveal()} className='mt-10 short:mt-5'>
+            <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
+              <div className='grid w-full gap-3 sm:flex sm:w-auto sm:gap-4'>
+                <Magnetic>
+                  <m.a href='#works' className={styles.buttonPrimary} {...pressable}>
+                    {t('hero.seeProjects')}
+                  </m.a>
+                </Magnetic>
+                <Magnetic>
+                  <ResumeLink />
+                </Magnetic>
+              </div>
+              <a
+                href='#contact'
+                className='link-draw font-semibold text-foreground underline decoration-line-strong underline-offset-4 transition-colors before:absolute before:inset-x-0 before:-inset-y-2 hover:text-primary-400'
               >
-                <CrosshairIcon className='h-5 w-5 text-primary-400' />
-                {t('gameMode')}
-              </m.button>
-            </Magnetic>
+                {t('hero.getInTouch')}
+              </a>
+            </div>
+            <m.button
+              type='button'
+              aria-haspopup='dialog'
+              onClick={onEnterGame}
+              {...pressable}
+              className='mt-6 inline-flex items-center gap-2 rounded-full border border-dashed border-primary-400 bg-glass px-4 py-1.5 text-sm font-semibold text-foreground backdrop-blur-md transition-colors hover:bg-primary/15 short:mt-3'
+            >
+              <CrosshairIcon className='h-4 w-4 text-primary-400' />
+              {t('gameMode')}
+            </m.button>
           </m.div>
         </div>
       </m.div>

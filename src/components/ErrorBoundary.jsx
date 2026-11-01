@@ -35,6 +35,7 @@ class ErrorBoundary extends React.Component {
           error={this.state.error}
           resetErrorBoundary={this.resetErrorBoundary}
           sectionName={this.props.sectionName}
+          reloadPage={this.props.reloadPage}
         />
       );
     }

@@ -30,6 +30,8 @@ const ExperienceCard = ({ experience }) => {
   const date = t(`experience.items.${experience.id}.date`);
   return (
     <VerticalTimelineElement
+      // The library writes id="" when none is given (invalid HTML)
+      id={`experience-${experience.id}`}
       contentStyle={CARD_STYLE}
       contentArrowStyle={{ borderRight: '7px solid var(--color-line)' }}
       date={date ? <span aria-hidden='true'>{date}</span> : undefined}

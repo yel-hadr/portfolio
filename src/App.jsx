@@ -215,27 +215,40 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
               {!webgl && <WebGLFallback reason={supported ? 'failed' : 'unsupported'} />}
             </div>
 
-            <Suspense fallback={null}>
-              <BelowFold onReady={() => setSectionsReady(true)} />
-            </Suspense>
+            {/* A lazy chunk that fails to load (a flaky network; a stale tab after a deploy is
+                reloaded by main.jsx) drops only what it holds: an uncaught lazy() rejection
+                would unmount the whole root and leave a blank page. The sections say so, with a
+                page reload (rendering again cannot fetch the chunk) */}
+            <ErrorBoundary sectionName='sections' reloadPage>
+              <Suspense fallback={null}>
+                <BelowFold onReady={() => setSectionsReady(true)} />
+              </Suspense>
+            </ErrorBoundary>
           </main>
         </Near3DContext.Provider>
 
-        <Suspense fallback={null}>
-          <Footer onOpenGames={openGames} onEnterGame={enterGameMode} />
-        </Suspense>
+        <CanvasErrorBoundary sectionType='footer'>
+          <Suspense fallback={null}>
+            <Footer onOpenGames={openGames} onEnterGame={enterGameMode} />
+          </Suspense>
+        </CanvasErrorBoundary>
       </div>
 
       {terminalOpen && (
-        <Suspense fallback={null}>
-          <Terminal onClose={closeTerminal} initialCommand={terminalCommand} />
-        </Suspense>
+        // As Game Mode below: a chunk that fails to load closes the overlay instead
+        <CanvasErrorBoundary sectionType='terminal' onError={closeTerminal}>
+          <Suspense fallback={null}>
+            <Terminal onClose={closeTerminal} initialCommand={terminalCommand} />
+          </Suspense>
+        </CanvasErrorBoundary>
       )}
 
       {gamesOpen && (
-        <Suspense fallback={null}>
-          <GameMenu onClose={closeGames} onPlayTerminal={playTerminalChallenge} />
-        </Suspense>
+        <CanvasErrorBoundary sectionType='games' onError={closeGames}>
+          <Suspense fallback={null}>
+            <GameMenu onClose={closeGames} onPlayTerminal={playTerminalChallenge} />
+          </Suspense>
+        </CanvasErrorBoundary>
       )}
 
       {gameModeOpen && (

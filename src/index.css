@@ -8,6 +8,9 @@
 /* light: for the few element-level differences tokens cannot carry (prefer tokens), never inside a
    .scheme-dark island, which stays dark */
 @custom-variant light (:root[data-theme='light'] &:not(.scheme-dark, .scheme-dark *));
+/* A phone held sideways (or any short, wide window): registered after the breakpoints, so it wins
+   over md: and lg: where both apply */
+@custom-variant short (@media (max-height: 30rem) and (orientation: landscape));
 
 /* Design tokens. Values live in the CSS variables below: `:root` is the dark theme,
    `:root[data-theme='light']` the light one, so every class follows the theme. `inline`, so each
@@ -559,46 +562,6 @@
     }
   }
 
-  /* A slow diagonal sheen across the hero's contact button: under the label (z-index -1 in its own
-     stacking context), one pass after load (under 5 s, so nothing moves on its own for long:
-     WCAG 2.2.2), then one per hover. Not under reduced motion */
-  .shimmer {
-    position: relative;
-    overflow: hidden;
-    isolation: isolate;
-  }
-  .shimmer::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background: linear-gradient(
-      115deg,
-      transparent 35%,
-      rgb(var(--c-foreground) / 0.12) 50%,
-      transparent 65%
-    );
-    transform: translateX(-120%);
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .shimmer::after {
-      animation: shimmer 2.4s ease-in-out 1.5s 1;
-    }
-    .shimmer:hover::after {
-      animation: shimmer 2.4s ease-in-out 1;
-    }
-  }
-  @keyframes shimmer {
-    0%,
-    55% {
-      transform: translateX(-120%);
-    }
-    100% {
-      transform: translateX(120%);
-    }
-  }
-
   /* The cursor spotlight on a card: a <Spotlight /> layer inside the card (useSpotlight writes
      --mx/--my and data-lit on the card; the timeline's cards are matched by their class). Its
      ::before is the rim, the gradient masked to the 1px border, and its ::after the fill; the
@@ -720,7 +683,6 @@
 
 /* The navbar's pause switch (useMotionPaused, WCAG 2.2.2) stops the CSS animations as well.
    Outside the cascade layers, so it also beats the motion-safe:animate-pulse utility */
-:root[data-motion='paused'] .shimmer::after,
 :root[data-motion='paused'] .scanline,
 :root[data-motion='paused'] .animate-pulse {
   animation: none;

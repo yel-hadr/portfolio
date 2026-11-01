@@ -3,8 +3,12 @@ import { navLinks, person } from '../constans';
 import { useI18n } from '../i18n/context';
 import SystemStatus from './SystemStatus';
 
-// .link-draw: an underline draws in from the left on hover or focus
-const LINK = 'link-draw font-medium text-foreground-muted hover:text-foreground transition-colors';
+// .link-draw: an underline draws in from the left on hover or focus. On a phone each link's
+// ::before (the ::after is the drawn line) reaches 13 px above and below its 18 px line: a 44 px
+// target, the rows spaced 26 px (ROWS) so no two targets overlap
+const LINK =
+  'link-draw font-medium text-foreground-muted hover:text-foreground transition-colors before:absolute before:-inset-x-1 before:-inset-y-[13px] md:before:hidden';
+const ROWS = 'gap-y-[26px] md:gap-y-3';
 
 const Footer = ({ onOpenGames, onEnterGame }) => {
   const { t } = useI18n();
@@ -33,7 +37,7 @@ const Footer = ({ onOpenGames, onEnterGame }) => {
         </div>
 
         <nav aria-label={t('footer.nav')}>
-          <ul className='grid grid-cols-2 gap-x-8 gap-y-3 text-sm'>
+          <ul className={`grid grid-cols-2 gap-x-8 text-sm ${ROWS}`}>
             {links.map((link) => (
               <li key={link.id}>
                 <a href={`#${link.id}`} className={LINK}>
@@ -44,7 +48,7 @@ const Footer = ({ onOpenGames, onEnterGame }) => {
           </ul>
         </nav>
 
-        <ul className='flex flex-col gap-3 text-sm'>
+        <ul className={`flex flex-col text-sm ${ROWS}`}>
           <li>
             <a href={person.github} target='_blank' rel='noopener noreferrer' className={LINK}>
               {t('footer.github')}

@@ -14,8 +14,14 @@ const LoadingProgress = () => {
   // The total grows as lazy scene chunks register their loads, so the raw value can drop;
   // only ever show the highest value seen.
   const [max, setMax] = useState(0);
+  // drei restarts its count at 0 for each new batch (the globe after the balls): forget the last
+  // batch's high mark, or the bar would sit full at 100 for the whole next download
+  if (!active) {
+    if (max !== 0) setMax(0);
+    return null;
+  }
   if (progress > max) setMax(progress);
-  if (!active || progress >= 100) return null;
+  if (progress >= 100) return null;
 
   return (
     <div

@@ -451,10 +451,15 @@ const BUTTON =
   'inline-flex min-h-10 items-center justify-center rounded-lg py-1.5 text-center leading-tight border border-line-strong bg-surface/70 px-3 text-sm font-semibold text-foreground transition-colors hover:border-foreground-muted';
 
 /** A group of toggle buttons, one pressed: the projection or the palette */
-const Choice = ({ legend, options, value, onChange, label, className = '' }) => (
+const Choice = ({ legend, options, value, onChange, label, className = '', stacked = false }) => (
   <fieldset>
     <legend className='text-sm font-semibold text-foreground'>{legend}</legend>
-    <div className='mt-2 inline-flex flex-wrap gap-1 rounded-xl border border-line-strong p-1'>
+    {/* Every group spans the panel and its options line up: equal columns, or one per row for
+        long labels (a wrapping inline row left one group hugging its content and the next on
+        ragged lines) */}
+    <div
+      className={`mt-2 grid gap-1 rounded-xl border border-line-strong p-1 ${stacked ? 'grid-cols-1' : 'grid-cols-2'}`}
+    >
       {options.map((option) => (
         <button
           key={option}
@@ -535,7 +540,9 @@ const MapPicker = ({ t, value, onChange, reduced }) => {
         role='radiogroup'
         aria-labelledby={labelId}
         onKeyDown={onKeyDown}
-        className='relative mt-2 flex snap-x scroll-px-2 gap-1 overflow-x-auto rounded-xl border border-line-strong p-2 md:flex-wrap md:overflow-visible'
+        // Beside the view (md+), a two-column grid: the pills wrapped as a flex row left ragged
+        // rows (two, one, two, one) since the names differ in length
+        className='relative mt-2 flex snap-x scroll-px-2 gap-1 overflow-x-auto rounded-xl border border-line-strong p-2 md:grid md:grid-cols-2 md:overflow-visible'
       >
         {FDF_MAPS.map((map) => {
           const checked = map.id === value;
@@ -623,9 +630,14 @@ const FdfViewer = ({ t }) => {
       loadMap(id).then(
         (next) => {
           if (wanted.current !== id) return;
-          setMap(next);
-          setTurns(0);
-          setScanned(reduced);
+          // Back to the map already drawn (picked away and back before the other file came in):
+          // nothing remounts, so its scan never runs again; resetting it would leave the readout
+          // on "scanning" for good, and the view's turns would be lost for nothing
+          if (next !== drawn.current) {
+            setMap(next);
+            setTurns(0);
+            setScanned(reduced);
+          }
           setAnnouncement(
             t('demos.fdf.mapLoaded', {
               name: t(`demos.fdf.maps.${id}.name`),
@@ -795,6 +807,7 @@ const FdfViewer = ({ t }) => {
           value={shownPalette}
           onChange={setPalette}
           label={(p) => t(`demos.fdf.palettes.${p}`)}
+          stacked
         />
 
         {/* Buttons for everything a drag does (WCAG 2.5.7) */}
