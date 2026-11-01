@@ -206,7 +206,11 @@ const GameMode = ({ onClose }) => {
         canPlay={playing && webgl}
         returnTo={lastDemo}
         onRunDemo={openDemo}
-        onBack={() => setView('game')}
+        onBack={() => {
+          setView('game');
+          // The text's button goes: the dialog holds focus until the world or its menu takes it
+          requestAnimationFrame(() => panelRef.current?.focus());
+        }}
         onExit={close}
       />
     );

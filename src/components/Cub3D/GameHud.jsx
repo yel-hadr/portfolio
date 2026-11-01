@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useId, useRef, useState } from 'react';
+import { Fragment, useEffect, useEffectEvent, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useModalDialog } from '../../hooks/useModalDialog';
@@ -6,8 +6,8 @@ import { styles } from '../../styles';
 
 // Game Mode's heads-up display over the 3D view, in glass panels: crosshair (it spreads while
 // moving and after a shot), the weapon's name with its energy, integrity, the status bar, the fact
-// toast, Access granted, and the text-only, sound, volume, contrast and exit controls; the dialog a
-// wall opens into. Everything is DOM over the canvas, so none of it costs a WebGL draw. The game
+// toast, Access granted, and the text-only, pause and exit controls; the dialog a wall opens
+// into. Everything is DOM over the canvas, so none of it costs a WebGL draw. The game
 // loop writes the crosshair's spread and the bars straight to their elements (no render per frame).
 
 // The crosshair while something is in the sights: corner brackets
@@ -190,6 +190,27 @@ export const ContrastToggle = ({ t, contrast, onContrast, className }) => (
   </button>
 );
 
+/** Sound on or off (M during play): the synthesizer loads the first time it is turned on */
+export const SoundToggle = ({ t, sound, onSound, className }) => (
+  <button type='button' aria-pressed={sound} onClick={onSound} className={className}>
+    <svg
+      aria-hidden='true'
+      viewBox='0 0 24 24'
+      className='h-5 w-5'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='1.75'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    >
+      <path d='M4 9h4l5-4v14l-5-4H4z' />
+      <path d={sound ? 'M16 9a4 4 0 010 6M18.5 6.5a7.5 7.5 0 010 11' : 'M17 9l5 6M22 9l-5 6'} />
+    </svg>
+    {t('demos.game.sound')}
+    <span aria-hidden='true'>{t(sound ? 'demos.game.on' : 'demos.game.off')}</span>
+  </button>
+);
+
 /** Reduce flashing: no muzzle flash, screen shake, bloom, flicker or flashing pulses */
 export const FlashToggle = ({ t, noFlash, onFlash, className }) => (
   <button type='button' aria-pressed={noFlash} onClick={onFlash} className={className}>
@@ -244,7 +265,7 @@ const GraphicsChoice = ({ t, graphics, onGraphics }) => {
 
 /**
  * Game Mode's settings, in the main menu and the pause menu: the graphics tier, Reduce flashing,
- * high contrast and the master volume
+ * high contrast, sound and the master volume (the HUD keeps only Text-only, Pause and Exit)
  */
 export const GameSettings = ({
   t,
@@ -254,6 +275,8 @@ export const GameSettings = ({
   onFlash,
   contrast,
   onContrast,
+  sound,
+  onSound,
   volume,
   onVolume,
   headingLevel = 'h4',
@@ -274,15 +297,21 @@ export const GameSettings = ({
       <GraphicsChoice t={t} graphics={graphics} onGraphics={onGraphics} />
       <FlashToggle t={t} noFlash={noFlash} onFlash={onFlash} className={toggle} />
       <ContrastToggle t={t} contrast={contrast} onContrast={onContrast} className={toggle} />
+      <SoundToggle t={t} sound={sound} onSound={onSound} className={toggle} />
       <VolumeSlider t={t} volume={volume} onVolume={onVolume} />
     </section>
   );
 };
 
+// The weapon card shows from sm with a fine pointer (`[@media(min-width:40rem)_and_(pointer:fine)]`,
+// written out in full where it is used: Tailwind only sees whole class names). Elsewhere (a phone,
+// a touch screen) the status bar carries a slim integrity meter, since SYSTEM FAILURE can still
+// happen there
+
 /**
- * Crosshair, the weapon's name and energy, integrity, status bar (room, threats, walls), the
- * fact toast, the Access granted overlay, and the text-only, sound, volume, contrast and exit
- * controls
+ * Crosshair, the weapon's name and energy, integrity, status bar (room, threats), the fact toast,
+ * the Access granted overlay, and the text-only, pause and exit controls. Sound, volume and
+ * contrast are in the pause menu, so the controls never cover the radar or the touch pad
  */
 export const GameHud = ({
   t,
@@ -296,20 +325,17 @@ export const GameHud = ({
   weapon,
   toast,
   access,
-  sound,
-  onSound,
   onTextMode,
   onExit,
+  confirmExit = false,
+  onPointerDone,
   crosshairRef,
   hitMarkerRef,
   energyBar,
   integrityBar,
+  integritySlimBar,
   hitRef,
   slowed,
-  contrast,
-  onContrast,
-  volume,
-  onVolume,
   onPause,
   hubFlash = 0,
   noFlash = false,
@@ -423,7 +449,7 @@ export const GameHud = ({
 
     {/* The weapon in hand, its energy, and integrity: bottom right, above the status bar */}
     <div
-      className={`pointer-events-none absolute bottom-12 right-3 z-30 hidden flex-col items-end gap-2 rounded-md ${SOLID} px-3 py-2 sm:flex [@media(pointer:coarse)]:hidden`}
+      className={`pointer-events-none absolute bottom-12 right-3 z-30 hidden flex-col items-end gap-2 rounded-md ${SOLID} px-3 py-2 [@media(min-width:40rem)_and_(pointer:fine)]:flex`}
     >
       <Brackets className='text-primary-400' />
       <p className='font-mono text-sm font-bold uppercase tracking-wider text-primary-400'>
@@ -477,55 +503,44 @@ export const GameHud = ({
       </div>
     )}
 
+    {/* Separators only between the items there are; the sections' count is the mission
+        tracker's. Where the weapon card is hidden, a slim integrity meter */}
     <p
       className={`absolute inset-x-0 bottom-0 z-30 flex min-h-9 flex-wrap items-center gap-x-3 border-x-0 border-b-0 ${GLASS} px-3 font-mono text-xs uppercase tracking-wider text-foreground`}
     >
       <span aria-hidden='true' className='h-2 w-2 shrink-0 rounded-full bg-success' />
-      <span>{t('demos.game.status.system')}</span>
-      <span aria-hidden='true'>|</span>
-      {room && <span>{t('demos.game.status.room', { name: t(`demos.game.rooms.${room}`) })}</span>}
-      <span aria-hidden='true'>|</span>
-      <span>{t('demos.game.status.threats', { count: kills, total: threats })}</span>
-      <span aria-hidden='true' className='hidden sm:inline'>
-        |
-      </span>
-      <span className='hidden sm:inline'>
-        {t('demos.game.status.sections', {
-          count: sections.filter(({ found }) => found).length,
-          total: sections.length,
-        })}
+      {[
+        t('demos.game.status.system'),
+        room && t('demos.game.status.room', { name: t(`demos.game.rooms.${room}`) }),
+        t('demos.game.status.threats', { count: kills, total: threats }),
+      ]
+        .filter(Boolean)
+        .map((item, i) => (
+          <Fragment key={item}>
+            {i > 0 && <span aria-hidden='true'>|</span>}
+            <span>{item}</span>
+          </Fragment>
+        ))}
+      <span
+        aria-hidden='true'
+        className='ml-auto flex items-center gap-2 [@media(min-width:40rem)_and_(pointer:fine)]:hidden'
+      >
+        {t('demos.game.integrity')}
+        <span className='relative h-1.5 w-20 overflow-hidden rounded-xs bg-background/80'>
+          <span
+            ref={integritySlimBar}
+            className='block h-full origin-left rounded-xs bg-success transition-colors data-[low=true]:bg-danger'
+          />
+        </span>
       </span>
     </p>
 
-    {/* A column below xl (a zoomed or narrow window), so it never reaches the mission tracker */}
-    <div className='absolute right-3 top-3 z-50 flex flex-col items-end gap-2 xl:flex-row xl:items-center'>
+    {/* Text-only, Pause and Exit: a column on a phone (no radar there), a row from sm, which
+        ends above the radar */}
+    <div className='absolute right-3 top-3 z-50 flex flex-col items-end gap-2 sm:flex-row sm:items-center'>
       <button type='button' onClick={onTextMode} className={HUD_BUTTON}>
         {t('demos.game.textMode')}
       </button>
-      <button type='button' aria-pressed={sound} onClick={onSound} className={HUD_BUTTON}>
-        <svg
-          aria-hidden='true'
-          viewBox='0 0 24 24'
-          className='h-5 w-5'
-          fill='none'
-          stroke='currentColor'
-          strokeWidth='1.75'
-          strokeLinecap='round'
-          strokeLinejoin='round'
-        >
-          <path d='M4 9h4l5-4v14l-5-4H4z' />
-          <path d={sound ? 'M16 9a4 4 0 010 6M18.5 6.5a7.5 7.5 0 010 11' : 'M17 9l5 6M22 9l-5 6'} />
-        </svg>
-        {t('demos.game.sound')}
-        <span aria-hidden='true'>{t(sound ? 'demos.game.on' : 'demos.game.off')}</span>
-      </button>
-      <VolumeSlider
-        t={t}
-        volume={volume}
-        onVolume={onVolume}
-        className={`h-11 rounded-xl ${GLASS} px-3`}
-      />
-      <ContrastToggle t={t} contrast={contrast} onContrast={onContrast} className={HUD_BUTTON} />
       <button type='button' onClick={onPause} className={HUD_BUTTON}>
         {t('demos.game.pauseButton')}
         <kbd
@@ -535,12 +550,42 @@ export const GameHud = ({
           {t('demos.game.escKey')}
         </kbd>
       </button>
-      <button type='button' onClick={onExit} className={HUD_BUTTON}>
-        {t('demos.game.exit')}
-      </button>
+      <ExitButton t={t} confirm={confirmExit} onExit={onExit} onPointerDone={onPointerDone} />
     </div>
   </>
 );
+
+const EXIT_CONFIRM_MS = 4000;
+/**
+ * Exit Game Mode. On a touch screen (`confirm`) the first tap asks to confirm, for a few seconds,
+ * since a thumb meant for the view can land on it. A pointer click gives the keys back to the view
+ * (`onPointerDone`), so Space does not press it again; a key press keeps focus here
+ */
+const ExitButton = ({ t, confirm, onExit, onPointerDone }) => {
+  const [asking, setAsking] = useState(false);
+  useEffect(() => {
+    if (!asking) return undefined;
+    const timer = window.setTimeout(() => setAsking(false), EXIT_CONFIRM_MS);
+    return () => window.clearTimeout(timer);
+  }, [asking]);
+  const onClick = (e) => {
+    if (confirm && !asking) {
+      setAsking(true);
+      if (e.detail > 0) onPointerDone?.();
+      return;
+    }
+    onExit();
+  };
+  return (
+    <button
+      type='button'
+      onClick={onClick}
+      className={`${HUD_BUTTON} ${asking ? 'border-danger' : ''}`}
+    >
+      {t(asking ? 'demos.game.exitConfirm' : 'demos.game.exit')}
+    </button>
+  );
+};
 
 /**
  * The mission: the profile's six sections in the story's order, ticked off as their terminals
@@ -559,7 +604,9 @@ const MissionTracker = ({ t, sections }) => {
       <p className='font-mono text-xs font-bold uppercase tracking-wider'>
         {t('demos.game.mission.progress', { count: found, total: sections.length })}
       </p>
-      <ol className='mt-1 space-y-0.5 text-sm'>
+      {/* On a very short screen (a phone held sideways) only the count, so the touch pad below
+          stays clear; the radar's ring and the lit path still show the next section */}
+      <ol className='mt-1 space-y-0.5 text-sm [@media(max-height:26rem)]:hidden'>
         {sections.map(({ id, title, found: done }) => (
           <li
             key={id}
@@ -725,9 +772,10 @@ export const MissionComplete = ({
 
 /**
  * Escape during play: a dialog over the frozen game. Resume (or Escape again), Restart (a fresh
- * run), Exit to the main menu, and the settings
+ * run), Exit to the main menu, the resume to download (always in reach, not only at the hub and
+ * the mission's end), and the settings
  */
-export const PauseMenu = ({ t, onResume, onRestart, onMenu, settings }) => {
+export const PauseMenu = ({ t, onResume, onRestart, onMenu, resumeHref, settings }) => {
   const titleId = useId();
   const { overlayRef, panelRef, close, release, onKeyDown, backdrop } = useModalDialog(onResume);
   const resume = useRef(null);
@@ -785,6 +833,9 @@ export const PauseMenu = ({ t, onResume, onRestart, onMenu, settings }) => {
           >
             {t('demos.game.pause.toMenu')}
           </button>
+          <a href={resumeHref} download className={`${styles.buttonGhost} ${MENU_BUTTON}`}>
+            {t('demos.game.mission.resume')}
+          </a>
         </div>
         <GameSettings t={t} {...settings} headingLevel='h3' />
       </div>
@@ -1315,6 +1366,8 @@ export const NpcDialogue = ({ t, name, line, reduced, onClose }) => {
   return (
     <div
       ref={box}
+      // The pause menu's Resume brings focus back here while the line is open
+      data-dialogue=''
       role='dialog'
       aria-modal='true'
       aria-labelledby={titleId}

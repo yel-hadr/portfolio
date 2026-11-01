@@ -184,7 +184,7 @@
     "keys": [
       "W A S D (Z Q S D on AZERTY): move · ← →: turn",
       "Mouse: look around (click the view to capture it)",
-      "Click or F: fire · 1 2 3 or Q: switch weapon",
+      "Click or F: fire · 1 2 3 or Q (A on AZERTY): switch weapon",
       "E: interact with doors, walls, terminals and the crew",
       "Space: open the door ahead · M: sound on or off",
       "Esc: pause",
@@ -337,9 +337,10 @@
       "you": "You",
       "threats": "Threats",
       "crew": "Crew",
-      "doors": "Doors",
+      "doors": "Closed doors",
       "objective": "Next section",
-      "leak": "Memory leak"
+      "leak": "Memory leak",
+      "doorsOpen": "Open doors"
     },
     "weaponRoles": [
       "Rifle: one shot, long range",
@@ -369,6 +370,17 @@
     "flashing": "Reduce flashing",
     "slowed": "Slowed: memory leak",
     "slowedSay": "A memory leak is slowing you down. Move away from it or neutralize it.",
-    "vaultOpen": "The vault's laser grid is down."
+    "vaultOpen": "The vault's laser grid is down.",
+    "keysTouch": [
+      "Drag the view to turn · tap it to fire",
+      "▲ ▼ walk, ◀ ▶ sidestep, ↺ ↻ turn",
+      "Weapon: switch weapon",
+      "Use: talk, read a terminal or open the door ahead",
+      "Pause: the pause menu, with sound and the other settings",
+      "Memory Leak: slows you down · Zero-Day: only seen in your flashlight’s beam"
+    ],
+    "weaponButton": "Weapon",
+    "switchWeapon": "Switch weapon",
+    "exitConfirm": "Tap again to exit"
   }
 }
