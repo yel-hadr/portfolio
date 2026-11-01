@@ -10,17 +10,18 @@ import Spotlight from './Spotlight';
 import { useI18n } from '../i18n/context';
 import { Ball, SceneView } from './canvas';
 
-// The bento: on large screens a 6-column grid, the large card 3 x 2 on the left, the two medium
-// cards stacked on its right and the three tools in a row below; on tablets 2 columns
+// The bento: on large screens a 6-column grid, the large card a full-width row (its text left,
+// its balls right, nothing left empty), then the two medium cards side by side and the three
+// tools in a row below; on tablets 2 columns
 const SPAN = {
-  large: 'sm:col-span-2 lg:col-span-3 lg:row-span-2',
+  large: 'sm:col-span-2 lg:col-span-6',
   medium: 'sm:col-span-2 lg:col-span-3',
   small: 'lg:col-span-2 sm:last:col-span-2 lg:last:col-span-2',
 };
 // Each ball's 3D view, by card size
 const BALL = {
-  // Three must fit one row of the card: on a 360px phone, and on lg, where the card is a half width
-  large: 'h-18 w-18 xs:h-24 xs:w-24 sm:h-32 sm:w-32 lg:h-24 lg:w-24 xl:h-32 xl:w-32',
+  // Three must fit one row of the card on a 360px phone; from sm the card is wide enough at full size
+  large: 'h-18 w-18 xs:h-24 xs:w-24 sm:h-32 sm:w-32',
   medium: 'h-18 w-18 xs:h-20 xs:w-20 sm:h-24 sm:w-24',
   small: 'h-16 w-16 sm:h-20 sm:w-20',
 };
@@ -96,11 +97,15 @@ const Tech = () => {
                   {t('tech.tools', { count: tools.length })}
                 </span>
               </div>
-              <div className='blueprint flex flex-1 flex-col rounded-b-3xl p-6 sm:p-8'>
-                <h3 className='text-h3 font-bold text-foreground'>{title}</h3>
-                <p className='mt-2 max-w-md text-foreground-muted leading-relaxed'>{text}</p>
+              <div
+                className={`blueprint flex flex-1 flex-col rounded-b-3xl p-6 sm:p-8 ${large ? 'lg:flex-row lg:items-center lg:justify-between lg:gap-10' : ''}`}
+              >
+                <div>
+                  <h3 className='text-h3 font-bold text-foreground'>{title}</h3>
+                  <p className='mt-2 max-w-md text-foreground-muted leading-relaxed'>{text}</p>
+                </div>
                 <ul
-                  className={`flex list-none flex-wrap gap-x-4 gap-y-4 pt-8 xs:gap-x-6 ${large ? 'my-auto justify-between sm:justify-start sm:gap-x-10 lg:gap-x-6 xl:gap-x-10' : ''}`}
+                  className={`flex list-none flex-wrap gap-x-4 gap-y-4 pt-8 xs:gap-x-6 ${large ? 'justify-between sm:justify-start sm:gap-x-10 lg:shrink-0 lg:pt-0' : ''}`}
                 >
                   {tools.map((tech) => (
                     <li key={tech.name} className='flex flex-col items-center gap-2'>

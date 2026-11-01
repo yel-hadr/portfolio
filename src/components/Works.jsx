@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { m } from 'framer-motion';
 
-import { styles } from '../styles';
+import { styles, tagColor } from '../styles';
 import { SectionWrapper } from '../hoc';
 import { projects } from '../constans';
 import { pressable, reveal } from '../utils/motion';
@@ -24,15 +24,6 @@ const DEMOS = { cub3d: lazy(DEMO_LOADERS.cub3d), fdf: lazy(DEMO_LOADERS.fdf) };
 // click finds it loaded. A failure here is ignored: the click's own load reports it
 const prefetch = (load) => {
   load().catch(() => {});
-};
-
-// Tag colors in src/constans keep their legacy class names; map them to theme tokens with AA
-// contrast on surface-raised in both themes.
-const TAG_COLORS = {
-  'blue-text-gradient': 'text-info',
-  'green-text-gradient': 'text-success',
-  'pink-text-gradient': 'text-danger',
-  'orange-text-gradient': 'text-primary-400',
 };
 
 const ProjectCard = ({
@@ -71,12 +62,12 @@ const ProjectCard = ({
         {t(`works.items.${id}.description`)}
       </p>
       <ul className='mt-4 flex flex-wrap gap-2' aria-label={t('works.technologies')}>
-        {tags.map((tag) => (
+        {tags.map((tag, i) => (
           <li
             key={tag.id ?? tag.name}
             // Product names are English, also on the French page; a technique (`id`) is translated
             lang={tag.id ? undefined : 'en'}
-            className={`rounded-full border border-line bg-surface-raised px-3 py-1 text-sm font-medium ${TAG_COLORS[tag.color] ?? 'text-foreground-muted'}`}
+            className={`rounded-full border border-line bg-surface-raised px-3 py-1 text-sm font-medium ${tagColor(i)}`}
           >
             {tagName(t, tag)}
           </li>

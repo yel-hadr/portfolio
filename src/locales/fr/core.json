@@ -184,6 +184,7 @@
     "name": "Nom",
     "email": "E-mail",
     "message": "Message",
+    "namePlaceholder": "ex. Ada Lovelace",
     "emailPlaceholder": "vous@exemple.com",
     "messagePlaceholder": "De quoi aimeriez-vous parler ?",
     "errors": {

@@ -7,6 +7,7 @@ import { logo } from '../assets';
 import { useModalDialog } from '../hooks/useModalDialog';
 import { setMotionPaused, useMotionPaused } from '../hooks/useMotionPaused';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import { styles } from '../styles';
 import { useI18n } from '../i18n/context';
 import { useTheme } from '../theme/context';
 import { SPRING } from '../utils/motion';
@@ -317,36 +318,57 @@ const Navbar = ({ onOpenTerminal }) => {
   useEffect(() => {
     const main = document.getElementById('main');
     if (!main || typeof IntersectionObserver === 'undefined') return undefined;
-    // The last section to cross the line, applied at once, or when a jump's hold ends (a reader
-    // who scrolls on during the hold is caught up with, not left on the jump's link)
-    let latest = null;
+    // The section under the line, read from the page itself; at the very bottom of the page the
+    // last one (a short last section, Contact over the footer, may never reach the line)
+    const sections = () => [...main.querySelectorAll(':scope > section[id]')];
+    const current = () => {
+      const all = sections();
+      const root = document.documentElement;
+      if (window.innerHeight + window.scrollY >= root.scrollHeight - 2) return all.at(-1)?.id;
+      const line = window.innerHeight * 0.4;
+      return all.find((s) => {
+        const box = s.getBoundingClientRect();
+        return box.top <= line && box.bottom > line;
+      })?.id;
+    };
+    // Applied at once while reading; after a jump's hold, or a scroll that is still going (a long
+    // smooth scroll outlasting the hold), once the page has come to rest
+    let lastScroll = 0;
     let timer = 0;
     const apply = () => {
       timer = 0;
-      const wait = holdUntil.current - performance.now();
+      const now = performance.now();
+      const wait = Math.max(holdUntil.current - now, lastScroll + 150 - now);
       if (wait > 0) {
-        timer = setTimeout(apply, wait + 50);
+        timer = setTimeout(apply, wait + 20);
         return;
       }
-      if (latest !== null) setActive(latest === 'hero' ? '' : latest);
+      const id = current();
+      if (id !== undefined) setActive(id === 'hero' ? '' : id);
     };
     const spy = new IntersectionObserver(
       (entries) => {
-        const crossing = entries.filter((entry) => entry.isIntersecting).at(-1);
-        if (!crossing) return;
-        latest = crossing.target.id;
-        if (!timer) apply();
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        if (performance.now() >= holdUntil.current) {
+          const id = current();
+          if (id !== undefined) setActive(id === 'hero' ? '' : id);
+        } else if (!timer) apply();
       },
       { rootMargin: '-40% 0px -59% 0px' }
     );
+    const onScroll = () => {
+      lastScroll = performance.now();
+      if (!timer) timer = setTimeout(apply, 170);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
     // The sections are main's own children (BelowFold renders a fragment): only those are watched
-    const watch = () =>
-      main.querySelectorAll(':scope > section[id]').forEach((s) => spy.observe(s));
+    const watch = () => sections().forEach((s) => spy.observe(s));
     watch();
     const added = new MutationObserver(watch);
     added.observe(main, { childList: true });
     return () => {
       clearTimeout(timer);
+      window.removeEventListener('scroll', onScroll);
       added.disconnect();
       spy.disconnect();
     };
@@ -457,7 +479,7 @@ const Navbar = ({ onOpenTerminal }) => {
     >
       {/* The page's column (styles.container) less the pill's inner edge (8 px padding and its
           1 px border), so the logo lines up with the content's left edge at every width */}
-      <div className='mx-auto max-w-7xl px-[calc(--spacing(6)-9px)] sm:px-[calc(--spacing(10)-9px)] lg:px-[calc(--spacing(16)-9px)]'>
+      <div className={styles.navColumn}>
         {/* The pill: blurred glass at 80%, slid away while reading down (transform only, so the
             page never shifts). The transparent border is its edge in forced colors */}
         <div
@@ -484,7 +506,7 @@ const Navbar = ({ onOpenTerminal }) => {
             className='flex shrink-0 items-center gap-2'
             onClick={() => setActive('')}
           >
-            <img src={logo} alt='' className='h-9 w-9 object-contain' />
+            <img src={logo} alt='' width={36} height={36} className='h-9 w-9 object-contain' />
             {/* Not beside the desktop links until xl: from lg to xl the column leaves them no room */}
             <span
               aria-hidden='true'

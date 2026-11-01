@@ -26,7 +26,7 @@ Work out the entry type: `project`, `experience` or `tech`. Then confirm you hav
 
 | Type | Required | Optional |
 |---|---|---|
-| project | name, description, 1+ tags | image path (cards render text-only without one), `source_code_link` (full `https://` URL; omit while the repo is private), tag colors |
+| project | name, description, 1+ tags | image path (cards render text-only without one), `source_code_link` (full `https://` URL; omit while the repo is private) |
 | experience | title, date (match the existing `"Month YYYY - Month YYYY"` style), 1+ points | company_name, logo image path, iconBg (default `"#383E56"`) |
 | tech | name, icon image path | — |
 
@@ -36,11 +36,11 @@ Check that the source image exists (`ls -l <path>`). Tech icons are applied as a
 
 Read these files so field names and style come from the code:
 
-- `src/components/Works.jsx`: `ProjectCard` destructures the project fields. `tag.color` is used as a class name.
+- `src/components/Works.jsx`: `ProjectCard` destructures the project fields. A tag's color comes from its position (`tagColor` in `src/styles.js`).
 - `src/components/Experience.jsx`: `ExperienceCard` reads `experience.*` fields.
 - `src/components/Tech.jsx`: maps `technologies` and renders a `SceneView` + `Ball` per entry, with the name shown under it.
 - `src/assets/index.js` and `src/constans/index.js`: current imports, exports and arrays.
-- `grep -n "text-gradient {" src/index.css`: valid tag colors. Today these are `blue-text-gradient`, `green-text-gradient`, `pink-text-gradient` and `orange-text-gradient`. Existing projects only use blue, green and pink.
+- Tags have no color field: the first tag renders in the brand orange and the rest in slate (`tagColor` in `src/styles.js`), so put the project's lead technology first.
 
 Known gap (verify again before you rely on it): `Experience.jsx` renders an empty `<div>` as the timeline icon and ignores `experience.icon`. A logo you add will not show up until the component changes. Tell the user, and touch the component only if they ask.
 
@@ -98,8 +98,8 @@ Both are required. A missing export becomes `undefined` at runtime, and the buil
   name: "...",
   description: "...",
   tags: [
-    { name: "React", color: "blue-text-gradient" },
-    { name: "Django", color: "green-text-gradient" },
+    { name: "React" },
+    { name: "Django" },
   ],
   image: <identifier>,
   source_code_link: "https://github.com/...",
