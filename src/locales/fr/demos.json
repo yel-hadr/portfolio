@@ -188,6 +188,7 @@
       "E : interagir avec les portes, les murs, les terminaux et l’équipe",
       "Espace : ouvrir la porte devant vous · M : son activé ou coupé",
       "Échap : pause",
+      "Équipement : le fusil au départ ; lire Compétences débloque le pistolet, Projets le blaster, et Expérience porte l’intégrité à 150",
       "Fuite mémoire : vous ralentit · Zero-day : visible seulement dans le faisceau de votre lampe"
     ],
     "status": {
@@ -377,6 +378,7 @@
       "Arme : changer d’arme",
       "Ouvrir : parler, lire un terminal ou ouvrir la porte devant vous",
       "Pause : le menu pause, avec le son et les autres réglages",
+      "Équipement : le fusil au départ ; lire Compétences débloque le pistolet, Projets le blaster, et Expérience porte l’intégrité à 150",
       "Fuite mémoire : vous ralentit · Zero-day : visible seulement dans le faisceau de votre lampe"
     ],
     "weaponButton": "Arme",
@@ -384,6 +386,32 @@
     "exitConfirm": "Touchez encore pour quitter",
     "outOfRange": "Hors de portée",
     "closerToTalk": "Approchez-vous pour parler à {name}.",
-    "percent": "{value} %"
+    "percent": "{value} %",
+    "unlocks": {
+      "weapon": "Nouvelle arme : {name} (touche {key} ou A).",
+      "integrity": "Intégrité renforcée : jusqu’à {max}."
+    },
+    "locked": "{name} est verrouillé : lisez le terminal {section} pour le débloquer.",
+    "deploy": {
+      "label": "Finale",
+      "title": "Déploiement en production",
+      "stages": ["Build", "Tests", "Scan de sécurité", "Mise en production", "Vérification"],
+      "start": "Les six sections sont lues. Déploiement en production.",
+      "done": "Déployé en production. Toutes les portes sont ouvertes."
+    },
+    "hunt": {
+      "tracker": "Optionnel · menaces restantes : {count}",
+      "clear": "Zone sécurisée",
+      "start": "Optionnel : neutralisez les menaces restantes ({count}). Le chemin lumineux mène à la plus proche.",
+      "clearTitle": "Zone sécurisée",
+      "clearBody": "Toutes les menaces sont neutralisées. Le centre est sécurisé."
+    },
+    "grade": {
+      "label": "Note",
+      "hint": "S : toutes les menaces, 60 % de précision, moins de 6:00 · A : les deux tiers, 40 %, moins de 10:00",
+      "bestTime": "Meilleur temps",
+      "bestGrade": "Meilleure note",
+      "new": "Record"
+    }
   }
 }

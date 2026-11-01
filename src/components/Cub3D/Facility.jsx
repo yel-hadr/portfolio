@@ -473,9 +473,37 @@ const paintScreen = (canvas, panel, read, c, accent, flat) => {
   }
 };
 
+// The finale on every screen: "Deploy to production" and its pipeline, each stage ticked green as
+// it passes (the HUD shows the same)
+const paintDeploy = (canvas, deploy, c, accent, flat) => {
+  const ctx = canvas.getContext('2d');
+  const [w, h] = SCREEN_PX;
+  ctx.fillStyle = rgb(c.dark);
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = rgb(deploy.done >= deploy.stages.length ? c.success : accent, 0.9);
+  ctx.lineWidth = 6;
+  ctx.strokeRect(10, 10, w - 20, h - 20);
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 26px ui-monospace, Menlo, Consolas, monospace';
+  ctx.fillStyle = rgb(c.light);
+  ctx.fillText(deploy.title.toUpperCase(), 36, 62, w - 72);
+  ctx.font = 'bold 24px ui-monospace, Menlo, Consolas, monospace';
+  deploy.stages.forEach((stage, i) => {
+    const done = i < deploy.done;
+    const now = i === deploy.done;
+    ctx.fillStyle = rgb(done ? c.success : now ? accent : c.light, done || now ? 1 : 0.55);
+    ctx.fillText(`${done ? '✓' : now ? '▶' : '·'} ${stage}`, 48, 112 + i * 40, w - 96);
+  });
+  if (!flat) {
+    ctx.fillStyle = rgb(c.dark, 0.22);
+    for (let y = 0; y < h; y += 4) ctx.fillRect(0, y, w, 2);
+  }
+};
+
 const Terminals = memo(function Terminals({
   panels,
   discovered,
+  deploy,
   targetRef,
   res,
   flat,
@@ -548,16 +576,19 @@ const Terminals = memo(function Terminals({
     let changed = false;
     items.forEach((item, i) => {
       const read = discovered.includes(item.id);
-      if (item.read === read) return;
-      item.read = read;
-      paintScreen(item.canvas, panels[i], read, res.c, item.channels, flat);
+      // The finale's pipeline on every screen while it runs; back to its own after
+      const shows = deploy ? `deploy-${deploy.done}` : read;
+      if (item.read === shows) return;
+      item.read = shows;
+      if (deploy) paintDeploy(item.canvas, deploy, res.c, item.channels, flat);
+      else paintScreen(item.canvas, panels[i], read, res.c, item.channels, flat);
       item.texture.needsUpdate = true;
       changed = true;
     });
     // New screens (high contrast switched) start unlit: the aimed one is lit again next frame
     lit.current = undefined;
     if (changed) invalidate();
-  }, [items, panels, discovered, res, flat, invalidate]);
+  }, [items, panels, discovered, deploy, res, flat, invalidate]);
 
   const time = useRef(0);
   useFrame((state, delta) => {
@@ -708,6 +739,7 @@ const Facility = ({
   hitStopRef,
   hubLitRef,
   nearRef,
+  deploy = null,
 }) => {
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
@@ -755,7 +787,8 @@ const Facility = ({
       danger: t.danger,
       secondary: t.secondary,
     };
-    const accent = (room, k) => toColor(t[ROOM_ACCENT[room]], k);
+    // A room's accent, or a theme token by name (the lit path's danger red for the hunt)
+    const accent = (room, k) => toColor(t[ROOM_ACCENT[room] ?? room], k);
     const textures = [];
     const tex = (size, paint, repeat) => {
       const texture = canvasTexture(size, paint, repeat);
@@ -1286,6 +1319,7 @@ const Facility = ({
         <Terminals
           panels={panels}
           discovered={discovered}
+          deploy={deploy}
           targetRef={targetRef}
           res={res}
           flat={flat}

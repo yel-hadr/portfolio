@@ -347,6 +347,8 @@ export const GameHud = ({
   onPause,
   hubFlash = 0,
   noFlash = false,
+  deploy = null,
+  hunt = null,
 }) => (
   <>
     {/* The command hub coming online: a cool edge glow that fades (not with reduced motion or
@@ -455,7 +457,7 @@ export const GameHud = ({
       )
     )}
 
-    <MissionTracker t={t} sections={sections} />
+    <MissionTracker t={t} sections={sections} hunt={hunt} />
 
     {/* The weapon in hand, its energy, and integrity: bottom right, above the status bar */}
     <div
@@ -525,6 +527,48 @@ export const GameHud = ({
 
     {/* Separators only between the items there are; the sections' count is the mission
         tracker's. Where the weapon card is hidden, a slim integrity meter */}
+    {deploy && (
+      // The finale: the pipeline, one stage a second. Announced as it starts and ends; this is the
+      // picture of it (every terminal screen shows it too)
+      <div
+        aria-hidden='true'
+        className='pointer-events-none absolute inset-0 z-[45] flex items-center justify-center bg-background/60'
+      >
+        <div
+          className={`relative w-[min(26rem,calc(100%-2rem))] rounded-md ${SOLID} border-success/50 px-6 py-5 text-foreground motion-safe:animate-crt-in`}
+        >
+          <Brackets className='text-success' size='h-4 w-4' />
+          <p className='font-mono text-xs font-bold uppercase tracking-widest text-foreground-muted'>
+            {deploy.label}
+          </p>
+          <p className='mt-1 font-mono text-xl font-black uppercase tracking-wider text-success'>
+            {deploy.title}
+          </p>
+          <ol className='mt-4 space-y-1.5 font-mono text-sm'>
+            {deploy.stages.map((stage, i) => {
+              const done = i < deploy.done;
+              const now = i === deploy.done;
+              return (
+                <li
+                  key={stage}
+                  className={`flex items-center gap-2 ${done ? 'text-success' : now ? 'text-primary-400' : 'text-foreground-muted'}`}
+                >
+                  <span className='w-4 text-center'>{done ? '✓' : now ? '▶' : '·'}</span>
+                  {stage}
+                </li>
+              );
+            })}
+          </ol>
+          <div className='relative mt-4 h-1.5 overflow-hidden rounded-xs bg-background/80'>
+            <div
+              className='h-full origin-left rounded-xs bg-success transition-transform duration-500 motion-reduce:transition-none'
+              style={{ transform: `scaleX(${deploy.done / deploy.stages.length})` }}
+            />
+          </div>
+        </div>
+      </div>
+    )}
+
     <p
       className={`absolute inset-x-0 bottom-0 z-30 flex min-h-9 flex-wrap items-center gap-x-3 border-x-0 border-b-0 ${GLASS} px-3 font-mono text-xs uppercase tracking-wider text-foreground`}
     >
@@ -617,7 +661,7 @@ const ExitButton = ({ t, confirm, onExit, onPointerDone }) => {
  * are read, with the next one marked. A visual list; each discovery is announced by the view, and
  * the whole list is in the text-only mode too
  */
-const MissionTracker = ({ t, sections }) => {
+const MissionTracker = ({ t, sections, hunt = null }) => {
   const found = sections.filter((section) => section.found).length;
   const next = sections.find((section) => !section.found)?.id;
   return (
@@ -667,6 +711,14 @@ const MissionTracker = ({ t, sections }) => {
           </li>
         ))}
       </ol>
+      {/* After the mission: the optional hunt for the threats still standing, then all clear */}
+      {hunt !== null && (
+        <p
+          className={`mt-2 border-t border-line pt-2 font-mono text-xs font-bold uppercase tracking-wider ${hunt ? 'text-danger' : 'text-success'}`}
+        >
+          {hunt ? t('demos.game.hunt.tracker', { count: hunt }) : t('demos.game.hunt.clear')}
+        </p>
+      )}
     </section>
   );
 };
@@ -696,6 +748,8 @@ export const MissionComplete = ({
   kills,
   threats,
   accuracy,
+  grade,
+  best,
   resume,
   github,
   onContact,
@@ -745,6 +799,16 @@ export const MissionComplete = ({
           {t('demos.game.mission.title')}
         </h2>
         <p className='mt-4 leading-relaxed'>{body}</p>
+        {grade && (
+          // The SRE grade: the letter, and what each one takes
+          <p className='mt-4 font-mono uppercase tracking-widest'>
+            <span className='text-sm text-foreground-muted'>{t('demos.game.grade.label')}</span>{' '}
+            <span className='text-4xl font-black text-primary-400'>{grade}</span>
+          </p>
+        )}
+        {grade && (
+          <p className='mt-1 text-xs text-foreground-muted'>{t('demos.game.grade.hint')}</p>
+        )}
         <dl className='mx-auto mt-4 grid max-w-xs grid-cols-2 gap-x-4 gap-y-1 text-left font-mono text-sm'>
           <dt>{t('demos.game.mission.time')}</dt>
           <dd className='text-right tabular-nums'>{time}</dd>
@@ -754,6 +818,24 @@ export const MissionComplete = ({
           </dd>
           <dt>{t('demos.game.mission.accuracy')}</dt>
           <dd className='text-right tabular-nums'>{accuracy}</dd>
+          {best && (
+            <>
+              <dt>{t('demos.game.grade.bestTime')}</dt>
+              <dd className='text-right tabular-nums'>
+                {best.newTime && (
+                  <span className='mr-2 text-success'>{t('demos.game.grade.new')}</span>
+                )}
+                {best.timeText}
+              </dd>
+              <dt>{t('demos.game.grade.bestGrade')}</dt>
+              <dd className='text-right tabular-nums'>
+                {best.newGrade && (
+                  <span className='mr-2 text-success'>{t('demos.game.grade.new')}</span>
+                )}
+                {best.grade}
+              </dd>
+            </>
+          )}
         </dl>
         <div className='mt-6 flex flex-col gap-3'>
           <button

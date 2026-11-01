@@ -12,6 +12,19 @@ export const readBest = (key) => {
   }
 };
 
+/** Saves `ms` if it is faster than the saved best time (lower is better); as `saveBest` */
+export const saveFastest = (key, ms) => {
+  const value = Math.max(1, Math.round(ms));
+  const previous = readBest(key);
+  if (previous && value >= previous) return { best: previous, newBest: false };
+  try {
+    window.localStorage.setItem(key, String(value));
+  } catch {
+    // Not saved; the time still counts for this visit
+  }
+  return { best: value, newBest: true };
+};
+
 /** Saves `score` if it beats the saved best; returns the best after the update and whether it did */
 export const saveBest = (key, score) => {
   const previous = readBest(key);
