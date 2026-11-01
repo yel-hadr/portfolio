@@ -225,6 +225,7 @@
       "hub": "Command hub"
     },
     "weapons": ["Kubernetes Kar98k", "Terraform Tactical", "The DevOps Defender"],
+    "weaponsShort": ["Kar98k", "Tactical", "Defender"],
     "weapon": "Weapon: {name}",
     "enemies": {
       "ddos": "DDoS Bot",
@@ -233,6 +234,7 @@
       "zeroday": "Zero-Day"
     },
     "aimEnemy": "{name}: click or press F to shoot",
+    "aimEnemyFar": "{name}: out of range",
     "facts": {
       "helm": {
         "title": "Threat Neutralized!",
@@ -295,6 +297,7 @@
     "volume": "Volume",
     "energy": "Energy",
     "integrity": "Integrity",
+    "integrityValue": "Integrity: {value}",
     "recharging": "Recharging: wait for the energy bar to refill.",
     "integrityLow": "Integrity low: back away from the threats.",
     "hologram": "COMMAND HUB",
@@ -384,7 +387,6 @@
     "weaponButton": "Weapon",
     "switchWeapon": "Switch weapon",
     "exitConfirm": "Tap again to exit",
-    "outOfRange": "Out of range",
     "closerToTalk": "Walk closer to talk to {name}.",
     "percent": "{value}%",
     "unlocks": {

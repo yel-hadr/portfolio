@@ -111,7 +111,9 @@ export const createSfx = (volume = 0.7) => {
       ducked = on;
       if (!hum) return;
       const now = ctx.currentTime;
+      // Held where it is: a duck during the fade-in would otherwise drop it to its start (silent)
       hum.gain.gain.cancelScheduledValues(now);
+      hum.gain.gain.setValueAtTime(hum.gain.gain.value, now);
       hum.gain.gain.setTargetAtTime(on ? HUM * 0.3 : HUM, now, 0.15);
     },
     // A heavy, muffled boot on metal grating

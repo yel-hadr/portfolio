@@ -12,9 +12,10 @@ const FOCUSABLE =
  *
  * Returns refs for the overlay and the panel, `close`, `release` (lets the page go without
  * closing, when the dialog hands over to another one), the panel's `onKeyDown` and the overlay's
- * `backdrop` handlers.
+ * `backdrop` handlers. `canClose`, if given, is asked first: while it says no, `close()` (and so
+ * Escape and the backdrop) does nothing, and the page stays inert.
  */
-export const useModalDialog = (onClose) => {
+export const useModalDialog = (onClose, canClose) => {
   const overlayRef = useRef(null);
   const panelRef = useRef(null);
   const pressedOnBackdrop = useRef(false);
@@ -50,6 +51,7 @@ export const useModalDialog = (onClose) => {
   const release = () => releaseRef.current();
 
   const close = () => {
+    if (canClose && !canClose()) return;
     releaseRef.current();
     onClose();
   };

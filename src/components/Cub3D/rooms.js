@@ -54,18 +54,23 @@ export const THREAT_TYPES = {
   memleak: { color: 'secondary', speed: 0, harm: false, slows: true },
   zeroday: { color: 'foreground', speed: 0.6, harm: true, stealth: true },
 };
+// cells: threats hover this far from the player, and wear integrity down this close. A threat in
+// reach is also in reach of a shot, even against a rack or a crate (point-blank)
+export const THREAT_STOP = 1.2;
+export const THREAT_REACH = THREAT_STOP + 0.35;
 
 // Threats just past the doors: each door has one on its far side, in the next room's entry (e4
 // in Projects', e8 in Education's, away from the crew there). None in the spawn room (About).
-// The Memory Leak (e5) sits in a pocket of Projects off the ways through it, so the corridor up to
-// Experience is never slowed. Each carries its own fact (`fact`: demos.game.facts.<fact> in the
+// The Memory Leak (e5) sits in Projects' south-west corner, 3 cells or more from the lit path's
+// routes through the room (Skills to Projects, Projects to Experience) and from every terminal, so
+// following the chevrons is never slowed (its pull reaches 2.5 cells). Each carries its own fact (`fact`: demos.game.facts.<fact> in the
 // locales), shown when it is neutralized
 export const ENEMIES = [
   { id: 'e1', type: 'ddos', cell: [14, 13], fact: 'helm' },
   { id: 'e2', type: 'sql', cell: [19, 13], fact: 'tenants' },
   { id: 'e3', type: 'ddos', cell: [24, 11], fact: 'argocd' },
   { id: 'e4', type: 'sql', cell: [30, 12], fact: 'ansible' },
-  { id: 'e5', type: 'memleak', cell: [40, 10], fact: 'observability' },
+  { id: 'e5', type: 'memleak', cell: [36, 15], fact: 'observability' },
   { id: 'e6', type: 'sql', cell: [34, 4], fact: 'terraform' },
   { id: 'e7', type: 'zeroday', cell: [41, 3], fact: 'falco' },
   { id: 'e8', type: 'sql', cell: [26, 4], fact: 'pgbouncer' },

@@ -31,7 +31,17 @@ import CanvasErrorBoundary from '../CanvasErrorBoundary';
 import { rgb } from '../../utils/themeColors';
 import { readGameTheme } from './gameTheme';
 import { frozen } from './freeze';
-import { ENEMIES, ICON_Y, MOVE_SPEED, NPCS, PROP_BOXES, THREAT_TYPES, iconSpot } from './rooms';
+import {
+  ENEMIES,
+  ICON_Y,
+  MOVE_SPEED,
+  NPCS,
+  PROP_BOXES,
+  THREAT_REACH,
+  THREAT_STOP,
+  THREAT_TYPES,
+  iconSpot,
+} from './rooms';
 import { toColor } from './toColor';
 
 // Game Mode's layer inside the Canvas: the threats (low-poly "glitch" entities drifting toward
@@ -44,8 +54,8 @@ import { toColor } from './toColor';
 // cells: threats this close, and in line of sight, come for the player. Short of the rifle's 14,
 // but far enough that most are moving before a shot lands
 const SIGHT = 11;
-const STOP = 1.2; // cells: they hover this far away
-const REACH = STOP + 0.35; // cells: this close, a threat wears down the player's integrity
+const STOP = THREAT_STOP; // cells: they hover this far away
+const REACH = THREAT_REACH; // cells: this close, a threat wears down the player's integrity
 const BODY = 0.2; // collision radius, as the player's
 const FX_LIFE = 0.5; // seconds: every weapon particle effect is freed after this
 const SHATTER_LIFE = 0.8;
@@ -465,14 +475,20 @@ const Entities = ({
 
   const blocked = (x, z) => solid(Math.floor(x), Math.floor(z));
   // Walls, and the props (racks, crates, the hub): threats no longer float through them
-  const free = (x, z) =>
-    !blocked(x - BODY, z - BODY) &&
-    !blocked(x + BODY, z - BODY) &&
-    !blocked(x - BODY, z + BODY) &&
-    !blocked(x + BODY, z + BODY) &&
-    !PROP_BOXES.some(
-      ([x0, z0, x1, z1]) => x > x0 - BODY && x < x1 + BODY && z > z0 - BODY && z < z1 + BODY
-    );
+  const free = (x, z) => {
+    if (
+      blocked(x - BODY, z - BODY) ||
+      blocked(x + BODY, z - BODY) ||
+      blocked(x - BODY, z + BODY) ||
+      blocked(x + BODY, z + BODY)
+    )
+      return false;
+    // A plain loop: this runs for every moving threat, every frame
+    for (const [x0, z0, x1, z1] of PROP_BOXES) {
+      if (x > x0 - BODY && x < x1 + BODY && z > z0 - BODY && z < z1 + BODY) return false;
+    }
+    return true;
+  };
   const inSight = (x, z, tx, tz) => {
     const steps = Math.ceil(Math.hypot(tx - x, tz - z) / 0.1);
     for (let i = 1; i < steps; i += 1) {
@@ -500,27 +516,32 @@ const Entities = ({
     let close = 0;
     let slowest = 1;
     nearest.length = 0;
+    // One callback a frame (the React Compiler lets its writes to the threats through, not a plain
+    // loop's), and within it no closure per threat
     enemies.current.forEach((enemy, i) => {
       const node = nodes.current[enemy.id];
       if (!node || !enemy.alive) return;
       const kind = THREAT_TYPES[enemy.type];
       const d = Math.hypot(px - enemy.x, pz - enemy.z);
-      // Line of sight, worked out once and only when something below needs it
-      let sight;
-      const seen = () => {
-        if (sight === undefined) sight = inSight(enemy.x, enemy.z, px, pz);
-        return sight;
-      };
-      if (!paused.current && !reduced && d < SIGHT && d > STOP && seen()) {
+      // Line of sight, worked out once (from where it stood at the frame's start), and only when
+      // something below needs it
+      const moves = !paused.current && !reduced && d < SIGHT && d > STOP;
+      const seen =
+        (moves ||
+          (kind.harm && d < REACH) ||
+          (kind.slows && d < SLOW_RANGE) ||
+          (kind.stealth && d < BEAM_RANGE)) &&
+        inSight(enemy.x, enemy.z, px, pz);
+      if (moves && seen) {
         const step = (kind.speed * dt) / d;
         const nx = enemy.x + (px - enemy.x) * step;
         const nz = enemy.z + (pz - enemy.z) * step;
         if (free(nx, enemy.z)) enemy.x = nx;
         if (free(enemy.x, nz)) enemy.z = nz;
       }
-      if (kind.harm && d < REACH && seen()) close += 1;
+      if (kind.harm && d < REACH && seen) close += 1;
       // A Memory Leak drags the player's steps, the more the closer
-      if (kind.slows && d < SLOW_RANGE && seen()) {
+      if (kind.slows && d < SLOW_RANGE && seen) {
         const k = MathUtils.clamp((d - SLOW_FULL) / (SLOW_RANGE - SLOW_FULL), 0, 1);
         slowest = Math.min(slowest, SLOWEST + (1 - SLOWEST) * k);
       }
@@ -533,7 +554,7 @@ const Entities = ({
           MathUtils.euclideanModulo(bearing - yaw + Math.PI, 2 * Math.PI) - Math.PI
         );
         const beam =
-          d < BEAM_RANGE && off < BEAM_ANGLE && seen()
+          d < BEAM_RANGE && off < BEAM_ANGLE && seen
             ? 1 - MathUtils.smoothstep(off, BEAM_FULL, BEAM_ANGLE)
             : 0;
         const was = enemy.lit ?? 0;
@@ -584,10 +605,12 @@ const Entities = ({
       }
     });
     slowRef.current = paused.current ? 1 : slowest;
-    pressureRef.current = paused.current ? 0 : close;
+    // Kept as it was while the game is held (Cub3DWorld counts nothing then): play coming back
+    // beside a threat carries on its wind-up rather than starting it again
+    if (!paused.current) pressureRef.current = close;
     // A threat in reach: the next frame comes even on demand (reduced motion), or a player standing
     // still beside one would take nothing (Cub3DWorld's onTick reads this a frame later)
-    if (pressureRef.current) state.invalidate();
+    if (pressureRef.current && !paused.current) state.invalidate();
 
     if (!flat) {
       // The trails fade
