@@ -54,14 +54,17 @@ export const createSfx = (volume = 0.7) => {
     source.stop(now + length);
   };
 
-  // The server hum: two low tones and a breath of filtered noise, looping until turned off
+  // The server hum: two low tones and a breath of filtered noise, looping until turned off.
+  // Ducked to 30% while the game is held (a menu, a dossier, a dialog)
+  const HUM = 0.22;
   let hum = null;
+  let ducked = false;
   const startHum = () => {
     if (hum) return;
     const now = wake();
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.22, now + 1.5);
+    gain.gain.exponentialRampToValueAtTime(ducked ? HUM * 0.3 : HUM, now + 1.5);
     gain.connect(master);
     const parts = [55, 110.5].map((f, i) => {
       const osc = ctx.createOscillator();
@@ -104,6 +107,13 @@ export const createSfx = (volume = 0.7) => {
       master.gain.setTargetAtTime(value * 0.3, ctx.currentTime, 0.05);
     },
     hum: (on) => (on ? startHum() : stopHum()),
+    duck: (on) => {
+      ducked = on;
+      if (!hum) return;
+      const now = ctx.currentTime;
+      hum.gain.gain.cancelScheduledValues(now);
+      hum.gain.gain.setTargetAtTime(on ? HUM * 0.3 : HUM, now, 0.15);
+    },
     // A heavy, muffled boot on metal grating
     step: () => {
       burst(0.12, 0.9, 380, 90, 'lowpass');

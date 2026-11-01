@@ -3,7 +3,8 @@ import { useContext, useEffect, useState } from 'react';
 import { PageCanvasContext } from '../components/canvas/PageCanvasContext';
 import { WebGLContext } from '../components/canvas/WebGLContext';
 
-// R3F releases an unmounted Canvas's WebGL context (forceContextLoss) 500 ms after unmount
+// R3F 9 releases an unmounted Canvas's WebGL context (dispose, then forceContextLoss) as soon as the
+// unmount commits; this leaves a margin for the commit and the browser
 export const CONTEXT_RELEASE_MS = 600;
 
 /**

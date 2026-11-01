@@ -383,6 +383,7 @@
     "switchWeapon": "Switch weapon",
     "exitConfirm": "Tap again to exit",
     "outOfRange": "Out of range",
-    "closerToTalk": "Walk closer to talk to {name}."
+    "closerToTalk": "Walk closer to talk to {name}.",
+    "percent": "{value}%"
   }
 }

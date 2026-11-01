@@ -3,6 +3,7 @@ import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import {
   AdditiveBlending,
   BackSide,
+  FrontSide,
   BoxGeometry,
   CanvasTexture,
   Euler,
@@ -329,7 +330,8 @@ const Blaster = ({ m, moving }) => (
 const bakeFlashlight = (gl, light) => {
   const scene = new Scene();
   const parts = [];
-  const add = (geometry, k, at, side) => {
+  // `side` defaults to the front: three warns about a material parameter passed as undefined
+  const add = (geometry, k, at, side = FrontSide) => {
     const material = new MeshBasicMaterial({ color: light.clone().multiplyScalar(k), side });
     const mesh = new Mesh(geometry, material);
     if (at) mesh.position.copy(at);
