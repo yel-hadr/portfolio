@@ -3,7 +3,8 @@
 // corridors, each with a door (D, the bonus part). The map is closed (walls all round) and every
 // floor cell can be reached from N, as cub3D's map check requires; one texture per side, F and C
 // colors. Bottom row of rooms, west to east: About (N), Skills, Projects; then up the corridor in
-// Projects' north wall, and back west along the top: Experience, Education, Contact.
+// Projects' north wall, and back west along the top: Experience, Education, Contact; and from
+// Contact a shortcut back down to About (x 2-3), so the last room is not a dead end.
 export const GAME_CUB = `NO ./textures/CRATE_1D.png
 SO ./textures/BRICK_6D.png
 WE ./textures/CONSOLE_1B.png
@@ -19,9 +20,9 @@ C 225,30,0
 10000000000D000000000000000D00000000000000001
 100000000011100000000000001110000000000000001
 100000000011100010000010001110000100000010001
-111111111111111111111111111111111111001111111
-111111111111111111111111111111111111DD1111111
-111111111111111111111111111111111111001111111
+110011111111111111111111111111111111001111111
+11DD11111111111111111111111111111111DD1111111
+110011111111111111111111111111111111001111111
 100000000000111000000000000011100000000000001
 100000000000111000000000000011100010000000001
 1000000000000D000000000000000D000000000000001
