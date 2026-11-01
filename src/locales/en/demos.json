@@ -45,7 +45,8 @@
       "facing": "Facing {direction}.",
       "doorOpened": "Door opened.",
       "doorClosed": "Door closed.",
-      "noDoor": "No door right ahead."
+      "noDoor": "No door right ahead.",
+      "doorBlocked": "Something is in the doorway: the door stays open."
     },
     "touch": {
       "label": "Walk and turn",
@@ -356,7 +357,8 @@
       "title": "System failure",
       "body": "Integrity reached zero: the threats got through. Reboot to respawn in the About room with full integrity; your progress is kept.",
       "reboot": "Reboot",
-      "rebooted": "System rebooted: back in the About room, integrity restored."
+      "rebooted": "System rebooted: back in the About room, integrity restored.",
+      "confirmMenu": "Confirm: exit to main menu"
     },
     "graphics": {
       "label": "Graphics",

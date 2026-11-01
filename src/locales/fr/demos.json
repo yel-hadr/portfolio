@@ -45,7 +45,8 @@
       "facing": "Face {direction}.",
       "doorOpened": "Porte ouverte.",
       "doorClosed": "Porte fermée.",
-      "noDoor": "Pas de porte juste devant."
+      "noDoor": "Pas de porte juste devant.",
+      "doorBlocked": "Quelque chose bloque le passage : la porte reste ouverte."
     },
     "touch": {
       "label": "Marcher et tourner",
@@ -356,7 +357,8 @@
       "title": "Défaillance système",
       "body": "L’intégrité est tombée à zéro : les menaces sont passées. Redémarrez pour réapparaître dans la salle À propos avec toute votre intégrité ; votre progression est conservée.",
       "reboot": "Redémarrer",
-      "rebooted": "Système redémarré : retour dans la salle À propos, intégrité restaurée."
+      "rebooted": "Système redémarré : retour dans la salle À propos, intégrité restaurée.",
+      "confirmMenu": "Confirmer : retour au menu principal"
     },
     "graphics": {
       "label": "Graphismes",
