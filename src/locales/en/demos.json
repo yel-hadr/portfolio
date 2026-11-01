@@ -368,6 +368,7 @@
     },
     "flashing": "Reduce flashing",
     "slowed": "Slowed: memory leak",
-    "slowedSay": "A memory leak is slowing you down. Move away from it or neutralize it."
+    "slowedSay": "A memory leak is slowing you down. Move away from it or neutralize it.",
+    "vaultOpen": "The vault's laser grid is down."
   }
 }

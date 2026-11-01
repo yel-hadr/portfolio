@@ -288,6 +288,25 @@ const makeWorld = (text) => {
 // The cub3D demo walks the repo's map.cub; Game Mode its own map
 const DEMO_WORLD = makeWorld(MAP_CUB);
 const GAME_WORLD = makeWorld(GAME_CUB);
+// The distance along the view (yaw) to the nearest prop box ahead (a ray against each box), or
+// Infinity
+const propAhead = (x, z, yaw) => {
+  const dx = -Math.sin(yaw);
+  const dz = -Math.cos(yaw);
+  let best = Infinity;
+  PROP_BOXES.forEach(([x0, z0, x1, z1]) => {
+    const tx0 = dx ? (x0 - x) / dx : -Infinity;
+    const tx1 = dx ? (x1 - x) / dx : Infinity;
+    const tz0 = dz ? (z0 - z) / dz : -Infinity;
+    const tz1 = dz ? (z1 - z) / dz : Infinity;
+    const near = Math.max(Math.min(tx0, tx1), Math.min(tz0, tz1));
+    const far = Math.min(Math.max(tx0, tx1), Math.max(tz0, tz1));
+    if (dx === 0 && (x < x0 || x > x1)) return;
+    if (dz === 0 && (z < z0 || z > z1)) return;
+    if (near <= far && far > 0) best = Math.min(best, Math.max(near, 0));
+  });
+  return best;
+};
 // Whether someone stands in a door's cell: the player's box (RADIUS round the eye) or a live threat
 const doorwayTaken = (cell, W, camera, enemies) => {
   const x0 = cell % W;
@@ -466,6 +485,7 @@ const Scene = memo(function Scene({
   hitStop,
   respawnRef,
   hubLitRef,
+  nearRef,
 }) {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
@@ -764,6 +784,7 @@ const Scene = memo(function Scene({
             graphics={graphics}
             hitStopRef={hitStop}
             hubLitRef={hubLitRef}
+            nearRef={nearRef}
           />
         </Suspense>
       ) : (
@@ -1230,6 +1251,8 @@ const Cub3DWorld = ({
   // The command hub's hologram burns bright while its dossier is open (Facility reads it), and a
   // counter replays the HUD's edge glow each time it opens
   const hubLit = useRef(false);
+  // How far the nearest wall, door or prop ahead is (cells), for the flashlight to dim up close
+  const nearAhead = useRef(Infinity);
   const [hubFlash, setHubFlash] = useState(0);
   // The HUD's crosshair (its spread), energy and integrity bars and hit flash, written per frame
   const crosshairRef = useRef(null);
@@ -1733,6 +1756,13 @@ const Cub3DWorld = ({
           announce(t('demos.game.doorNear', { place: name }));
         }
       }
+      // The nearest surface straight ahead: a wall or closed door (the DDA), or a prop's box
+      {
+        const { x, z } = camera.position;
+        const yaw = camera.rotation.y;
+        const [hx, hz] = castRay(x, z, yaw, solid);
+        nearAhead.current = Math.min(Math.hypot(hx - x, hz - z), propAhead(x, z, yaw));
+      }
       const aimed = aimAt(
         camera,
         solid,
@@ -2148,6 +2178,11 @@ const Cub3DWorld = ({
           count,
           total: SECTIONS.length,
         });
+        // Projects read: the vault's laser grid goes down (Facility fades it out)
+        if (found === 'projects') {
+          said = `${said} ${t('demos.game.vaultOpen')}`;
+          play('lasers');
+        }
         announce(said);
         // The sixth: the mission is complete (once; a later visit to a wall does not repeat it)
         if (count === SECTIONS.length && !missionDoneRef.current) {
@@ -2634,6 +2669,7 @@ const Cub3DWorld = ({
           hitStop={hitStop}
           respawnRef={respawnRef}
           hubLitRef={hubLit}
+          nearRef={nearAhead}
         />
         {game && (
           <GameLayer
@@ -2814,6 +2850,7 @@ const Cub3DWorld = ({
           t={t}
           aim={target && !KIND[target] ? aimText(t, ENEMIES, target) : null}
           prompt={target && KIND[target] ? panelTitle(t, target, true) : null}
+          promptKeyOnly={KIND[target] === 'section' || KIND[target] === 'terminal'}
           sections={sectionList}
           kills={kills}
           threats={ENEMIES.length}

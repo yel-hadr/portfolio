@@ -164,6 +164,12 @@ export const createSfx = (volume = 0.7) => {
       tone('sine', 990, 1320, 0.16, 0.26, 0.11);
       tone('triangle', 1980, 1980, 0.06, 0.06, 0.11);
     },
+    // The vault's laser grid powering down: a falling electric whine and a soft crackle
+    lasers: () => {
+      tone('sawtooth', 1200, 90, 0.55, 0.12);
+      tone('square', 600, 60, 0.4, 0.06, 0.05);
+      burst(0.25, 0.25, 3000, 400, 'bandpass', 0.1);
+    },
     // A dossier typing out: a very quiet, short key tick (throttled by the caller)
     tick: () => tone('square', 1500, 1300, 0.012, 0.04),
   };
