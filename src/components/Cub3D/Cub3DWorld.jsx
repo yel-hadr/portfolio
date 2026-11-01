@@ -88,6 +88,16 @@ const AIM_RANGE = 8; // cells: how far away a wall panel can be opened (the cub3
 const targetable = (enemy) => enemy.alive && (!THREAT_TYPES[enemy.type].stealth || enemy.lit > 0.5);
 // Game Mode's wall terminals answer only up close: the Press E prompt, E and a click all need this
 const PANEL_RANGE = 2.5;
+// cells: E talks to a crew member this close (they are seen, and named in the crosshair, further)
+const TALK_RANGE = 3;
+// Threats in the crosshair as far as the longest weapon reaches: past the weapon in hand's own
+// `range` the HUD says it is out of range, and a shot falls short
+const AIM_REACH = Math.max(...WEAPON_FX.map(({ range }) => range));
+// Integrity: what each threat in reach takes a second, after a short wind-up once one is close
+const HARM_RATE = 6;
+const HARM_WINDUP_MS = 500;
+// Energy starts to refill this long after the last shot
+const REFILL_AFTER_MS = 150;
 // The lit path to the next section: this many cells of it, from the player on
 const GUIDE_LENGTH = 14;
 const AIM_RADIUS = 0.9; // cells from a panel's center that still count as aiming at it
@@ -239,6 +249,9 @@ const writeBar = (el, value) => {
   el.dataset.value = String(v);
   el.style.transform = `scaleX(${v / 100})`;
   el.dataset.low = String(v < 30);
+  // Its number, beside the label
+  const readout = el.closest('[data-meter]')?.querySelector('[data-readout]');
+  if (readout) readout.textContent = `${v}%`;
 };
 
 const KEYS = {
@@ -305,9 +318,7 @@ const DEMO_WORLD = makeWorld(MAP_CUB);
 const GAME_WORLD = makeWorld(GAME_CUB);
 // The distance along the view (yaw) to the nearest prop box ahead (a ray against each box), or
 // Infinity
-const propAhead = (x, z, yaw) => {
-  const dx = -Math.sin(yaw);
-  const dz = -Math.cos(yaw);
+const propAlong = (x, z, dx, dz) => {
   let best = Infinity;
   PROP_BOXES.forEach(([x0, z0, x1, z1]) => {
     const tx0 = dx ? (x0 - x) / dx : -Infinity;
@@ -322,6 +333,8 @@ const propAhead = (x, z, yaw) => {
   });
   return best;
 };
+const propAhead = (x, z, yaw) => propAlong(x, z, -Math.sin(yaw), -Math.cos(yaw));
+// A prop (a rack, a crate, the hub) between the player and a point: shots do not pass through
 // Whether someone stands in a door's cell: the player's box (RADIUS round the eye) or a live threat
 const doorwayTaken = (cell, W, camera, enemies) => {
   const x0 = cell % W;
@@ -934,17 +947,19 @@ const aimAt = (
   let hit = null;
   let nearest = Math.min(wall, Math.max(reach, AIM_RANGE));
   // `cone` widens the hit with distance: a thing about 30° off the line still counts (the hub)
-  const consider = (thing, radius, limit, cone = 0) => {
+  // Threats and the crew behind a prop are hidden by it (the hub is a prop itself: not for it)
+  const prop = propAlong(x, z, dx, dz);
+  const consider = (thing, radius, limit, cone = 0, block = Infinity) => {
     const ex = thing.x - x;
     const ez = thing.z - z;
     const along = ex * dx + ez * dz;
-    if (along <= 0 || along >= nearest || along >= limit) return;
+    if (along <= 0 || along >= nearest || along >= limit || along >= block) return;
     if (Math.abs(ex * dz - ez * dx) >= Math.max(radius, along * cone)) return;
     hit = thing.id;
     nearest = along;
   };
-  enemies.forEach((enemy) => targetable(enemy) && consider(enemy, ENEMY_RADIUS, reach));
-  npcs.forEach((npc) => consider(npc, NPC_RADIUS, AIM_RANGE));
+  enemies.forEach((enemy) => targetable(enemy) && consider(enemy, ENEMY_RADIUS, reach, 0, prop));
+  npcs.forEach((npc) => consider(npc, NPC_RADIUS, AIM_RANGE, 0, prop));
   // Things that stand in a room and answer like a terminal (the command hub): within panel range
   objects.forEach((object) => consider(object, object.radius, panelRange, object.cone));
   if (hit || wall > panelRange) return hit;
@@ -973,7 +988,8 @@ const inCone = (camera, enemies, solid, { cone, range }) => {
     const d = Math.hypot(enemy.x - x, enemy.z - z);
     const bearing = Math.atan2(-(enemy.x - x), -(enemy.z - z));
     const off = Math.abs(MathUtils.euclideanModulo(bearing - yaw + Math.PI, 2 * Math.PI) - Math.PI);
-    return d < range && off < cone && clearLine(x, z, enemy.x, enemy.z, solid);
+    if (d >= range || off >= cone || !clearLine(x, z, enemy.x, enemy.z, solid)) return false;
+    return propAlong(x, z, (enemy.x - x) / d, (enemy.z - z) / d) >= d;
   });
 };
 
@@ -1116,6 +1132,9 @@ const findPath = (world, [sx, sz], [tx, tz], blocked = null) => {
 };
 // The cells Game Mode's props stand in, which the lit path walks around
 const PROP_CELLS = blockedCells(PROP_BOXES, GAME_WORLD.W);
+// The mission's clock (D1): `total` ms played before, plus the stretch running since `since`
+// (null while the game is held: the menu, a dialog, a crew member talking, the pause menu)
+const clockElapsed = ({ total, since }) => total + (since === null ? 0 : timeNow() - since);
 // m:ss
 const minutes = (ms) => {
   const seconds = Math.max(0, Math.round(ms / 1000));
@@ -1217,7 +1236,7 @@ const Cub3DWorld = ({
   const [complete, setComplete] = useState(null);
   // The last threat is down and MISSION COMPLETE opens in a moment: no pausing in between
   const missionPending = useRef(false);
-  const startAt = useRef(null);
+  const missionClock = useRef({ total: initialState?.elapsed ?? 0, since: null });
   // A section opened for the first time: announced as discovered when its dossier closes
   const foundRef = useRef(null);
   // The lit path toward the next section (Facility draws it, the radar marks its end): the cells,
@@ -1244,7 +1263,7 @@ const Cub3DWorld = ({
   const nearDoorCell = useRef(-1);
   const doorSaid = useRef({ key: '', at: -Infinity });
   // The trigger: held (automatic weapons keep firing) and when the gun that last fired is ready
-  const firing = useRef({ held: false, ready: -Infinity });
+  const firing = useRef({ held: false, ready: WEAPON_FX.map(() => -Infinity) });
   const fireRef = useRef(() => {});
   // Integrity at zero (the frame loop calls it): the latest `fail`, set after each render
   const failRef = useRef(() => {});
@@ -1256,6 +1275,11 @@ const Cub3DWorld = ({
   const readRef = useRef(read);
   const weaponState = useRef(weapon);
   const [toast, setToast] = useState(null);
+  // Facts waiting their turn: a blast that neutralizes several shows each, one after the other
+  const factQueue = useRef([]);
+  // The threat in the crosshair is past the weapon in hand's range
+  const [far, setFar] = useState(false);
+  const farRef = useRef(false);
   const [access, setAccess] = useState(false);
   const [sound, setSound] = useState(initialState?.sound ?? false);
   const soundRef = useRef(sound);
@@ -1278,8 +1302,15 @@ const Cub3DWorld = ({
   const hitRef = useRef(null);
   // Energy: each shot costs some (WEAPON_FX), refilled shortly after the last one. Integrity:
   // worn down while threats are close (`pressure`, counted by the threats), restored after
-  const energy = useRef({ value: 100, at: 0, warned: false });
-  const integrity = useRef({ value: 100, at: 0, pulse: 0, warned: false });
+  // Both come back from a snapshot (a demo or the text-only mode is not a free heal)
+  const energy = useRef({ value: initialState?.energy ?? 100, at: 0, warned: false });
+  const integrity = useRef({
+    value: initialState?.integrity ?? 100,
+    at: 0,
+    pulse: 0,
+    warned: false,
+    since: null,
+  });
   const pressure = useRef(0);
   // The chromatic aberration's pulse (Facility eases it back)
   const postFx = useRef({ aberration: 0 });
@@ -1683,7 +1714,7 @@ const Cub3DWorld = ({
       // Energy refills shortly after the last shot
       const now = timeNow();
       const en = energy.current;
-      if (now - en.at > 350 && en.value < 100) {
+      if (now - en.at > REFILL_AFTER_MS && en.value < 100) {
         en.value = Math.min(100, en.value + 40 * dt);
         invalidateRef.current();
       }
@@ -1691,8 +1722,11 @@ const Cub3DWorld = ({
       // Threats close by wear integrity down, in pulses (a hit flash and aberration, a sound)
       const hp = integrity.current;
       const hurt = pressure.current;
-      if (hurt) {
-        hp.value = Math.max(0, hp.value - 12 * hurt * dt);
+      // A wind-up once a threat comes into reach: brushing past one costs nothing
+      if (hurt && hp.since === null) hp.since = now;
+      if (!hurt) hp.since = null;
+      if (hurt && now - hp.since >= HARM_WINDUP_MS) {
+        hp.value = Math.max(0, hp.value - HARM_RATE * hurt * dt);
         hp.at = now;
         hp.pulse -= dt;
         if (hp.pulse <= 0) {
@@ -1712,7 +1746,7 @@ const Cub3DWorld = ({
         }
         // Integrity gone: SYSTEM FAILURE
         if (hp.value <= 0 && !failedRef.current) failRef.current();
-      } else {
+      } else if (!hurt) {
         hp.pulse = 0;
         // The steady edge (Reduce flashing) holds a moment, so a threat at the edge of its reach
         // does not make it flicker
@@ -1788,9 +1822,19 @@ const Cub3DWorld = ({
         enemies.current,
         npcs.current,
         PANEL_RANGE,
-        WEAPON_FX[weaponState.current].range,
+        AIM_REACH,
         HUB_OBJECTS
       );
+      // A threat past the weapon in hand's range: the HUD dims its label and says so
+      const enemy = aimed && enemies.current.find((e) => e.id === aimed);
+      const outOfRange =
+        !!enemy &&
+        Math.hypot(enemy.x - camera.position.x, enemy.z - camera.position.z) >
+          WEAPON_FX[weaponState.current].range;
+      if (outOfRange !== farRef.current) {
+        farRef.current = outOfRange;
+        setFar(outOfRange);
+      }
       if (aimed === targetRef.current) return;
       targetRef.current = aimed;
       setTarget(aimed);
@@ -1799,7 +1843,8 @@ const Cub3DWorld = ({
         setAimSaid('');
         return;
       }
-      const text = aimText(t, enemies.current, aimed);
+      const named = aimText(t, enemies.current, aimed);
+      const text = outOfRange ? `${named}. ${t('demos.game.outOfRange')}` : named;
       aimTimer.current = window.setTimeout(() => setAimSaid(text), 300);
     },
     [announce, solid, t, drawRadar, doorCells, reduced, W, noFlashRef, radarShownRef, startedRef]
@@ -1933,12 +1978,36 @@ const Cub3DWorld = ({
       doors: doors.current,
       read: readRef.current,
       missionDone: missionDoneRef.current,
-      elapsed: startAt.current === null ? 0 : timeNow() - startAt.current,
+      elapsed: clockElapsed(missionClock.current),
+      integrity: integrity.current.value,
+      energy: energy.current.value,
       weapon: weaponState.current,
       sound: soundRef.current,
       shots: shots.current,
       enemies: enemies.current.map(({ id, x, z, alive, seen }) => ({ id, x, z, alive, seen })),
     };
+  };
+
+  // The fact at the head of the queue, for TOAST_MS, then the next
+  const showFact = () => {
+    const [enemy] = factQueue.current;
+    if (!enemy) {
+      setToast(null);
+      return;
+    }
+    setToast({
+      key: enemy.id,
+      title: t(`demos.game.facts.${enemy.fact}.title`),
+      body: t(`demos.game.facts.${enemy.fact}.body`),
+    });
+    later(
+      'toast',
+      () => {
+        factQueue.current = factQueue.current.slice(1);
+        showFact();
+      },
+      TOAST_MS
+    );
   };
 
   const neutralize = (enemy) => {
@@ -1979,18 +2048,15 @@ const Cub3DWorld = ({
     // Reduced motion draws on demand: the hidden threat must be redrawn away
     invalidateRef.current();
     setKills((n) => n + 1);
-    // Its own fact shows in the HUD's own live region, which announces it
-    setToast({
-      key: enemy.id,
-      title: t(`demos.game.facts.${enemy.fact}.title`),
-      body: t(`demos.game.facts.${enemy.fact}.body`),
-    });
-    later('toast', () => setToast(null), TOAST_MS);
+    // Its own fact shows in the HUD's own live region, which announces it; one already showing
+    // keeps its time, and this one follows
+    factQueue.current = [...factQueue.current, enemy];
+    if (factQueue.current.length === 1) showFact();
     // The last threat: the mission is complete too (once), after a moment to see the kill
     if (!missionDoneRef.current && enemies.current.every((e) => !e.alive)) {
       missionDoneRef.current = true;
       setMissionDone(true);
-      const time = startAt.current === null ? 0 : timeNow() - startAt.current;
+      const time = clockElapsed(missionClock.current);
       missionPending.current = true;
       later(
         'complete',
@@ -2037,6 +2103,18 @@ const Cub3DWorld = ({
     requestAnimationFrame(() => wrapperRef.current?.focus({ preventScroll: true }));
   };
 
+  // A wall's panel read: a section is ticked off (and announced as it closes), a terminal hands
+  // over to its demo, anything else opens its text
+  const readPanel = (id) => {
+    holdView();
+    foundRef.current = KIND[id] === 'section' && !readRef.current.includes(id) ? id : null;
+    if (!readRef.current.includes(id)) readRef.current = [...readRef.current, id];
+    setRead(readRef.current);
+    play('blip');
+    if (KIND[id] === 'terminal') openTerminal(id);
+    else setOpenPanel(id);
+  };
+
   // Game Mode. E, Enter or the touch Use button acts on what is in the crosshair: a crew member
   // talks, a panel opens (its text, the contact form, or after "Access granted" a terminal's live
   // demo). Nothing in the crosshair works the door ahead
@@ -2055,6 +2133,14 @@ const Cub3DWorld = ({
       return;
     }
     if (NPC_IDS.has(id)) {
+      const npc = npcs.current.find((n) => n.id === id);
+      const camera = cameraRef.current;
+      const d =
+        npc && camera ? Math.hypot(npc.x - camera.position.x, npc.z - camera.position.z) : 0;
+      if (d > TALK_RANGE) {
+        announce(t('demos.game.closerToTalk', { name: t(`demos.game.npcs.${id}.name`) }));
+        return;
+      }
       talkTo(id);
       return;
     }
@@ -2069,13 +2155,7 @@ const Cub3DWorld = ({
       setOpenPanel(id);
       return;
     }
-    holdView();
-    foundRef.current = KIND[id] === 'section' && !readRef.current.includes(id) ? id : null;
-    if (!readRef.current.includes(id)) readRef.current = [...readRef.current, id];
-    setRead(readRef.current);
-    play('blip');
-    if (KIND[id] === 'terminal') openTerminal(id);
-    else setOpenPanel(id);
+    readPanel(id);
   };
   // "Access granted", then a terminal's live demo (from its wall, or the Projects dossier)
   const openTerminal = (id, before = '') => {
@@ -2104,13 +2184,15 @@ const Cub3DWorld = ({
     const now = timeNow();
     const camera = cameraRef.current;
     if (!camera || (!press && !cfg.auto)) return;
-    // A press on a terminal or a crew member uses it, whatever the weapon's cooldown
+    // A press on a terminal uses it, whatever the weapon's cooldown. A crew member in the sights:
+    // hold fire (E talks)
     const id = targetRef.current;
-    if (press && id && (KIND[id] || NPC_IDS.has(id))) {
+    if (press && id && KIND[id]) {
       interact();
       return;
     }
-    if (now < firing.current.ready) return;
+    if (id && NPC_IDS.has(id)) return;
+    if (now < firing.current.ready[weaponState.current]) return;
     // Out of energy: a dry click on a press, and it says so once until it has recharged (an
     // automatic weapon running dry while held too)
     if (energy.current.value < cfg.energy) {
@@ -2124,7 +2206,7 @@ const Cub3DWorld = ({
     energy.current.value -= cfg.energy;
     energy.current.at = now;
     shots.current.fired += 1;
-    firing.current.ready = now + cfg.cooldown * 1000;
+    firing.current.ready[weaponState.current] = now + cfg.cooldown * 1000;
     // The recoil's target: a shot adds to it (rapid fire climbs, to a point), the weapon springs
     // up to it fast and settles back slowly (GameMotion)
     motion.current.kick = Math.min(1.3, motion.current.kick + cfg.kick);
@@ -2146,7 +2228,9 @@ const Cub3DWorld = ({
     const muzzle = [x + fx * 0.9, 0.42, z + fz * 0.9];
     const hits = cfg.cone
       ? inCone(camera, enemies.current, solid, cfg)
-      : enemies.current.filter((e) => e.alive && e.id === id);
+      : enemies.current.filter(
+          (e) => e.alive && e.id === id && Math.hypot(e.x - x, e.z - z) <= cfg.range
+        );
     if (hits.length) shots.current.hit += 1;
     let impacts = hits.map((e) => [e.x, 0.5, e.z]);
     if (!impacts.length) {
@@ -2212,7 +2296,7 @@ const Cub3DWorld = ({
           setMissionDone(true);
           setComplete({
             by: 'sections',
-            time: startAt.current === null ? 0 : timeNow() - startAt.current,
+            time: clockElapsed(missionClock.current),
             shots: { ...shots.current },
           });
           return { completed: true, said };
@@ -2334,7 +2418,7 @@ const Cub3DWorld = ({
   });
   // Reboot: back in the first room, integrity and energy full; the mission's progress is kept
   const reboot = () => {
-    integrity.current = { value: 100, at: 0, pulse: 0, warned: false };
+    integrity.current = { value: 100, at: 0, pulse: 0, warned: false, since: null };
     energy.current = { value: 100, at: 0, warned: false };
     pressure.current = 0;
     slow.current = 1;
@@ -2605,12 +2689,17 @@ const Cub3DWorld = ({
   // menu, a wall's text or the contact form, Access granted, a crew member talking. Frames still
   // run then (the energy refill draws), so they must be told, not just left undrawn
   const held = game && (!started || stopped);
-  // The mission's clock starts with the game (or goes on from a snapshot)
+  // The mission's clock runs only while the game is played (or goes on from a snapshot): reading a
+  // dossier, talking to the crew or a pause does not count as time
   useEffect(() => {
-    if (game && started && startAt.current === null) {
-      startAt.current = timeNow() - (initialState?.elapsed ?? 0);
+    if (!game) return;
+    const c = missionClock.current;
+    if (!held && c.since === null) c.since = timeNow();
+    if (held && c.since !== null) {
+      c.total += timeNow() - c.since;
+      c.since = null;
     }
-  }, [game, started, initialState]);
+  }, [game, held]);
   // The tracker's list: the sections in order, ticked once read
   const sectionList = useMemo(
     () =>
@@ -2899,6 +2988,7 @@ const Cub3DWorld = ({
         <GameHud
           t={t}
           aim={target && !KIND[target] ? aimText(t, ENEMIES, target) : null}
+          aimFar={far}
           prompt={target && KIND[target] ? panelTitle(t, target, true) : null}
           promptKeyOnly={KIND[target] === 'section' || KIND[target] === 'terminal'}
           sections={sectionList}
@@ -2993,9 +3083,10 @@ const Cub3DWorld = ({
           }
           resume={person.resume}
           github={person.github}
+          // The Contact dossier, read as at its wall: Contact is ticked off
           onContact={() => {
             setComplete(null);
-            setOpenPanel('contact');
+            readPanel('contact');
           }}
           onClose={closeComplete}
         />

@@ -115,11 +115,17 @@ const Typed = ({ text, shown, caret = false }) => (
 const MENU_BUTTON = 'w-full justify-center text-center font-mono uppercase tracking-widest';
 const HUD_BUTTON = `inline-flex h-11 items-center gap-2 rounded-xl ${GLASS} px-3 text-sm font-semibold text-foreground hover:border-foreground-muted ${styles.hudFocus}`;
 
-/** A labeled bar the game loop fills (`barRef`); it turns red under 30% */
+/**
+ * A labeled bar the game loop fills (`barRef`); it turns red under 30%. The loop writes the
+ * number too, into the `data-readout` span beside the label (writeBar in Cub3DWorld)
+ */
 const Meter = ({ label, barRef, tone }) => (
-  <div aria-hidden='true' className='w-40'>
+  <div aria-hidden='true' data-meter='' className='w-40'>
     <p className='flex justify-between font-mono text-xs uppercase tracking-wider text-foreground'>
       {label}
+      <span data-readout='' className='tabular-nums'>
+        100%
+      </span>
     </p>
     <div className='relative mt-1 h-1.5 overflow-hidden rounded-xs bg-background/80'>
       <div
@@ -316,6 +322,7 @@ export const GameSettings = ({
 export const GameHud = ({
   t,
   aim,
+  aimFar = false,
   prompt,
   promptKeyOnly = false,
   sections,
@@ -437,10 +444,12 @@ export const GameHud = ({
       </div>
     ) : (
       aim && (
+        // Past the weapon in hand's range: dimmed, and it says so (not by color alone)
         <p
-          className={`pointer-events-none absolute left-1/2 top-[calc(50%+1.75rem)] z-30 -translate-x-1/2 whitespace-nowrap rounded-md ${SOLID} px-3 py-1 font-mono text-xs font-semibold uppercase tracking-wider text-foreground`}
+          className={`pointer-events-none absolute left-1/2 top-[calc(50%+1.75rem)] z-30 -translate-x-1/2 whitespace-nowrap rounded-md ${SOLID} px-3 py-1 font-mono text-xs font-semibold uppercase tracking-wider ${aimFar ? 'text-foreground-muted' : 'text-foreground'}`}
         >
           {aim}
+          {aimFar && <span> · {t('demos.game.outOfRange')}</span>}
         </p>
       )
     )}
@@ -523,9 +532,13 @@ export const GameHud = ({
         ))}
       <span
         aria-hidden='true'
+        data-meter=''
         className='ml-auto flex items-center gap-2 [@media(min-width:40rem)_and_(pointer:fine)]:hidden'
       >
         {t('demos.game.integrity')}
+        <span data-readout='' className='tabular-nums'>
+          100%
+        </span>
         <span className='relative h-1.5 w-20 overflow-hidden rounded-xs bg-background/80'>
           <span
             ref={integritySlimBar}

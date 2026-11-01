@@ -45,24 +45,27 @@ export const GAME_PANELS = [
 
 // The threat types: `color` is the theme token they glow in, `speed` (cells per second) how fast
 // they drift toward the player once in sight. `harm`: this close they wear integrity down. A
-// Memory Leak does no harm but `slows` the player near it; a Zero-Day is `stealth`: unseen (and
-// out of the crosshair) unless the flashlight's beam is on it
+// Memory Leak does no harm and stays where it is, but `slows` the player near it (a hazard to walk
+// round); a Zero-Day is `stealth`: unseen (and out of the crosshair) unless the flashlight's beam
+// is on it
 export const THREAT_TYPES = {
   ddos: { color: 'danger', speed: 0.6, harm: true },
   sql: { color: 'success', speed: 0.6, harm: true },
-  memleak: { color: 'secondary', speed: 0.3, harm: false, slows: true },
+  memleak: { color: 'secondary', speed: 0, harm: false, slows: true },
   zeroday: { color: 'foreground', speed: 0.6, harm: true, stealth: true },
 };
 
-// Threats between the rooms: behind each door and just inside the room after it. The spawn room
-// (About) and the rooms with crew (Projects, Education) have none. Each carries its own fact
-// (`fact`: demos.game.facts.<fact> in the locales), shown when it is neutralized
+// Threats just past the doors: each door has one on its far side, in the next room's entry (e4
+// in Projects', e8 in Education's, away from the crew there). None in the spawn room (About).
+// The Memory Leak (e5) sits in a pocket of Projects off the ways through it, so the corridor up to
+// Experience is never slowed. Each carries its own fact (`fact`: demos.game.facts.<fact> in the
+// locales), shown when it is neutralized
 export const ENEMIES = [
   { id: 'e1', type: 'ddos', cell: [14, 13], fact: 'helm' },
   { id: 'e2', type: 'sql', cell: [19, 13], fact: 'tenants' },
   { id: 'e3', type: 'ddos', cell: [24, 11], fact: 'argocd' },
   { id: 'e4', type: 'sql', cell: [30, 12], fact: 'ansible' },
-  { id: 'e5', type: 'memleak', cell: [36, 7], fact: 'observability' },
+  { id: 'e5', type: 'memleak', cell: [40, 10], fact: 'observability' },
   { id: 'e6', type: 'sql', cell: [34, 4], fact: 'terraform' },
   { id: 'e7', type: 'zeroday', cell: [41, 3], fact: 'falco' },
   { id: 'e8', type: 'sql', cell: [26, 4], fact: 'pgbouncer' },
@@ -113,12 +116,12 @@ export const WEAPON_FX = [
     shell: true,
   },
   // The DevOps Defender, the blaster: a wide blast hitting every threat in its cone, an orange
-  // radial burst
+  // radial burst; three to a full charge
   {
     cooldown: 0.6,
     cone: 0.3,
     range: 6,
-    energy: 40,
+    energy: 33,
     shake: 0.55,
     kick: 0.7,
     fx: 'radial',

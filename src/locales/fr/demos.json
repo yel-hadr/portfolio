@@ -381,6 +381,8 @@
     ],
     "weaponButton": "Arme",
     "switchWeapon": "Changer d’arme",
-    "exitConfirm": "Touchez encore pour quitter"
+    "exitConfirm": "Touchez encore pour quitter",
+    "outOfRange": "Hors de portée",
+    "closerToTalk": "Approchez-vous pour parler à {name}."
   }
 }

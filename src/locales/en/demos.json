@@ -381,6 +381,8 @@
     ],
     "weaponButton": "Weapon",
     "switchWeapon": "Switch weapon",
-    "exitConfirm": "Tap again to exit"
+    "exitConfirm": "Tap again to exit",
+    "outOfRange": "Out of range",
+    "closerToTalk": "Walk closer to talk to {name}."
   }
 }
