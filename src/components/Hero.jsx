@@ -50,9 +50,9 @@ const Hero = ({ onEnterGame }) => {
     <section
       id='hero'
       aria-labelledby='hero-title'
-      // Not a full screen: the next section's top peeks in, so the hero's content sits higher and
-      // the page reads on rather than ending under the buttons
-      className='relative flex min-h-[88svh] w-full items-center'
+      // As tall as its content, not a screen: About's heading is in view under it, so the page reads
+      // on instead of a wide empty band under the buttons
+      className='relative flex w-full items-center'
     >
       {/* The page's one orchestrated entrance: portrait, name, headline, then the actions. */}
       <m.div

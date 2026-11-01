@@ -213,10 +213,11 @@
     --color-line-hover: rgb(255 255 255 / 0.14);
     /* The timeline's line and arrows: a hairline in dark, a little firmer on the light ground */
     --color-rule: rgb(255 255 255 / 0.1);
-    /* Waves (WavesBackground): ember amber, violet, ice cyan, and their opacity multiplier */
+    /* Waves (WavesBackground): the brand orange into amber into slate (one accent on the page),
+       and their opacity multiplier */
     --c-wave-1: 249 115 22;
-    --c-wave-2: 167 139 250;
-    --c-wave-3: 6 182 212;
+    --c-wave-2: 251 146 60;
+    --c-wave-3: 100 116 139;
     --wave-alpha: 1;
     /* The footer's band: the page itself in dark, a shade darker than the page in light */
     --c-ground: 11 14 20;
@@ -306,10 +307,10 @@
       inset 0 1px 0 rgb(255 255 255 / 0.4), 0 1px 2px rgb(64 42 20 / 0.12),
       0 4px 12px rgb(64 42 20 / 0.1);
     --color-rule: rgb(140 131 122 / 0.45);
-    /* Pastel waves: peach, lavender, sky */
+    /* Pastel waves: orange, peach, warm stone */
     --c-wave-1: 251 146 60;
-    --c-wave-2: 167 139 250;
-    --c-wave-3: 96 165 250;
+    --c-wave-2: 253 186 116;
+    --c-wave-3: 168 162 158;
     --wave-alpha: 0.65;
     --c-ground: 244 239 232;
     /* Three soft warm layers (contact, near, ambient); under the pointer they deepen and the
@@ -515,7 +516,7 @@
     background-size: 24px 24px;
   }
 
-  /* The 42 demo cards: a scan line (ice cyan, with a soft trail) sweeps down the card once when it
+  /* The 42 demo cards: a scan line (the brand orange, with a soft trail) sweeps down the card once when it
      is hovered or a control inside it has focus. The card clips it. Never on its own, never
      under reduced motion */
   .scanline {
@@ -527,8 +528,8 @@
     background: linear-gradient(
       to bottom,
       transparent calc(100% - 3rem),
-      rgb(var(--c-secondary) / 0.08) calc(100% - 2px),
-      rgb(var(--c-secondary) / 0.7) 100%
+      rgb(var(--c-primary) / 0.08) calc(100% - 2px),
+      rgb(var(--c-primary) / 0.7) 100%
     );
     transform: translateY(-100%);
   }
