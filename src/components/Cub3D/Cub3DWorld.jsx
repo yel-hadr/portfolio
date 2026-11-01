@@ -288,6 +288,14 @@ const makeWorld = (text) => {
 // The cub3D demo walks the repo's map.cub; Game Mode its own map
 const DEMO_WORLD = makeWorld(MAP_CUB);
 const GAME_WORLD = makeWorld(GAME_CUB);
+// Whether someone stands in a door's cell: the player's box (RADIUS round the eye) or a live threat
+const doorwayTaken = (cell, W, camera, enemies) => {
+  const x0 = cell % W;
+  const z0 = Math.floor(cell / W);
+  const overlaps = (x, z, r) => x + r > x0 && x - r < x0 + 1 && z + r > z0 && z - r < z0 + 1;
+  if (camera && overlaps(camera.position.x, camera.position.z, RADIUS)) return true;
+  return enemies.some((enemy) => enemy.alive && overlaps(enemy.x, enemy.z, ENEMY_RADIUS));
+};
 
 // 64x64 pixel-art textures, one per side as the subject requires, in the theme's colors.
 // The names follow the textures map.cub points to.
@@ -889,19 +897,20 @@ const aimAt = (
   const dz = -Math.cos(yaw);
   let hit = null;
   let nearest = Math.min(wall, Math.max(reach, AIM_RANGE));
-  const consider = (thing, radius, limit) => {
+  // `cone` widens the hit with distance: a thing about 30° off the line still counts (the hub)
+  const consider = (thing, radius, limit, cone = 0) => {
     const ex = thing.x - x;
     const ez = thing.z - z;
     const along = ex * dx + ez * dz;
     if (along <= 0 || along >= nearest || along >= limit) return;
-    if (Math.abs(ex * dz - ez * dx) >= radius) return;
+    if (Math.abs(ex * dz - ez * dx) >= Math.max(radius, along * cone)) return;
     hit = thing.id;
     nearest = along;
   };
   enemies.forEach((enemy) => targetable(enemy) && consider(enemy, ENEMY_RADIUS, reach));
   npcs.forEach((npc) => consider(npc, NPC_RADIUS, AIM_RANGE));
   // Things that stand in a room and answer like a terminal (the command hub): within panel range
-  objects.forEach((object) => consider(object, object.radius, panelRange));
+  objects.forEach((object) => consider(object, object.radius, panelRange, object.cone));
   if (hit || wall > panelRange) return hit;
   const panel = panels.find(
     ({ position: [px, , pz] }) => Math.hypot(hx - px, hz - pz) < AIM_RADIUS
@@ -1017,9 +1026,27 @@ const panelCell = ({ position: [px, , pz], yaw }) => [
 const SECTION_PANELS = Object.fromEntries(
   GAME_PANELS.filter(({ kind }) => kind === 'section').map((panel) => [panel.id, panel])
 );
+// Game Mode's floor cells a prop (a rack, a crate, the hub) stands in: their center is inside the
+// prop's box grown by the player's radius, so the player cannot walk through them
+const blockedCells = (boxes, W) => {
+  const cells = new Set();
+  boxes.forEach(([x0, z0, x1, z1]) => {
+    for (let z = Math.floor(z0 - RADIUS); z <= Math.floor(z1 + RADIUS); z += 1) {
+      for (let x = Math.floor(x0 - RADIUS); x <= Math.floor(x1 + RADIUS); x += 1) {
+        const cx = x + 0.5;
+        const cz = z + 0.5;
+        if (cx > x0 - RADIUS && cx < x1 + RADIUS && cz > z0 - RADIUS && cz < z1 + RADIUS) {
+          cells.add(z * W + x);
+        }
+      }
+    }
+  });
+  return cells;
+};
 // The shortest walk between two cells (doors count as open: the player opens them on the way),
-// as a list of cells from the first to the last; null if none
-const findPath = (world, [sx, sz], [tx, tz]) => {
+// as a list of cells from the first to the last; null if none. `blocked` cells (props) are walked
+// around, except the start and the goal; if they cut every way through, the walk ignores them
+const findPath = (world, [sx, sz], [tx, tz], blocked = null) => {
   const { W, H, isFloor } = world;
   const start = sz * W + sx;
   const goal = tz * W + tx;
@@ -1038,18 +1065,21 @@ const findPath = (world, [sx, sz], [tx, tz]) => {
       [x, z - 1],
     ].forEach(([nx, nz]) => {
       const next = nz * W + nx;
-      if (isFloor(nx, nz) && from[next] < 0) {
+      const free = !blocked || next === goal || !blocked.has(next);
+      if (isFloor(nx, nz) && free && from[next] < 0) {
         from[next] = cell;
         queue.push(next);
       }
     });
   }
-  if (from[goal] < 0) return null;
+  if (from[goal] < 0) return blocked ? findPath(world, [sx, sz], [tx, tz]) : null;
   const path = [];
   for (let cell = goal; cell !== start; cell = from[cell]) path.push(cell);
   path.push(start);
   return path.reverse();
 };
+// The cells Game Mode's props stand in, which the lit path walks around
+const PROP_CELLS = blockedCells(PROP_BOXES, GAME_WORLD.W);
 // m:ss
 const minutes = (ms) => {
   const seconds = Math.max(0, Math.round(ms / 1000));
@@ -1747,7 +1777,7 @@ const Cub3DWorld = ({
         return;
       }
       guide.target = panelCell(SECTION_PANELS[next]);
-      const path = findPath(world, [cx, cz], guide.target) ?? [];
+      const path = findPath(world, [cx, cz], guide.target, PROP_CELLS) ?? [];
       // From the cell after the player's, each with the one before it (the way it points)
       guide.cells = path
         .slice(1, GUIDE_LENGTH + 1)
@@ -1827,9 +1857,13 @@ const Cub3DWorld = ({
       return;
     }
     const closed = !doors.current[ahead];
-    const whole = Object.fromEntries(
-      (world.doorOf[ahead] ?? [ahead]).map((cell) => [cell, closed])
-    );
+    const cells = world.doorOf[ahead] ?? [ahead];
+    // Never closed onto someone: the player's box or a live threat in either of its cells
+    if (closed && cells.some((cell) => doorwayTaken(cell, world.W, camera, enemies.current))) {
+      announce(t('demos.cub3d.sr.doorBlocked'));
+      return;
+    }
+    const whole = Object.fromEntries(cells.map((cell) => [cell, closed]));
     doors.current = { ...doors.current, ...whole };
     setClosedDoors(doors.current);
     announce(t(closed ? 'demos.cub3d.sr.doorClosed' : 'demos.cub3d.sr.doorOpened'));
@@ -1959,6 +1993,8 @@ const Cub3DWorld = ({
   // talks, a panel opens (its text, the contact form, or after "Access granted" a terminal's live
   // demo). Nothing in the crosshair works the door ahead
   const interact = () => {
+    // The last threat just fell: MISSION COMPLETE is on its way, nothing may open over it
+    if (missionPending.current) return;
     const id = targetRef.current;
     if (!id) {
       toggleDoor();
@@ -2204,6 +2240,8 @@ const Cub3DWorld = ({
 
   // Escape (or the mouse let go by the browser's Escape) during play: the pause menu
   const pause = () => {
+    // Not over Access granted's hand-off to a demo, MISSION COMPLETE on its way, or SYSTEM FAILURE
+    if (access || failed || missionPending.current) return;
     wasLocked.current = !!document.pointerLockElement || wasLocked.current;
     holdView();
     setPauseOpen(true);
@@ -2292,6 +2330,23 @@ const Cub3DWorld = ({
         e.preventDefault();
         e.stopPropagation();
         closeTalk();
+      }
+      return;
+    }
+    // Before play, Escape on Info / Controls or the story goes back to the menu; only on the menu
+    // itself is it left to the dialog, which closes Game Mode
+    if (game && !started && e.key === 'Escape' && screen !== 'menu') {
+      e.preventDefault();
+      e.stopPropagation();
+      setScreen('menu');
+      return;
+    }
+    // While Access granted hands over to a demo, or MISSION COMPLETE is on its way, no key acts
+    // (E would start the hand-off again, Escape would pause over it)
+    if (game && (access || missionPending.current)) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
       }
       return;
     }
@@ -2426,6 +2481,23 @@ const Cub3DWorld = ({
     };
     window.addEventListener('blur', clear);
     return () => window.removeEventListener('blur', clear);
+  }, []);
+  // Away from the game (another window, another tab) during play: it pauses, so threats do not
+  // close in on a player who cannot see them (a pointer-lock release already does the same)
+  const pauseIfPlaying = useEffectEvent(() => {
+    const busy = pauseOpen || openPanel || talk || access || complete || failed;
+    if (game && started && !busy) pause();
+  });
+  useEffect(() => {
+    const away = () => {
+      if (document.visibilityState === 'hidden' || !document.hasFocus()) pauseIfPlaying();
+    };
+    window.addEventListener('blur', away);
+    document.addEventListener('visibilitychange', away);
+    return () => {
+      window.removeEventListener('blur', away);
+      document.removeEventListener('visibilitychange', away);
+    };
   }, []);
 
   // Touch buttons act while held; a click with no hold behind it (Enter or Space, a screen

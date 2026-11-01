@@ -61,6 +61,14 @@ const send = async (form) => {
   }
 };
 
+// The message being written, kept outside the form: a dialog that closes on Escape or a click
+// outside it (Game Mode's Contact dossier) must not throw away what a visitor typed. Every copy of
+// the form shares it (in memory only, for this page); a message sent clears it
+let draft = EMPTY_FORM;
+const keepDraft = (form) => {
+  draft = form;
+};
+
 /** The submit button: its label and busy state come from the form's pending action */
 const SubmitButton = () => {
   const { t } = useI18n();
@@ -97,20 +105,25 @@ const ContactForm = () => {
   const [errors, setErrors] = useState({});
   const fieldRefs = { name: useRef(null), email: useRef(null), message: useRef(null) };
   // Controlled fields: a failed send keeps what was typed, a sent one clears them
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState(() => draft);
   // { type: 'success' | 'error', key } shown in a live region instead of alert(); a key, not
   // text, so the message follows a language switch
   const [status, sendAction, pending] = useActionState(async (previous, data) => {
     const result = await send(
       Object.fromEntries(['name', 'email', 'message', 'website'].map((k) => [k, data.get(k) ?? '']))
     );
-    if (result.type === 'success') setForm(EMPTY_FORM);
+    if (result.type === 'success') {
+      setForm(EMPTY_FORM);
+      keepDraft(EMPTY_FORM);
+    }
     return result;
   }, null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const next = { ...form, [name]: value };
+    setForm(next);
+    keepDraft(next);
     // A field marked wrong is checked again as it is typed in, so the message goes once it is right
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: check(name, value) }));
   };

@@ -165,6 +165,11 @@ export const CRATES = [
 ];
 
 // The boxes that block movement: [x0, z0, x1, z1]
+// The command hub's holographic projection, in the About room
+export const HOLOGRAM = [3.5, 12];
+// Its base, as wide as its ring: solid like a rack, so it cannot be walked through
+const HUB_HALF = 0.35;
+
 export const PROP_BOXES = [
   ...RACKS.map(([x, z]) => [
     x - RACK_SIZE[0] / 2,
@@ -173,6 +178,7 @@ export const PROP_BOXES = [
     z + RACK_SIZE[2] / 2,
   ]),
   ...CRATES.map(([x, z, s]) => [x - s / 2, z - s / 2, x + s / 2, z + s / 2]),
+  [HOLOGRAM[0] - HUB_HALF, HOLOGRAM[1] - HUB_HALF, HOLOGRAM[0] + HUB_HALF, HOLOGRAM[1] + HUB_HALF],
 ];
 
 // The vault's laser grid, in front of the Projects room's two live-demo terminals (it can be
@@ -185,12 +191,19 @@ export const LASER_GRID = {
   posts: 5,
 };
 
-// The command hub's holographic projection, in the About room
-export const HOLOGRAM = [3.5, 12];
 // The hub answers like a wall terminal (Press E, then its own dossier: the briefing, the mission's
 // progress, the controls), but it stands in the room: the crosshair finds it by its distance from
-// the view's center line, as the crew (`radius` in cells, a little wider than the globe)
-export const HUB = { id: 'hub', kind: 'hub', x: HOLOGRAM[0], z: HOLOGRAM[1], radius: 0.45 };
+// the view's center line, as the crew (`radius` in cells, a little wider than the globe), or
+// within a cone of about 30° (`cone`: the distance off the line per cell along it), so it answers
+// whenever it is roughly in front of the player, not only dead center
+export const HUB = {
+  id: 'hub',
+  kind: 'hub',
+  x: HOLOGRAM[0],
+  z: HOLOGRAM[1],
+  radius: 0.45,
+  cone: 0.6,
+};
 
 // Walking speed, cells per second (the original cub3D: SPEED 4 of a 64-unit cell per frame). The
 // weapon's bob follows the speed the player actually moves at (Enemies.jsx)

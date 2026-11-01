@@ -595,6 +595,20 @@ const MissionTracker = ({ t, sections }) => {
   );
 };
 
+// The end dialogs open under a player who may still be clicking to fire: their buttons and
+// backdrop take nothing for a moment (`ARMED_MS`), so a shot's click never lands on Exit
+const ARMED_MS = 400;
+const useArmed = () => {
+  const armed = useRef(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      armed.current = true;
+    }, ARMED_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
+  return armed;
+};
+
 /**
  * Every section read, or every threat neutralized: the mission's end, a dialog over the paused
  * game with the time it took, the threats neutralized, the accuracy, and the ways to get in touch
@@ -612,8 +626,19 @@ export const MissionComplete = ({
   onClose,
 }) => {
   const titleId = useId();
-  const { overlayRef, panelRef, close, onKeyDown, backdrop } = useModalDialog(onClose);
+  const armed = useArmed();
+  const { overlayRef, panelRef, close, onKeyDown, backdrop } = useModalDialog(() => {
+    if (armed.current) onClose();
+  });
   const heading = useRef(null);
+  // A click too soon after it opened does nothing (a link does not follow)
+  const guard = (action) => (e) => {
+    if (!armed.current) {
+      e.preventDefault();
+      return;
+    }
+    action?.(e);
+  };
 
   useEffect(() => {
     heading.current?.focus();
@@ -657,24 +682,34 @@ export const MissionComplete = ({
         <div className='mt-6 flex flex-col gap-3'>
           <button
             type='button'
-            onClick={onContact}
+            onClick={guard(onContact)}
             className={`${styles.buttonPrimary} justify-center`}
           >
             {t('demos.game.mission.contact')}
           </button>
-          <a href={resume} download className={`${styles.buttonGhost} justify-center`}>
+          <a
+            href={resume}
+            download
+            onClick={guard()}
+            className={`${styles.buttonGhost} justify-center`}
+          >
             {t('demos.game.mission.resume')}
           </a>
           <a
             href={github}
             target='_blank'
             rel='noopener noreferrer'
+            onClick={guard()}
             className={`${styles.buttonGhost} justify-center`}
           >
             {t('demos.game.mission.github')}
             <span className='sr-only'>{t('footer.newTab')}</span>
           </a>
-          <button type='button' onClick={close} className={`${styles.buttonGhost} justify-center`}>
+          <button
+            type='button'
+            onClick={guard(close)}
+            className={`${styles.buttonGhost} justify-center`}
+          >
             {t('demos.game.mission.keepExploring')}
           </button>
         </div>
@@ -761,8 +796,20 @@ export const PauseMenu = ({ t, onResume, onRestart, onMenu, settings }) => {
 export const SystemFailure = ({ t, onReboot, onMenu }) => {
   const titleId = useId();
   const bodyId = useId();
+  const armed = useArmed();
   const { overlayRef, panelRef, close, release, onKeyDown } = useModalDialog(onReboot);
   const reboot = useRef(null);
+  // Exit to the main menu ends the run: a second press confirms it
+  const [confirming, setConfirming] = useState(false);
+  const toMenu = () => {
+    if (!armed.current) return;
+    if (!confirming) {
+      setConfirming(true);
+      return;
+    }
+    release();
+    onMenu();
+  };
 
   useEffect(() => {
     reboot.current?.focus();
@@ -803,20 +850,13 @@ export const SystemFailure = ({ t, onReboot, onMenu }) => {
           <button
             ref={reboot}
             type='button'
-            onClick={close}
+            onClick={() => armed.current && close()}
             className={`${styles.buttonPrimary} ${MENU_BUTTON}`}
           >
             {t('demos.game.failure.reboot')}
           </button>
-          <button
-            type='button'
-            onClick={() => {
-              release();
-              onMenu();
-            }}
-            className={`${styles.buttonGhost} ${MENU_BUTTON}`}
-          >
-            {t('demos.game.pause.toMenu')}
+          <button type='button' onClick={toMenu} className={`${styles.buttonGhost} ${MENU_BUTTON}`}>
+            {t(confirming ? 'demos.game.failure.confirmMenu' : 'demos.game.pause.toMenu')}
           </button>
         </div>
       </div>
