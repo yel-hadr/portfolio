@@ -285,6 +285,9 @@ const typingChallenge = { seconds: 30, bonus: 5 };
 const gameStorage = {
   snake: 'packet_snake_high_score',
   typing: 'typing_high_score',
+  // Game Mode's mission: the fastest time (ms) and the best grade (3 S, 2 A, 1 B)
+  missionTime: 'game_mode_best_time',
+  missionGrade: 'game_mode_best_grade',
 };
 
 export {

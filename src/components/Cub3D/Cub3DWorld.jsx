@@ -29,7 +29,8 @@ import { styles } from '../../styles';
 import { readTheme, rgb } from '../../utils/themeColors';
 import ContactForm from '../ContactForm';
 import { GameLayer } from './Enemies';
-import { person } from '../../constans';
+import { gameStorage, person } from '../../constans';
+import { readBest, saveBest, saveFastest } from '../Games/storage';
 import { HIT_STOP_MS, frozen } from './freeze';
 import { readGameTheme } from './gameTheme';
 import {
@@ -46,6 +47,9 @@ import { MAP_CUB, parseCub } from './map';
 import {
   ENEMIES,
   GAME_PANELS,
+  GRADE_BY_RANK,
+  HARDENED_BY,
+  HARDENED_MAX,
   HUB,
   MOVE_SPEED,
   NPCS,
@@ -54,7 +58,11 @@ import {
   THREAT_TYPES,
   WEAPON_COUNT,
   WEAPON_FX,
+  WEAPON_UNLOCKS,
+  gradeOf,
+  maxIntegrity,
   roomAt,
+  weaponOpen,
 } from './rooms';
 import { useLiveRef } from '../../hooks/useLiveRef';
 
@@ -97,6 +105,11 @@ const HARM_RATE = 6;
 const HARM_WINDUP_MS = 500;
 // Energy starts to refill this long after the last shot
 const REFILL_AFTER_MS = 150;
+// The finale, the sixth section read: "Deploy to production", one pipeline stage a second (the
+// stages are demos.game.deploy.stages), a moment on the last, then every door opens
+const DEPLOY_STAGES = 5;
+const DEPLOY_STEP_MS = 1000;
+const DEPLOY_HOLD_MS = 700;
 // The lit path to the next section: this many cells of it, from the player on
 const GUIDE_LENGTH = 14;
 const AIM_RADIUS = 0.9; // cells from a panel's center that still count as aiming at it
@@ -250,13 +263,14 @@ const saveSetting = (key, value) => {
   }
 };
 // Fills a HUD bar to `value` (0 to 100), only when its whole percent changes
-const writeBar = (el, value) => {
+const writeBar = (el, value, max = 100) => {
   if (!el) return;
   const v = Math.round(value);
-  if (el.dataset.value === String(v)) return;
+  if (el.dataset.value === String(v) && el.dataset.max === String(max)) return;
   el.dataset.value = String(v);
-  el.style.transform = `scaleX(${v / 100})`;
-  el.dataset.low = String(v < 30);
+  el.dataset.max = String(max);
+  el.style.transform = `scaleX(${v / max})`;
+  el.dataset.low = String(v < max * 0.3);
   // Its number, beside the label (the unit is the locale's, next to it)
   const readout = el.closest('[data-meter]')?.querySelector('[data-readout]');
   if (readout) readout.textContent = String(v);
@@ -522,6 +536,7 @@ const Scene = memo(function Scene({
   respawnRef,
   hubLitRef,
   nearRef,
+  deploy,
 }) {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
@@ -822,6 +837,7 @@ const Scene = memo(function Scene({
             hitStopRef={hitStop}
             hubLitRef={hubLitRef}
             nearRef={nearRef}
+            deploy={deploy}
           />
         </Suspense>
       ) : (
@@ -1143,6 +1159,19 @@ const PROP_CELLS = blockedCells(PROP_BOXES, GAME_WORLD.W);
 // The mission's clock (D1): `total` ms played before, plus the stretch running since `since`
 // (null while the game is held: the menu, a dialog, a crew member talking, the pause menu)
 const clockElapsed = ({ total, since }) => total + (since === null ? 0 : timeNow() - since);
+// A finished mission's grade, and the bests kept (Games/storage.js): the fastest time and the best
+// grade, each with whether this run set it
+const recordRun = (time, grade) => {
+  const fastest = saveFastest(gameStorage.missionTime, time);
+  const previous = readBest(gameStorage.missionGrade);
+  const ranked = saveBest(gameStorage.missionGrade, grade.rank);
+  return {
+    time: fastest.best,
+    newTime: fastest.newBest,
+    grade: GRADE_BY_RANK[ranked.best] ?? grade.grade,
+    newGrade: ranked.newBest && previous > 0,
+  };
+};
 // m:ss
 const minutes = (ms) => {
   const seconds = Math.max(0, Math.round(ms / 1000));
@@ -1244,6 +1273,8 @@ const Cub3DWorld = ({
   const [complete, setComplete] = useState(null);
   // The last threat is down and MISSION COMPLETE opens in a moment: no pausing in between
   const missionPending = useRef(false);
+  // The finale's pipeline: how many stages are done (0 to DEPLOY_STAGES), null when not deploying
+  const [deploy, setDeploy] = useState(null);
   const missionClock = useRef({ total: initialState?.elapsed ?? 0, since: null });
   // A section opened for the first time: announced as discovered when its dossier closes
   const foundRef = useRef(null);
@@ -1761,15 +1792,16 @@ const Cub3DWorld = ({
         // The steady edge (Reduce flashing) holds a moment, so a threat at the edge of its reach
         // does not make it flicker
         if (now - hp.at > 500 && hitRef.current?.style.opacity) hitRef.current.style.opacity = '';
-        if (now - hp.at > 1500 && hp.value < 100) {
-          hp.value = Math.min(100, hp.value + 8 * dt);
+        const hpMax = maxIntegrity(readRef.current);
+        if (now - hp.at > 1500 && hp.value < hpMax) {
+          hp.value = Math.min(hpMax, hp.value + 8 * dt);
           invalidateRef.current();
         }
         if (hp.value > 60) hp.warned = false;
       }
       writeBar(energyBar.current, en.value);
-      writeBar(integrityBar.current, hp.value);
-      writeBar(integritySlimBar.current, hp.value);
+      writeBar(integrityBar.current, hp.value, maxIntegrity(readRef.current));
+      writeBar(integritySlimBar.current, hp.value, maxIntegrity(readRef.current));
       // A Memory Leak's drag: shown (and said once) as it starts, with a margin so its edge does
       // not flicker
       const dragged = slowedRef.current ? slow.current < 0.99 : slow.current < 0.95;
@@ -1868,18 +1900,31 @@ const Cub3DWorld = ({
       const next = SECTIONS.find((id) => !readRef.current.includes(id));
       const cx = Math.floor(camera.position.x);
       const cz = Math.floor(camera.position.z);
-      const key = `${cx},${cz},${next}`;
+      // Every section read and the mission over: the optional hunt leads to the nearest threat
+      const prey =
+        !next && missionDoneRef.current
+          ? enemies.current
+              .filter((e) => e.alive)
+              .sort(
+                (a, b) =>
+                  Math.hypot(a.x - camera.position.x, a.z - camera.position.z) -
+                  Math.hypot(b.x - camera.position.x, b.z - camera.position.z)
+              )[0]
+          : null;
+      const goal = prey ? [Math.floor(prey.x), Math.floor(prey.z)] : null;
+      const key = `${cx},${cz},${next},${goal}`;
       if (!force && key === guideFrom.current) return;
       guideFrom.current = key;
       const guide = guideRef.current;
       guide.version += 1;
-      guide.section = next ?? null;
-      if (!next) {
+      // The path's color: the next section's room, or danger red for the hunt
+      guide.section = next ?? (prey ? 'danger' : null);
+      if (!next && !prey) {
         guide.cells = [];
         guide.target = null;
         return;
       }
-      guide.target = panelCell(SECTION_PANELS[next]);
+      guide.target = next ? panelCell(SECTION_PANELS[next]) : goal;
       const path = findPath(world, [cx, cz], guide.target, PROP_CELLS) ?? [];
       // From the cell after the player's, each with the one before it (the way it points)
       guide.cells = path
@@ -1999,6 +2044,14 @@ const Cub3DWorld = ({
     };
   };
 
+  // The mission's end: its grade from the play time, the threats and the accuracy, and the bests
+  const completeMission = (by) => {
+    const time = clockElapsed(missionClock.current);
+    const fired = { ...shots.current };
+    const done = enemies.current.filter((e) => !e.alive).length;
+    const grade = gradeOf({ time, kills: done, threats: ENEMIES.length, shots: fired });
+    setComplete({ by, time, shots: fired, grade: grade.grade, best: recordRun(time, grade) });
+  };
   // The fact at the head of the queue, for TOAST_MS, then the next
   const showFact = () => {
     const [enemy] = factQueue.current;
@@ -2006,10 +2059,11 @@ const Cub3DWorld = ({
       setToast(null);
       return;
     }
+    // A threat's fact, or a card with its own words (the all clear)
     setToast({
       key: enemy.id,
-      title: t(`demos.game.facts.${enemy.fact}.title`),
-      body: t(`demos.game.facts.${enemy.fact}.body`),
+      title: enemy.title ?? t(`demos.game.facts.${enemy.fact}.title`),
+      body: enemy.body ?? t(`demos.game.facts.${enemy.fact}.body`),
     });
     later(
       'toast',
@@ -2063,11 +2117,11 @@ const Cub3DWorld = ({
     // keeps its time, and this one follows
     factQueue.current = [...factQueue.current, enemy];
     if (factQueue.current.length === 1) showFact();
+    const allDown = enemies.current.every((e) => !e.alive);
     // The last threat: the mission is complete too (once), after a moment to see the kill
-    if (!missionDoneRef.current && enemies.current.every((e) => !e.alive)) {
+    if (!missionDoneRef.current && allDown) {
       missionDoneRef.current = true;
       setMissionDone(true);
-      const time = clockElapsed(missionClock.current);
       missionPending.current = true;
       later(
         'complete',
@@ -2075,10 +2129,25 @@ const Cub3DWorld = ({
           missionPending.current = false;
           setPauseOpen(false);
           holdView();
-          setComplete({ by: 'threats', time, shots: { ...shots.current } });
+          completeMission('threats');
         },
         700
       );
+    } else if (allDown) {
+      // The optional hunt after the mission is over: an all-clear card after the last fact
+      factQueue.current = [
+        ...factQueue.current,
+        {
+          id: 'all-clear',
+          title: t('demos.game.hunt.clearTitle'),
+          body: t('demos.game.hunt.clearBody'),
+        },
+      ];
+      if (factQueue.current.length === 1) showFact();
+      updateGuide(cameraRef.current, true);
+    } else if (missionDoneRef.current) {
+      // The lit path moves on to the next nearest threat
+      updateGuide(cameraRef.current, true);
     }
   };
 
@@ -2280,8 +2349,32 @@ const Cub3DWorld = ({
   const releaseTrigger = () => {
     firing.current.held = false;
   };
-  const switchWeapon = (next) => {
-    const w = (next + WEAPON_COUNT) % WEAPON_COUNT;
+  // A weapon still locked says which section unlocks it
+  const sayLocked = (w) =>
+    announce(
+      t('demos.game.locked', {
+        name: t('demos.game.weapons')[w],
+        section: t(`demos.game.sections.${WEAPON_UNLOCKS[w]}`),
+      })
+    );
+  // `step` (1 or -1: Q, the wheel, the touch button) passes over the locked ones; a number key
+  // names one, which says so if it is locked
+  const switchWeapon = (next, step = 0) => {
+    const read = readRef.current;
+    let w = (next + WEAPON_COUNT) % WEAPON_COUNT;
+    for (let i = 0; step && i < WEAPON_COUNT && !weaponOpen(read, w); i += 1) {
+      w = (w + step + WEAPON_COUNT) % WEAPON_COUNT;
+    }
+    if (!weaponOpen(read, w)) {
+      sayLocked(w);
+      return;
+    }
+    // Nothing else unlocked yet: say what the next one needs
+    if (step && w === weaponState.current) {
+      const locked = WEAPON_UNLOCKS.findIndex((section, i) => section && !weaponOpen(read, i));
+      if (locked > 0) sayLocked(locked);
+      return;
+    }
     weaponState.current = w;
     setWeapon(w);
     announce(t('demos.game.weapon', { name: t('demos.game.weapons')[w] }));
@@ -2294,8 +2387,53 @@ const Cub3DWorld = ({
     if (!game || !started || held || !e.currentTarget.contains(e.target)) return;
     if (timeNow() - wheelAt.current < 200) return;
     wheelAt.current = timeNow();
-    switchWeapon(weapon + (e.deltaY > 0 ? 1 : -1));
+    const step = e.deltaY > 0 ? 1 : -1;
+    switchWeapon(weapon + step, step);
   };
+  // Every door opens at once (the finale): the way back from Contact, the dead end, is clear
+  const openAllDoors = () => {
+    doors.current = { ...doors.current, ...Object.fromEntries(doorCells.map((c) => [c, true])) };
+    setClosedDoors(doors.current);
+    play('hiss');
+  };
+  // One pipeline stage a second on the HUD and every terminal screen; nothing acts meanwhile
+  const runDeploy = (done) => {
+    setDeploy(done);
+    if (done > 0) play('blip');
+    if (done < DEPLOY_STAGES) {
+      later('deploy', () => runDeploy(done + 1), DEPLOY_STEP_MS);
+      return;
+    }
+    later(
+      'deploy',
+      () => {
+        setDeploy(null);
+        openAllDoors();
+        missionPending.current = false;
+        if (!missionDoneRef.current) {
+          missionDoneRef.current = true;
+          setMissionDone(true);
+          announce(t('demos.game.deploy.done'));
+          completeMission('sections');
+          return;
+        }
+        // The threats had already ended the mission: back to play
+        announce(t('demos.game.deploy.done'));
+        updateGuide(cameraRef.current, true);
+        requestAnimationFrame(() => wrapperRef.current?.focus({ preventScroll: true }));
+        relock();
+      },
+      DEPLOY_HOLD_MS
+    );
+  };
+  const startFinale = (said = '') => {
+    missionPending.current = true;
+    holdView();
+    play('access');
+    announce(`${said} ${t('demos.game.deploy.start')}`.trim());
+    runDeploy(0);
+  };
+
   const closePanel = () => {
     setOpenPanel(null);
     hubLit.current = false;
@@ -2315,18 +2453,25 @@ const Cub3DWorld = ({
           said = `${said} ${t('demos.game.vaultOpen')}`;
           play('lasers');
         }
-        announce(said);
-        // The sixth: the mission is complete (once; a later visit to a wall does not repeat it)
-        if (count === SECTIONS.length && !missionDoneRef.current) {
-          missionDoneRef.current = true;
-          setMissionDone(true);
-          setComplete({
-            by: 'sections',
-            time: clockElapsed(missionClock.current),
-            shots: { ...shots.current },
-          });
+        // The kit: a new weapon, or integrity hardened (filled by the difference)
+        const unlocked = WEAPON_UNLOCKS.indexOf(found);
+        if (unlocked > 0) {
+          said = `${said} ${t('demos.game.unlocks.weapon', {
+            name: t('demos.game.weapons')[unlocked],
+            key: unlocked + 1,
+          })}`;
+        }
+        if (found === HARDENED_BY) {
+          integrity.current.value = Math.min(HARDENED_MAX, integrity.current.value + 50);
+          said = `${said} ${t('demos.game.unlocks.integrity', { max: HARDENED_MAX })}`;
+        }
+        // The sixth: the finale, "Deploy to production", then the mission is complete (once; a
+        // later visit to a wall does not repeat it)
+        if (count === SECTIONS.length) {
+          startFinale(said);
           return { completed: true, said };
         }
+        announce(said);
       }
       updateGuide(cameraRef.current, true);
       invalidateRef.current();
@@ -2345,6 +2490,11 @@ const Cub3DWorld = ({
 
   const closeComplete = () => {
     setComplete(null);
+    // Threats left: the optional hunt (the tracker counts them, the lit path leads to them)
+    const left = enemies.current.filter((e) => e.alive).length;
+    if (left && SECTIONS.every((id) => readRef.current.includes(id))) {
+      announce(t('demos.game.hunt.start', { count: left }));
+    }
     updateGuide(cameraRef.current, true);
     invalidateRef.current();
     requestAnimationFrame(() => wrapperRef.current?.focus({ preventScroll: true }));
@@ -2450,13 +2600,14 @@ const Cub3DWorld = ({
   });
   // Reboot: back in the first room, integrity and energy full; the mission's progress is kept
   const reboot = () => {
-    integrity.current = { value: 100, at: 0, pulse: 0, warned: false, since: null };
+    const hpMax = maxIntegrity(readRef.current);
+    integrity.current = { value: hpMax, at: 0, pulse: 0, warned: false, since: null };
     energy.current = { value: 100, at: 0, warned: false };
     pressure.current = 0;
     slow.current = 1;
     if (hitRef.current) hitRef.current.style.opacity = '';
-    writeBar(integrityBar.current, 100);
-    writeBar(integritySlimBar.current, 100);
+    writeBar(integrityBar.current, hpMax, hpMax);
+    writeBar(integritySlimBar.current, hpMax, hpMax);
     writeBar(energyBar.current, 100);
     respawnRef.current?.();
     failedRef.current = false;
@@ -2495,6 +2646,9 @@ const Cub3DWorld = ({
       relockRef.current = true;
       later('relock', relock, 120);
     }
+    // Left during the finale (the text-only mode): it runs again, then MISSION COMPLETE
+    const allRead = SECTIONS.every((id) => initialState?.read?.includes(id));
+    if (game && allRead && !missionDoneRef.current) later('finale', () => startFinale(), 400);
   });
   // Once
   useEffect(() => {
@@ -2575,7 +2729,7 @@ const Cub3DWorld = ({
     } else if (game && /^Digit[1-9]$/.test(e.code) && Number(e.code[5]) <= WEAPON_COUNT) {
       if (!e.repeat) switchWeapon(Number(e.code[5]) - 1);
     } else if (game && e.code === 'KeyQ') {
-      if (!e.repeat) switchWeapon(weapon + 1);
+      if (!e.repeat) switchWeapon(weapon + 1, 1);
     } else if (game && (e.key === 'm' || e.key === 'M')) {
       if (e.repeat) return;
       // The button shows the state; from the keyboard, focus stays on the view, so say it
@@ -2730,7 +2884,8 @@ const Cub3DWorld = ({
 
   // Game Mode draws every frame while playing (the threats and the weapon move); paused (the
   // menu, a dialog, Access granted), or with reduced motion (nothing moves on its own), on demand
-  const stopped = !!openPanel || access || !!talk || !!complete || pauseOpen || failed;
+  const stopped =
+    !!openPanel || access || !!talk || !!complete || pauseOpen || failed || deploy !== null;
   const playing = game && started && !stopped && !reduced;
   // The threats hold still, and wear nothing down, whenever the game is not being played: the
   // menu, a wall's text or the contact form, Access granted, a crew member talking. Frames still
@@ -2752,6 +2907,22 @@ const Cub3DWorld = ({
       c.since = null;
     }
   }, [game, held]);
+  // The finale's pipeline as the HUD and the terminal screens show it
+  const deployView = useMemo(
+    () =>
+      deploy === null
+        ? null
+        : {
+            done: deploy,
+            title: t('demos.game.deploy.title'),
+            stages: t('demos.game.deploy.stages'),
+            label: t('demos.game.deploy.label'),
+          },
+    [deploy, t]
+  );
+  // After the mission, with every section read: the threats still standing (the optional hunt)
+  const hunt =
+    missionDone && SECTIONS.every((id) => read.includes(id)) ? ENEMIES.length - kills : null;
   // The tracker's list: the sections in order, ticked once read
   const sectionList = useMemo(
     () =>
@@ -2843,6 +3014,7 @@ const Cub3DWorld = ({
           respawnRef={respawnRef}
           hubLitRef={hubLit}
           nearRef={nearAhead}
+          deploy={deployView}
         />
         {game && (
           <GameLayer
@@ -2981,7 +3153,7 @@ const Cub3DWorld = ({
             <button
               type='button'
               aria-label={t('demos.game.switchWeapon')}
-              onClick={() => switchWeapon(weapon + 1)}
+              onClick={() => switchWeapon(weapon + 1, 1)}
               className={`${TOUCH_BUTTON} col-start-3 row-start-1 w-auto px-1 text-xs`}
             >
               {t('demos.game.weaponButton')}
@@ -3064,6 +3236,8 @@ const Cub3DWorld = ({
           onPause={pause}
           hubFlash={hubFlash}
           noFlash={noFlash}
+          deploy={deployView}
+          hunt={hunt}
         />
       )}
       {pauseOpen && (
@@ -3135,6 +3309,8 @@ const Cub3DWorld = ({
                 })
               : t('demos.game.mission.noShots')
           }
+          grade={complete.grade}
+          best={complete.best && { ...complete.best, timeText: minutes(complete.best.time) }}
           resume={person.resume}
           github={person.github}
           // The Contact dossier, read as at its wall: Contact is ticked off

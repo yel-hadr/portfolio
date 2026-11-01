@@ -130,6 +130,29 @@ export const WEAPON_FX = [
 ];
 export const WEAPON_COUNT = WEAPON_FX.length;
 
+// The kit grows as the profile is read: the rifle from the start, the section that unlocks each
+// other weapon (by index), and the section that hardens integrity (its maximum, from 100)
+export const WEAPON_UNLOCKS = [null, 'skills', 'projects'];
+export const weaponOpen = (read, w) => !WEAPON_UNLOCKS[w] || read.includes(WEAPON_UNLOCKS[w]);
+export const HARDENED_BY = 'experience';
+export const HARDENED_MAX = 150;
+export const maxIntegrity = (read) => (read.includes(HARDENED_BY) ? HARDENED_MAX : 100);
+
+// The mission's grade: S for every threat neutralized with 60% accuracy in under 6 minutes of play,
+// A for two thirds of them with 40% in under 10, B otherwise. `rank` orders them for the best kept
+export const GRADES = [
+  { grade: 'S', rank: 3, kills: 1, accuracy: 0.6, minutes: 6 },
+  { grade: 'A', rank: 2, kills: 2 / 3, accuracy: 0.4, minutes: 10 },
+];
+export const gradeOf = ({ time, kills, threats, shots }) => {
+  const accuracy = shots.fired ? shots.hit / shots.fired : 0;
+  const met = GRADES.find(
+    (g) => kills / threats >= g.kills - 1e-9 && accuracy >= g.accuracy && time <= g.minutes * 60000
+  );
+  return met ?? { grade: 'B', rank: 1 };
+};
+export const GRADE_BY_RANK = { 3: 'S', 2: 'A', 1: 'B' };
+
 // Game Mode's facility set dressing (Facility.jsx), kept off the ways through the rooms. Positions
 // are world (x, z); racks and crates block the way (PROP_BOXES)
 

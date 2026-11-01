@@ -188,6 +188,7 @@
       "E: interact with doors, walls, terminals and the crew",
       "Space: open the door ahead · M: sound on or off",
       "Esc: pause",
+      "Kit: the rifle to start; reading Skills unlocks the pistol, Projects the blaster, and Experience raises integrity to 150",
       "Memory Leak: slows you down · Zero-Day: only seen in your flashlight’s beam"
     ],
     "status": {
@@ -377,6 +378,7 @@
       "Weapon: switch weapon",
       "Use: talk, read a terminal or open the door ahead",
       "Pause: the pause menu, with sound and the other settings",
+      "Kit: the rifle to start; reading Skills unlocks the pistol, Projects the blaster, and Experience raises integrity to 150",
       "Memory Leak: slows you down · Zero-Day: only seen in your flashlight’s beam"
     ],
     "weaponButton": "Weapon",
@@ -384,6 +386,32 @@
     "exitConfirm": "Tap again to exit",
     "outOfRange": "Out of range",
     "closerToTalk": "Walk closer to talk to {name}.",
-    "percent": "{value}%"
+    "percent": "{value}%",
+    "unlocks": {
+      "weapon": "New weapon: {name} (key {key}, or Q).",
+      "integrity": "Integrity hardened: up to {max}."
+    },
+    "locked": "{name} is locked: read the {section} terminal to unlock it.",
+    "deploy": {
+      "label": "Finale",
+      "title": "Deploy to production",
+      "stages": ["Build", "Test", "Security scan", "Release", "Health check"],
+      "start": "All six sections read. Deploying to production.",
+      "done": "Deployed to production. Every door is open."
+    },
+    "hunt": {
+      "tracker": "Optional · threats left: {count}",
+      "clear": "All clear",
+      "start": "Optional: neutralize the remaining threats ({count} left). The lit path leads to the nearest.",
+      "clearTitle": "All clear",
+      "clearBody": "Every threat is neutralized. The facility is secure."
+    },
+    "grade": {
+      "label": "Grade",
+      "hint": "S: every threat, 60% accuracy, under 6:00 · A: two thirds, 40%, under 10:00",
+      "bestTime": "Best time",
+      "bestGrade": "Best grade",
+      "new": "New"
+    }
   }
 }
