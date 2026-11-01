@@ -89,3 +89,31 @@ Paths are under `src/components/Cub3D/` unless given.
   Automated (real GPU, production build, `.playwright-mcp/pr7-check.js`): F1, F2, H1 and G1 pass there
   (G1 checks the live region's text and the focus in touch emulation). Still to do by hand: a real
   phone with a screen reader.
+
+# PR 8: the finale, the shortcut, the Memory Leak
+
+Checked against `main` at d76d92f (after PR 7, #52). The list sent for this PR stopped after the
+three items below; J4–J12 and K2–K6 come in a later one.
+
+## Medium
+
+- [x] **J2 + K1 Clicks and kills during the finale.** During "Deploy to production" a click captured
+  the mouse and the next one fired; the deploy's end opened MISSION COMPLETE with the mouse captured;
+  a last kill could open MISSION COMPLETE for the threats while the pipeline ran. `missionPending`
+  now holds for the whole finale, and `fire`, `onPointerDown`, `onClick`, `lookWithMouse` and the
+  wheel check it; the Mouse look button is not offered during the deploy; the deploy's end calls
+  `setPauseOpen(false)` and `holdView()` before `completeMission`; the threats' MISSION COMPLETE
+  waits for a running deploy (`deploying`) and the deploy's end does not focus or capture behind
+  it (`completing`).
+- [x] **J3 Contact is still a dead end.** A shortcut door between Contact and About (x 2–3,
+  rows 7–9), closed at the start, labelled from both sides. Also found: `openAllDoors` set every
+  door to `true`, which is *closed* in the door state, so the finale closed every door; it now
+  opens them.
+- [x] **H1 (rest) Memory Leak beside two routes.** No cell in Projects keeps 2.5 cells from every
+  lit-path route (the best is 2.0), so e5 stays at [36, 15] and the lit path steers round its pull
+  while it is alive (`LEAK_ZONES`, one per leak, only the live ones), re-laid as it falls; `SLOW_RANGE` moved to rooms.js.
+
+## Before merging
+
+- [x] `npm run lint`, `npm run format:check`, `npm run compiler:report` (Skipped: none), build.
+- [x] `.playwright-mcp/pr8-check.js` (real GPU, production build) and the earlier suites.

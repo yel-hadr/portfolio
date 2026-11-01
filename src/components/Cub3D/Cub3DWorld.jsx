@@ -55,6 +55,7 @@ import {
   NPCS,
   PROP_BOXES,
   SECTIONS,
+  SLOW_RANGE,
   THREAT_REACH,
   THREAT_TYPES,
   WEAPON_COUNT,
@@ -1151,9 +1152,11 @@ const blockedCells = (boxes, W) => {
   return cells;
 };
 // The shortest walk between two cells (doors count as open: the player opens them on the way),
-// as a list of cells from the first to the last; null if none. `blocked` cells (props) are walked
-// around, except the start and the goal; if they cut every way through, the walk ignores them
-const findPath = (world, [sx, sz], [tx, tz], blocked = null) => {
+// as a list of cells from the first to the last; null if none. `avoid` is a list of cell sets
+// walked around (except the start and the goal), tried in order: the first that leaves a way
+// through wins, and with none left the walk goes straight
+const findPath = (world, [sx, sz], [tx, tz], avoid = []) => {
+  const [blocked = null, ...rest] = avoid;
   const { W, H, isFloor } = world;
   const start = sz * W + sx;
   const goal = tz * W + tx;
@@ -1179,7 +1182,7 @@ const findPath = (world, [sx, sz], [tx, tz], blocked = null) => {
       }
     });
   }
-  if (from[goal] < 0) return blocked ? findPath(world, [sx, sz], [tx, tz]) : null;
+  if (from[goal] < 0) return blocked ? findPath(world, [sx, sz], [tx, tz], rest) : null;
   const path = [];
   for (let cell = goal; cell !== start; cell = from[cell]) path.push(cell);
   path.push(start);
@@ -1187,6 +1190,22 @@ const findPath = (world, [sx, sz], [tx, tz], blocked = null) => {
 };
 // The cells Game Mode's props stand in, which the lit path walks around
 const PROP_CELLS = blockedCells(PROP_BOXES, GAME_WORLD.W);
+// And while a Memory Leak is alive, its pull too: the floor cells whose center is within
+// SLOW_RANGE of it plus half a cell (the player walks anywhere in a cell), one set per leak. Where
+// its zone cuts every way (a start inside it, or the hunt leading to it), the path keeps to the
+// props alone
+const LEAK_ZONES = new Map(
+  ENEMIES.filter(({ type }) => THREAT_TYPES[type].slows).map(({ id, cell: [lx, lz] }) => {
+    const { W, H, isFloor } = GAME_WORLD;
+    const zone = [];
+    for (let z = 0; z < H; z += 1) {
+      for (let x = 0; x < W; x += 1) {
+        if (isFloor(x, z) && Math.hypot(x - lx, z - lz) < SLOW_RANGE + 0.5) zone.push(z * W + x);
+      }
+    }
+    return [id, zone];
+  })
+);
 // The mission's clock (D1): `total` ms played before, plus the stretch running since `since`
 // (null while the game is held: the menu, a dialog, a crew member talking, the pause menu)
 const clockElapsed = ({ total, since }) => total + (since === null ? 0 : timeNow() - since);
@@ -1305,8 +1324,13 @@ const Cub3DWorld = ({
   // MISSION COMPLETE, open: how it ended ('sections', all six read, or 'threats', every one
   // neutralized), the play time and the shots, as they were then; null when closed
   const [complete, setComplete] = useState(null);
-  // The last threat is down and MISSION COMPLETE opens in a moment: no pausing in between
+  // The game is held, nothing acts: the last threat is down and MISSION COMPLETE opens in a moment,
+  // or the finale's pipeline runs (startFinale to the deploy's end)
   const missionPending = useRef(false);
+  // The finale's pipeline running, and the threats' MISSION COMPLETE still to open: refs, for the
+  // timers that read them renders later
+  const deploying = useRef(false);
+  const completing = useRef(false);
   // The finale's pipeline: how many stages are done (0 to DEPLOY_STAGES), null when not deploying
   const [deploy, setDeploy] = useState(null);
   const missionClock = useRef({ total: initialState?.elapsed ?? 0, since: null });
@@ -1972,7 +1996,12 @@ const Cub3DWorld = ({
         return;
       }
       guide.target = next ? panelCell(SECTION_PANELS[next]) : goal;
-      const path = findPath(world, [cx, cz], guide.target, PROP_CELLS) ?? [];
+      // The live leaks' zones on top of the props (only the live ones)
+      const leaks = enemies.current.filter((e) => e.alive && LEAK_ZONES.has(e.id));
+      const avoid = leaks.length
+        ? [new Set([...PROP_CELLS, ...leaks.flatMap((e) => LEAK_ZONES.get(e.id))]), PROP_CELLS]
+        : [PROP_CELLS];
+      const path = findPath(world, [cx, cz], guide.target, avoid) ?? [];
       // From the cell after the player's, each with the one before it (the way it points)
       guide.cells = path
         .slice(1, GUIDE_LENGTH + 1)
@@ -2189,16 +2218,21 @@ const Cub3DWorld = ({
       missionDoneRef.current = true;
       setMissionDone(true);
       missionPending.current = true;
-      later(
-        'complete',
-        () => {
-          missionPending.current = false;
-          setPauseOpen(false);
-          holdView();
-          completeMission('threats');
-        },
-        700
-      );
+      completing.current = true;
+      // The finale may have started in between (a world back from a snapshot runs it 400 ms in):
+      // MISSION COMPLETE waits for the deploy's end, and the game stays held until then
+      const finish = () => {
+        if (deploying.current) {
+          later('complete', finish, 100);
+          return;
+        }
+        completing.current = false;
+        missionPending.current = false;
+        setPauseOpen(false);
+        holdView();
+        completeMission('threats');
+      };
+      later('complete', finish, 700);
     } else if (allDown) {
       // The optional hunt after the mission is over: an all-clear card after the last fact
       queueFact({
@@ -2207,8 +2241,8 @@ const Cub3DWorld = ({
         body: t('demos.game.hunt.clearBody'),
       });
       updateGuide(cameraRef.current, true);
-    } else if (missionDoneRef.current) {
-      // The lit path moves on to the next nearest threat
+    } else if (missionDoneRef.current || THREAT_TYPES[enemy.type].slows) {
+      // The lit path moves on to the next nearest threat, or no longer steers round a Memory Leak
       updateGuide(cameraRef.current, true);
     }
   };
@@ -2354,8 +2388,9 @@ const Cub3DWorld = ({
     const cfg = WEAPON_FX[weaponState.current];
     const now = timeNow();
     const camera = cameraRef.current;
-    // Not during Access granted's hand-off to a demo: no shot, no energy spent
-    if (!camera || access || (!press && !cfg.auto)) return;
+    // Not during Access granted's hand-off to a demo, nor the finale or MISSION COMPLETE on its
+    // way (`missionPending`): no shot, no energy spent
+    if (!camera || access || missionPending.current || (!press && !cfg.auto)) return;
     // A press on a terminal uses it, whatever the weapon's cooldown. A crew member in the sights:
     // hold fire (E talks)
     const id = targetRef.current;
@@ -2461,15 +2496,18 @@ const Cub3DWorld = ({
     // Only over the view itself during play: a wheel over a dialog portaled out of it (the pause
     // menu, MISSION COMPLETE, SYSTEM FAILURE) bubbles here through React, and must not switch
     const held = openPanel || talk || complete || pauseOpen || failed || access;
-    if (!game || !started || held || !e.currentTarget.contains(e.target)) return;
+    // Nor during the finale or with MISSION COMPLETE on its way
+    if (held || missionPending.current) return;
+    if (!game || !started || !e.currentTarget.contains(e.target)) return;
     if (timeNow() - wheelAt.current < 200) return;
     wheelAt.current = timeNow();
     const step = e.deltaY > 0 ? 1 : -1;
     switchWeapon(weapon + step, step);
   };
-  // Every door opens at once (the finale): the way back from Contact, the dead end, is clear
+  // Every door opens at once (the finale): the chain's doors and the Contact ↔ About shortcut
   const openAllDoors = () => {
-    doors.current = { ...doors.current, ...Object.fromEntries(doorCells.map((c) => [c, true])) };
+    // `true` is a closed door (allClosed, solid): every one false
+    doors.current = { ...doors.current, ...Object.fromEntries(doorCells.map((c) => [c, false])) };
     setClosedDoors(doors.current);
     play('hiss');
   };
@@ -2485,18 +2523,26 @@ const Cub3DWorld = ({
       'deploy',
       () => {
         setDeploy(null);
+        deploying.current = false;
         openAllDoors();
-        missionPending.current = false;
+        // Held on while the threats' MISSION COMPLETE is still to open (its timer clears it)
+        missionPending.current = completing.current;
         if (!missionDoneRef.current) {
           missionDoneRef.current = true;
           setMissionDone(true);
           announce(t('demos.game.deploy.done'));
+          // As the threats' MISSION COMPLETE does: the mouse freed (in case), the flag kept, so
+          // closing the dialog captures it again
+          setPauseOpen(false);
+          holdView();
           completeMission('sections');
           return;
         }
         // The threats had already ended the mission: back to play
         announce(t('demos.game.deploy.done'));
         updateGuide(cameraRef.current, true);
+        // The threats' MISSION COMPLETE opens next: no focus or mouse capture behind it
+        if (completing.current) return;
         requestAnimationFrame(() => wrapperRef.current?.focus({ preventScroll: true }));
         relock();
       },
@@ -2505,6 +2551,7 @@ const Cub3DWorld = ({
   };
   const startFinale = (said = '') => {
     missionPending.current = true;
+    deploying.current = true;
     holdView();
     play('access');
     announce(`${said} ${t('demos.game.deploy.start')}`.trim());
@@ -2852,7 +2899,9 @@ const Cub3DWorld = ({
   };
   const onPointerDown = (e) => {
     pointerType.current = e.pointerType;
-    if (talk || access || !e.currentTarget.contains(e.target) || onControl(e)) return;
+    // Nor during the finale: a click there would capture the mouse, and the next one fire
+    if (talk || access || missionPending.current) return;
+    if (!e.currentTarget.contains(e.target) || onControl(e)) return;
     if (e.pointerType !== 'mouse') {
       drag.current = e.clientX;
       return;
@@ -2882,6 +2931,8 @@ const Cub3DWorld = ({
     if (game && started && soundRef.current) sfx.current?.hum(true);
   }, [game, started]);
   const lookWithMouse = () => {
+    // Not during the finale (the HUD's Mouse look button): MISSION COMPLETE opens with it free
+    if (missionPending.current) return;
     start();
     // Requested here rather than through the controls' lock(), so a refusal (pointer lock asked
     // again too soon after Escape, or not allowed) is caught instead of an unhandled rejection.
@@ -2904,6 +2955,7 @@ const Cub3DWorld = ({
       !game ||
       talk ||
       access ||
+      missionPending.current ||
       !started ||
       pointerType.current === 'mouse' ||
       !e.currentTarget.contains(e.target) ||
@@ -3214,7 +3266,7 @@ const Cub3DWorld = ({
         </details>
       )}
 
-      {lockable && started && !locked && (
+      {lockable && started && !locked && deploy === null && (
         // In Game Mode bottom left, above the status bar: the weapon panel holds the bottom right
         <button
           type='button'
