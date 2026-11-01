@@ -30,7 +30,7 @@ import { useLiveRef } from '../../hooks/useLiveRef';
 import { rgb } from '../../utils/themeColors';
 import { readGameTheme } from './gameTheme';
 import { frozen } from './freeze';
-import { ENEMIES, ICON_Y, MOVE_SPEED, NPCS, THREAT_TYPES, iconSpot } from './rooms';
+import { ENEMIES, ICON_Y, MOVE_SPEED, NPCS, PROP_BOXES, THREAT_TYPES, iconSpot } from './rooms';
 import { toColor } from './toColor';
 
 // Game Mode's layer inside the Canvas: the threats (low-poly "glitch" entities drifting toward
@@ -40,7 +40,9 @@ import { toColor } from './toColor';
 // recoil) and screen shake. The shared state lives in refs owned by Cub3DWorld, so a shot never
 // re-renders this tree.
 
-const SIGHT = 8; // cells: threats this close, and in line of sight, come for the player
+// cells: threats this close, and in line of sight, come for the player. Short of the rifle's 14,
+// but far enough that most are moving before a shot lands
+const SIGHT = 11;
 const STOP = 1.2; // cells: they hover this far away
 const REACH = STOP + 0.35; // cells: this close, a threat wears down the player's integrity
 const BODY = 0.2; // collision radius, as the player's
@@ -452,11 +454,15 @@ const Entities = ({
   );
 
   const blocked = (x, z) => solid(Math.floor(x), Math.floor(z));
+  // Walls, and the props (racks, crates, the hub): threats no longer float through them
   const free = (x, z) =>
     !blocked(x - BODY, z - BODY) &&
     !blocked(x + BODY, z - BODY) &&
     !blocked(x - BODY, z + BODY) &&
-    !blocked(x + BODY, z + BODY);
+    !blocked(x + BODY, z + BODY) &&
+    !PROP_BOXES.some(
+      ([x0, z0, x1, z1]) => x > x0 - BODY && x < x1 + BODY && z > z0 - BODY && z < z1 + BODY
+    );
   const inSight = (x, z, tx, tz) => {
     const steps = Math.ceil(Math.hypot(tx - x, tz - z) / 0.1);
     for (let i = 1; i < steps; i += 1) {

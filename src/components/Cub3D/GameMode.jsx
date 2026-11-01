@@ -208,8 +208,11 @@ const GameMode = ({ onClose }) => {
         onRunDemo={openDemo}
         onBack={() => {
           setView('game');
-          // The text's button goes: the dialog holds focus until the world or its menu takes it
-          requestAnimationFrame(() => panelRef.current?.focus());
+          // The text's button goes. A world back from a snapshot focuses itself as it mounts;
+          // only if nothing took focus (it fell to the body) does the dialog hold it
+          requestAnimationFrame(() => {
+            if (!panelRef.current?.contains(document.activeElement)) panelRef.current?.focus();
+          });
         }}
         onExit={close}
       />
