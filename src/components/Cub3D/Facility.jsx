@@ -263,6 +263,19 @@ const paintRackGlow = (ctx, s) => {
     }
   }
 };
+// A ceiling lamp's face: a lit panel behind a grille in a dark frame, so it reads as a fixture
+// rather than a flat white slab (multiplied by each lamp's color)
+const paintLampGrille = (ctx, s) => {
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, s, s);
+  ctx.fillStyle = '#000';
+  const frame = Math.round(s * 0.12);
+  ctx.fillRect(0, 0, s, frame);
+  ctx.fillRect(0, s - frame, s, frame);
+  ctx.fillRect(0, 0, frame, s);
+  ctx.fillRect(s - frame, 0, frame, s);
+  for (let x = frame + 6; x < s - frame; x += 8) ctx.fillRect(x, frame, 2, s - 2 * frame);
+};
 const paintCrate = (c) => (ctx, s) => {
   ctx.fillStyle = rgb(c.muted, 0.45);
   ctx.fillRect(0, 0, s, s);
@@ -378,6 +391,8 @@ const tint = toColor('0 0 0');
 const NO_OFFSET = new Vector2(0, 0);
 // Past this the fog has swallowed nearly everything: the light and its shadows stop here
 const REACH = 9;
+// The flashlight's full strength (it dims up close: nearRef)
+const FLASHLIGHT = 16;
 
 // The graphics tiers (Game Mode's settings): the flashlight's shadow map, and the post-processing.
 // Low drops bloom and grain; High adds MSAA and a wider bloom
@@ -565,8 +580,12 @@ const Terminals = memo(function Terminals({
     const glow = pulse ? 1.25 + 0.2 * Math.sin(time.current * 4) : 1.35;
     items.forEach((item) => {
       const on = item.id === id;
-      item.screen.color.setScalar(on ? glow : 1);
-      item.edge.color.copy(item.accent).multiplyScalar(flat ? 1 : on ? glow + 0.6 : 0.9);
+      // High contrast has no tone mapping: a brighter screen would clip its text to white, so
+      // there the aimed terminal shows by its edge alone (full, the others dimmed)
+      item.screen.color.setScalar(on && !flat ? glow : 1);
+      let edge = on ? glow + 0.6 : 0.9;
+      if (flat) edge = on ? 1 : 0.55;
+      item.edge.color.copy(item.accent).multiplyScalar(edge);
     });
   });
 
@@ -698,6 +717,7 @@ const Facility = ({
   guideRef,
   hitStopRef,
   hubLitRef,
+  nearRef,
 }) => {
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
@@ -721,6 +741,9 @@ const Facility = ({
   const roomLight = useRef(null);
   const lit = useRef(null);
   const lampsOn = useRef([]);
+  // The vault's laser grid: 1 standing, fading to 0 once Projects is read (already 0 if it was
+  // read before this world mounted, back from a demo)
+  const laserFade = useRef(discovered.includes('projects') ? 0 : 1);
   const spot = useRef(null);
   const spotTarget = useRef(null);
   const aberration = useRef(null);
@@ -803,7 +826,9 @@ const Facility = ({
         metalness: 0.7,
         roughness: 0.45,
       });
-      const rackGlow = tex(64, paintRackGlow);
+      // Repeat wrapping: its offset steps along forever (wrapped to 0..1), and a clamped map would
+      // sample its black edge row after a turn, leaving the racks dark
+      const rackGlow = tex(64, paintRackGlow, [1, 1]);
       rack = new MeshStandardMaterial({
         map: tex(64, paintRack(c)),
         emissiveMap: rackGlow,
@@ -819,7 +844,7 @@ const Facility = ({
     }
     const glowMaterial = () => new MeshBasicMaterial({ toneMapped: false });
     const strip = glowMaterial();
-    const lamp = glowMaterial();
+    const lamp = new MeshBasicMaterial({ toneMapped: false, map: tex(32, paintLampGrille) });
     const laser = new MeshBasicMaterial({
       color: toColor(t.danger, flat ? 1 : 1.8),
       toneMapped: false,
@@ -905,7 +930,7 @@ const Facility = ({
       beamGeometry,
       dust,
       plane: new PlaneGeometry(1, 1),
-      lampOn: toColor(c.light, flat ? 1 : 2.2),
+      lampOn: toColor(c.light, flat ? 1 : 1.7),
       lampOff: toColor(c.light, 0.25),
       textures,
       fog: new FogExp2(toColor(c.dark), FOG_DENSITY),
@@ -1023,6 +1048,8 @@ const Facility = ({
       lampMesh.current.setMatrixAt(i, dummy.matrix);
       lampMesh.current.setColorAt(i, res.lampOn);
     });
+    // Every lamp starts on with new materials (the flicker sets each one again as it runs)
+    lampsOn.current = [];
     lampMesh.current.instanceMatrix.needsUpdate = true;
     lampMesh.current.instanceColor.needsUpdate = true;
     lampMesh.current.computeBoundingSphere();
@@ -1171,6 +1198,35 @@ const Facility = ({
       moving = true;
     }
 
+    // The vault opens once Projects is read: its laser grid fades out over 0.6 s (at once with
+    // reduced motion or in high contrast, or if it was read before this world mounted)
+    const vaultOpen = discovered.includes('projects');
+    const vault = laserMesh.current;
+    if (vault?.visible && vaultOpen) {
+      laserFade.current = reduced || flat ? 0 : Math.max(0, laserFade.current - dt / 0.6);
+      r.laser.opacity = (flat ? 1 : 0.85) * laserFade.current;
+      if (laserFade.current <= 0) vault.visible = false;
+      else moving = true;
+    }
+
+    // The flashlight dims up close (the distance to the wall, door or prop ahead, from
+    // Cub3DWorld): at full strength a surface a fifth of a cell away turned into a flat white disc
+    const torch = spot.current;
+    if (torch) {
+      const near = nearRef?.current ?? REACH;
+      const strength = FLASHLIGHT * MathUtils.clamp((near - 0.3) / 1.2, 0.25, 1);
+      torch.intensity = reduced ? strength : MathUtils.damp(torch.intensity, strength, 10, dt);
+    }
+
+    // Flicker stopped (reduced motion or high contrast turned on mid-flicker): no lamp stays dim
+    if ((reduced || flat) && lampsOn.current.includes(false) && lampMesh.current) {
+      LAMPS.forEach((_, i) => {
+        if (lampsOn.current[i] === false) lampMesh.current.setColorAt(i, r.lampOn);
+      });
+      lampsOn.current = [];
+      lampMesh.current.instanceColor.needsUpdate = true;
+    }
+
     if (!reduced && !flat) {
       // Lamps that flicker (uploaded only when one changes), and the room light breathing
       const lamps = lampMesh.current;
@@ -1190,9 +1246,9 @@ const Facility = ({
       if (roomLight.current) roomLight.current.intensity = 2.2 + Math.sin(time * 1.7) * 0.25;
       // The racks' LEDs blink: their glow map steps along
       const glow = r.rack.userData.glow;
-      if (glow) glow.offset.y = Math.floor(time * 4) * 0.13;
-      // The vault's lasers pulse
-      r.laser.opacity = 0.65 + Math.sin(time * 6) * 0.2;
+      if (glow) glow.offset.y = (Math.floor(time * 4) * 0.13) % 1;
+      // The vault's lasers pulse (until they go down)
+      if (!vaultOpen) r.laser.opacity = 0.65 + Math.sin(time * 6) * 0.2;
       // The hologram turns
       if (holo.current) {
         holo.current.rotation.y = time * 0.6;
@@ -1328,7 +1384,7 @@ const Facility = ({
                 position={LENS}
                 angle={0.46}
                 penumbra={0.55}
-                intensity={16}
+                intensity={FLASHLIGHT}
                 distance={REACH}
                 decay={1.5}
                 color={res.flashlight}

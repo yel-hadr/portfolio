@@ -288,6 +288,7 @@ export const GameHud = ({
   t,
   aim,
   prompt,
+  promptKeyOnly = false,
   sections,
   kills,
   threats,
@@ -387,8 +388,9 @@ export const GameHud = ({
       )}
     </div>
     {prompt ? (
-      // A wall terminal in reach: the Press E prompt, on an opaque fill (it sits over the scene).
-      // Announced through the view's own status region; this is the picture of it
+      // Something to use in reach: the Press E prompt, on an opaque fill (it sits over the scene).
+      // Announced through the view's own status region; this is the picture of it. At a wall
+      // terminal (`promptKeyOnly`) only the key cap: its screen already says Press E and its title
       <div
         key={prompt}
         aria-hidden='true'
@@ -398,12 +400,14 @@ export const GameHud = ({
         <kbd className='inline-flex h-8 w-8 items-center justify-center rounded-xs border border-foreground font-mono text-base font-black'>
           E
         </kbd>
-        <span className='flex flex-col leading-tight'>
-          <span className='font-mono text-sm font-bold uppercase tracking-wider'>
-            {t('demos.game.prompt')}
+        {!promptKeyOnly && (
+          <span className='flex flex-col leading-tight'>
+            <span className='font-mono text-sm font-bold uppercase tracking-wider'>
+              {t('demos.game.prompt')}
+            </span>
+            <span className='text-sm'>{prompt}</span>
           </span>
-          <span className='text-sm'>{prompt}</span>
-        </span>
+        )}
       </div>
     ) : (
       aim && (

@@ -368,6 +368,7 @@
     },
     "flashing": "Réduire les flashs",
     "slowed": "Ralenti : fuite mémoire",
-    "slowedSay": "Une fuite mémoire vous ralentit. Éloignez-vous ou neutralisez-la."
+    "slowedSay": "Une fuite mémoire vous ralentit. Éloignez-vous ou neutralisez-la.",
+    "vaultOpen": "La grille laser de la salle forte est désactivée."
   }
 }
