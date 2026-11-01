@@ -5,7 +5,10 @@ import { useEffect, useState } from 'react';
 const API = 'https://api.github.com';
 const OWNER = 'yel-hadr';
 const REPO = `${OWNER}/portfolio`;
-const RUNS_URL = `${API}/repos/${REPO}/actions/workflows/deploy.yml/runs?branch=main&per_page=10`;
+// Each run object is ~12 kB of JSON. branch=main already drops PR runs (their head_branch is the
+// PR's branch), so the newest few runs always hold the latest deploy: 3, not 10 (~117 kB -> ~35 kB
+// per visitor), and without the pull_requests arrays
+const RUNS_URL = `${API}/repos/${REPO}/actions/workflows/deploy.yml/runs?branch=main&per_page=3&exclude_pull_requests=true`;
 const EVENTS_URL = `${API}/users/${OWNER}/events/public?per_page=30`;
 
 export const ACTIONS_URL = `https://github.com/${REPO}/actions`;

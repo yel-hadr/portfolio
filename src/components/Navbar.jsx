@@ -113,7 +113,8 @@ const linkClass = (isActive) =>
 /**
  * Where the pill behind the current link should sit, measured from the link itself, and again
  * whenever the row resizes (a language switch, the web font arriving, the window).
- * @returns {{ x: number, width: number } | null} null until a link has been current
+ * @returns {{ x: number, width: number, shown: boolean } | null} null until a link has been current;
+ *   shown is false while the current section has no link
  */
 const usePillPosition = (listRef, active) => {
   const [pill, setPill] = useState(null);
@@ -122,7 +123,10 @@ const usePillPosition = (listRef, active) => {
     if (!list || !active) return undefined;
     const measure = () => {
       const link = list.querySelector(`a[href="#${active}"]`);
-      if (link) setPill({ x: link.offsetLeft, width: link.offsetWidth });
+      // A section with no nav link (the blog, the tech stack, the top): the pill fades out where
+      // it is, rather than staying lit under the last link while none is aria-current
+      if (link) setPill({ x: link.offsetLeft, width: link.offsetWidth, shown: true });
+      else setPill((prev) => (prev ? { ...prev, shown: false } : prev));
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -359,7 +363,7 @@ const Navbar = ({ onOpenTerminal }) => {
           aria-hidden='true'
           className='pointer-events-none absolute inset-y-1 left-0 rounded-full bg-surface-raised ring-1 ring-line-strong'
           initial={false}
-          animate={{ x: pill.x, width: pill.width, opacity: active ? 1 : 0 }}
+          animate={{ x: pill.x, width: pill.width, opacity: active && pill.shown ? 1 : 0 }}
           transition={reduced ? { duration: 0 } : SPRING}
         />
       )}
