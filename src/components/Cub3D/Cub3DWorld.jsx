@@ -28,7 +28,6 @@ import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import { styles } from '../../styles';
 import { readTheme, rgb } from '../../utils/themeColors';
 import ContactForm from '../ContactForm';
-import ReleaseContext from '../canvas/ReleaseContext';
 import { GameLayer } from './Enemies';
 import { person } from '../../constans';
 import { HIT_STOP_MS, frozen } from './freeze';
@@ -209,6 +208,8 @@ const DEMO_GL = { powerPreference: 'default', alpha: true, premultipliedAlpha: f
 const CAMERA = { fov: 50, near: 0.05, far: 60 };
 const CONTRAST_KEY = 'game-contrast';
 const VOLUME_KEY = 'game-volume';
+// Sound on or off ('1' or '0'; off until set)
+const SOUND_KEY = 'game-sound';
 // The graphics tier ('low', 'medium' or 'high') and Reduce flashing ('1' or '0'; unset follows
 // reduced motion), remembered per viewer
 const GRAPHICS_KEY = 'game-graphics';
@@ -234,6 +235,13 @@ const readSetting = (key) => {
     return null;
   }
 };
+// A stored switch: '1' or '0', anything else as unset (null)
+const readSwitch = (key) => {
+  const saved = readSetting(key);
+  if (saved === '1') return true;
+  if (saved === '0') return false;
+  return null;
+};
 const saveSetting = (key, value) => {
   try {
     localStorage.setItem(key, value);
@@ -249,9 +257,9 @@ const writeBar = (el, value) => {
   el.dataset.value = String(v);
   el.style.transform = `scaleX(${v / 100})`;
   el.dataset.low = String(v < 30);
-  // Its number, beside the label
+  // Its number, beside the label (the unit is the locale's, next to it)
   const readout = el.closest('[data-meter]')?.querySelector('[data-readout]');
-  if (readout) readout.textContent = `${v}%`;
+  if (readout) readout.textContent = String(v);
 };
 
 const KEYS = {
@@ -768,7 +776,8 @@ const Scene = memo(function Scene({
     if (forward || strafe) {
       const yaw = eye.rotation.y;
       // A Memory Leak close by slows the player down (`slow`, 1 when none is)
-      const step = (reduced ? MOVE_SPEED / 2 : MOVE_SPEED) * (slow?.current ?? 1) * dt;
+      // Full speed with reduced motion too: it is about animation, not pace (turning steps)
+      const step = MOVE_SPEED * (slow?.current ?? 1) * dt;
       const dx = (-Math.sin(yaw) * forward + Math.cos(yaw) * strafe) * step;
       const dz = (-Math.cos(yaw) * forward - Math.sin(yaw) * strafe) * step;
       // Each axis on its own, so the player slides along a wall instead of stopping dead
@@ -891,7 +900,6 @@ const Scene = memo(function Scene({
           onChange={onLook}
         />
       )}
-      <ReleaseContext />
     </>
   );
 });
@@ -1281,7 +1289,8 @@ const Cub3DWorld = ({
   const [far, setFar] = useState(false);
   const farRef = useRef(false);
   const [access, setAccess] = useState(false);
-  const [sound, setSound] = useState(initialState?.sound ?? false);
+  // Remembered: a run back from a demo keeps its own, a new one starts as the player left it
+  const [sound, setSound] = useState(() => initialState?.sound ?? readSwitch(SOUND_KEY) === true);
   const soundRef = useRef(sound);
   const sfx = useRef(null);
   const fxRef = useRef(null);
@@ -1334,18 +1343,20 @@ const Cub3DWorld = ({
   const freeing = useRef(false);
   // Whether the mouse was captured when the pause menu opened: Resume captures it again
   const wasLocked = useRef(false);
+  // The mouse was captured when something paused the game (holdView): captured again after
+  const relockRef = useRef(false);
+  // Whether the game is held (a menu, a dialog): the hum is ducked then (set by an effect below)
+  const heldRef = useRef(false);
   // High contrast mode (bright flat colors, no fog or post-processing) and the master volume:
   // per-viewer settings, remembered when the browser lets us
   const prefersContrast = useMediaQuery('(prefers-contrast: more)');
-  const [contrast, setContrast] = useState(() => {
-    const saved = readSetting(CONTRAST_KEY);
-    return saved === null ? null : saved === '1';
-  });
+  const [contrast, setContrast] = useState(() => readSwitch(CONTRAST_KEY));
   const flat = contrast ?? prefersContrast;
   const [volume, setVolume] = useState(() => {
     const saved = readSetting(VOLUME_KEY);
     const value = Number(saved);
-    return saved !== null && value >= 0 && value <= 1 ? value : 0.7;
+    // A number from 0 to 1, written out (an empty value is not 0)
+    return saved?.trim() && Number.isFinite(value) && value >= 0 && value <= 1 ? value : 0.7;
   });
   const volumeRef = useRef(volume);
   // The graphics tier and Reduce flashing (which follows reduced motion until it is set)
@@ -1353,10 +1364,7 @@ const Cub3DWorld = ({
     const saved = readSetting(GRAPHICS_KEY);
     return TIERS.includes(saved) ? saved : 'medium';
   });
-  const [flashSetting, setFlashSetting] = useState(() => {
-    const saved = readSetting(FLASH_KEY);
-    return saved === null ? null : saved === '1';
-  });
+  const [flashSetting, setFlashSetting] = useState(() => readSwitch(FLASH_KEY));
   const noFlash = flashSetting ?? reduced;
   const noFlashRef = useLiveRef(noFlash);
   const [initialTuning] = useState(readTuning);
@@ -1722,7 +1730,9 @@ const Cub3DWorld = ({
       // Threats close by wear integrity down, in pulses (a hit flash and aberration, a sound)
       const hp = integrity.current;
       const hurt = pressure.current;
-      // A wind-up once a threat comes into reach: brushing past one costs nothing
+      // A wind-up once a threat comes into reach: brushing past one costs nothing. Frames keep
+      // coming meanwhile, even on demand (reduced motion), or standing still would cost nothing
+      if (hurt) invalidateRef.current();
       if (hurt && hp.since === null) hp.since = now;
       if (!hurt) hp.since = null;
       if (hurt && now - hp.since >= HARM_WINDUP_MS) {
@@ -1983,6 +1993,7 @@ const Cub3DWorld = ({
       energy: energy.current.value,
       weapon: weaponState.current,
       sound: soundRef.current,
+      locked: relockRef.current,
       shots: shots.current,
       enemies: enemies.current.map(({ id, x, z, alive, seen }) => ({ id, x, z, alive, seen })),
     };
@@ -2074,6 +2085,8 @@ const Cub3DWorld = ({
   // Before a dialog or a talk: the mouse is freed, keys let go, and no recoil or shake is left
   // frozen mid-way while the view pauses
   const holdView = () => {
+    // Whether the mouse was captured: closing what opens now captures it again (`relock`)
+    relockRef.current = !!document.pointerLockElement;
     // The unlock that follows is the game's own, not the player's Escape (cleared by the next
     // lock, so it never outlives a release that did not happen)
     freeing.current = true;
@@ -2090,6 +2103,14 @@ const Cub3DWorld = ({
     invalidateRef.current();
   };
 
+  // The mouse captured again where it was before the game paused (holdView), as the game comes
+  // back: after a dossier, a crew member's line, Reboot, MISSION COMPLETE or a demo
+  const relock = () => {
+    if (!relockRef.current || !lockable) return;
+    relockRef.current = false;
+    lockRef.current?.domElement?.requestPointerLock()?.catch?.(() => {});
+  };
+
   // A crew member talks: the threats hold still until the dialogue closes
   const talkTo = (id) => {
     holdView();
@@ -2101,6 +2122,7 @@ const Cub3DWorld = ({
     setTalk(null);
     paused.current = false;
     requestAnimationFrame(() => wrapperRef.current?.focus({ preventScroll: true }));
+    relock();
   };
 
   // A wall's panel read: a section is ticked off (and announced as it closes), a terminal hands
@@ -2171,7 +2193,11 @@ const Cub3DWorld = ({
   // From the Projects dossier. If closing it completed the mission, MISSION COMPLETE comes first:
   // the demo stays a button away (in the Projects room)
   const runDemo = (id) => {
+    // The demo comes next: no capture in between, but kept for the way back (the snapshot)
+    const locked = relockRef.current;
+    relockRef.current = false;
     const { completed, said } = closePanel();
+    relockRef.current = locked;
     if (!completed) openTerminal(id, said);
   };
 
@@ -2305,6 +2331,7 @@ const Cub3DWorld = ({
       updateGuide(cameraRef.current, true);
       invalidateRef.current();
       requestAnimationFrame(() => wrapperRef.current?.focus({ preventScroll: true }));
+      relock();
       return { completed: false, said };
     }
     if (read.length === panelList.length && !allReadAnnounced.current) {
@@ -2321,12 +2348,14 @@ const Cub3DWorld = ({
     updateGuide(cameraRef.current, true);
     invalidateRef.current();
     requestAnimationFrame(() => wrapperRef.current?.focus({ preventScroll: true }));
+    relock();
   };
 
   // The synthesizer loads on first use; sound stays off until the player turns it on
   const toggleSound = () => {
     soundRef.current = !soundRef.current;
     setSound(soundRef.current);
+    saveSetting(SOUND_KEY, soundRef.current ? '1' : '0');
     // Muted: the audio thread stops too
     if (!soundRef.current) {
       sfx.current?.suspend();
@@ -2337,7 +2366,8 @@ const Cub3DWorld = ({
       if (!soundRef.current || !wrapperRef.current) return;
       if (!sfx.current) sfx.current = createSfx(volumeRef.current);
       sfx.current.resume();
-      // The facility's low server hum, under everything
+      // The facility's low server hum, under everything (quieter while the game is held)
+      sfx.current.duck(heldRef.current);
       if (game) sfx.current.hum(true);
       sfx.current.blip();
     });
@@ -2393,6 +2423,8 @@ const Cub3DWorld = ({
   };
   const resume = () => {
     setPauseOpen(false);
+    // The pause menu captures the mouse again itself (wasLocked), below
+    relockRef.current = false;
     // Back to the crew member's line if it is still open (it is modal), else to the view
     requestAnimationFrame(() =>
       (wrapperRef.current?.querySelector('[data-dialogue]') ?? wrapperRef.current)?.focus({
@@ -2431,6 +2463,7 @@ const Cub3DWorld = ({
     setFailed(false);
     announce(t('demos.game.failure.rebooted'));
     requestAnimationFrame(() => wrapperRef.current?.focus({ preventScroll: true }));
+    relock();
   };
   // The player's own Escape, while the mouse is captured, arrives as an unlock: pause then
   const unlocked = useRef(() => {});
@@ -2451,10 +2484,17 @@ const Cub3DWorld = ({
       loadSfx().then(({ createSfx }) => {
         if (!wrapperRef.current) return;
         if (!sfx.current) sfx.current = createSfx(volumeRef.current);
+        sfx.current.duck(heldRef.current);
         if (game) sfx.current.hum(true);
       });
     }
     if (initialState || autostart) wrapperRef.current?.focus({ preventScroll: true });
+    // Back from a demo with the mouse captured before: capture it again (the click that closed
+    // the demo still counts as the player's; if the browser refuses, the Mouse look button stays)
+    if (initialState?.locked) {
+      relockRef.current = true;
+      later('relock', relock, 120);
+    }
   });
   // Once
   useEffect(() => {
@@ -2643,11 +2683,18 @@ const Cub3DWorld = ({
     const away = () => {
       if (document.visibilityState === 'hidden' || !document.hasFocus()) pauseIfPlaying();
     };
+    // A hidden tab is silent: the audio thread stops, and starts again on return if sound is on
+    const audio = () => {
+      if (document.visibilityState === 'hidden') sfx.current?.suspend();
+      else if (soundRef.current) sfx.current?.resume();
+    };
     window.addEventListener('blur', away);
     document.addEventListener('visibilitychange', away);
+    document.addEventListener('visibilitychange', audio);
     return () => {
       window.removeEventListener('blur', away);
       document.removeEventListener('visibilitychange', away);
+      document.removeEventListener('visibilitychange', audio);
     };
   }, []);
 
@@ -2689,6 +2736,11 @@ const Cub3DWorld = ({
   // menu, a wall's text or the contact form, Access granted, a crew member talking. Frames still
   // run then (the energy refill draws), so they must be told, not just left undrawn
   const held = game && (!started || stopped);
+  // The hum ducks while the game is held: the pause menu, a dossier, the end dialogs
+  useEffect(() => {
+    heldRef.current = held;
+    sfx.current?.duck(held);
+  }, [held]);
   // The mission's clock runs only while the game is played (or goes on from a snapshot): reading a
   // dossier, talking to the crew or a pause does not count as time
   useEffect(() => {
@@ -3078,7 +3130,9 @@ const Cub3DWorld = ({
           threats={ENEMIES.length}
           accuracy={
             complete.shots.fired
-              ? `${Math.round((complete.shots.hit / complete.shots.fired) * 100)}%`
+              ? t('demos.game.percent', {
+                  value: Math.round((complete.shots.hit / complete.shots.fired) * 100),
+                })
               : t('demos.game.mission.noShots')
           }
           resume={person.resume}

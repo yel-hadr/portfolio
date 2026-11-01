@@ -59,7 +59,9 @@ export const useModalDialog = (onClose) => {
     e.stopPropagation();
     if (e.key === 'Escape') {
       e.preventDefault();
-      close();
+      // A held Escape repeats: only the press closes (holding it in the game opened Pause and
+      // closed it again)
+      if (!e.repeat) close();
       return;
     }
     if (e.key !== 'Tab') return;

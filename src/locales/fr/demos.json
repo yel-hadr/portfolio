@@ -223,7 +223,7 @@
       "contactBody": "Ouvre un canal : le formulaire de contact.",
       "hub": "Centre de commande"
     },
-    "weapons": ["Kubernetes Kar98k", "Terraform Tactical", "The DevOps Defender"],
+    "weapons": ["Kubernetes Kar98k", "Terraform Tactical", "Le DevOps Defender"],
     "weapon": "Arme : {name}",
     "enemies": {
       "ddos": "Bot DDoS",
@@ -383,6 +383,7 @@
     "switchWeapon": "Changer d’arme",
     "exitConfirm": "Touchez encore pour quitter",
     "outOfRange": "Hors de portée",
-    "closerToTalk": "Approchez-vous pour parler à {name}."
+    "closerToTalk": "Approchez-vous pour parler à {name}.",
+    "percent": "{value} %"
   }
 }

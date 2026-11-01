@@ -27,7 +27,6 @@ import {
 
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import { styles } from '../../styles';
-import ReleaseContext from '../canvas/ReleaseContext';
 import { readTheme } from '../../utils/themeColors';
 import { DEFAULT_MAP, FDF_MAPS, loadMap } from '../../data/fdfMaps';
 
@@ -441,7 +440,6 @@ const Cameras = ({ map, projection, reduced, actionsRef }) => {
         minDistance={MIN_DISTANCE}
         maxDistance={view.maxDistance}
       />
-      <ReleaseContext />
     </>
   );
 };

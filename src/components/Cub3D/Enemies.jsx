@@ -27,6 +27,7 @@ import {
 } from 'three';
 
 import { useLiveRef } from '../../hooks/useLiveRef';
+import CanvasErrorBoundary from '../CanvasErrorBoundary';
 import { rgb } from '../../utils/themeColors';
 import { readGameTheme } from './gameTheme';
 import { frozen } from './freeze';
@@ -65,7 +66,8 @@ const SLOWEST = 0.45;
 // penumbra fading it in. The test is geometric, so it holds in high contrast (no lights) too
 const BEAM_ANGLE = 0.46;
 const BEAM_FULL = BEAM_ANGLE * (1 - 0.55);
-const BEAM_RANGE = 9;
+// cells: past this the fog hides most of it, so it is not "found" from further
+const BEAM_RANGE = 6;
 // The effects' colors: the rifle's blue trail, the pistol's green blocks, the blaster's orange
 const FX_COLORS = { trail: 'info', blocks: 'success', radial: 'primary' };
 
@@ -167,13 +169,11 @@ const freeShatter = (scene, mesh) => {
 /**
  * The weapons' particle effects and a kill's shatter. `fxRef.current.spawn(kind, from, to)`
  * makes one effect (THREE.Points, freed after FX_LIFE); `fxRef.current.shatter(at, type)` bursts
- * a threat into glowing voxels (one InstancedMesh, freed after SHATTER_LIFE). The particle
- * shader is compiled up front on a hidden copy, so the first shot does not stall
+ * a threat into glowing voxels (one InstancedMesh, freed after SHATTER_LIFE). Empty copies of
+ * both stay in every frame, so their programs exist before the first shot (no stall)
  */
 const Effects = ({ reduced, fxRef, hitStop }) => {
-  const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
-  const camera = useThree((s) => s.camera);
   const live = useRef([]);
   const shards = useRef([]);
   const colors = useMemo(() => {
@@ -185,11 +185,20 @@ const Effects = ({ reduced, fxRef, hitStop }) => {
   }, []);
 
   useEffect(() => {
-    // The program every effect uses, compiled now on a hidden copy kept until unmount
+    // The programs a shot and a kill use, built before either happens: a copy of each stays in
+    // every frame drawing nothing (no points in its range, no instances). The renderer builds a
+    // program before it skips an empty draw, with that frame's lights and fog, and builds it again
+    // the frame the facility's fog comes in, not at the first shot
     const warm = makePoints(colors, 'radial', PARTICLES.radial([0, 0, 0], [0, -10, 0]));
-    warm.visible = false;
-    scene.add(warm);
-    gl.compile(scene, camera);
+    warm.geometry.setDrawRange(0, 0);
+    const warmShatter = new InstancedMesh(
+      VOXEL,
+      new MeshBasicMaterial({ toneMapped: false, transparent: true }),
+      1
+    );
+    warmShatter.count = 0;
+    warmShatter.frustumCulled = false;
+    scene.add(warm, warmShatter);
     fxRef.current = {
       spawn: (kind, from, to) => {
         // Reduced motion: no flying particles
@@ -230,13 +239,14 @@ const Effects = ({ reduced, fxRef, hitStop }) => {
     return () => {
       fxRef.current = null;
       freePoints(scene, warm);
+      freeShatter(scene, warmShatter);
       effects.forEach(({ points }) => freePoints(scene, points));
       effects.length = 0;
       bursts.forEach(({ mesh }) => freeShatter(scene, mesh));
       bursts.length = 0;
     };
-    // The effects' colors are read once; the scene, renderer and camera are the Canvas's own
-  }, [fxRef, reduced, scene, gl, camera, colors]);
+    // The effects' colors are read once; the scene is the Canvas's own
+  }, [fxRef, reduced, scene, colors]);
 
   useFrame((state, delta) => {
     const dt = frozen(hitStop) ? 0 : Math.min(delta, 0.1);
@@ -575,6 +585,9 @@ const Entities = ({
     });
     slowRef.current = paused.current ? 1 : slowest;
     pressureRef.current = paused.current ? 0 : close;
+    // A threat in reach: the next frame comes even on demand (reduced motion), or a player standing
+    // still beside one would take nothing (Cub3DWorld's onTick reads this a frame later)
+    if (pressureRef.current) state.invalidate();
 
     if (!flat) {
       // The trails fade
@@ -693,7 +706,10 @@ const TechIcons = ({ icons, reduced, hitStop }) => {
       if (sprite) sprite.position.y = ICON_Y + Math.sin(time.current * 1.5 + i) * 0.06;
     });
   });
-  // drei caches the textures (never disposed here); R3F frees the sprite materials it made
+  // drei caches the textures across mounts. Game Mode's renderer goes with this layer, so its GPU
+  // copies (and the listener tying each texture to it) are freed on unmount; a next world's
+  // renderer uploads them again. R3F frees the sprite materials it made
+  useEffect(() => () => textures.forEach((texture) => texture.dispose()), [textures]);
   return textures.map((texture, i) => (
     <sprite
       key={icons[i]}
@@ -738,7 +754,9 @@ const GameMotion = ({ crosshairRef, motionRef, reduced, noFlash, hitStop, onTick
       };
     }
     const l = last.current;
-    const walked = Math.hypot(camera.position.x - l.x, camera.position.z - l.z);
+    let walked = Math.hypot(camera.position.x - l.x, camera.position.z - l.z);
+    // A jump of more than a few steps is a respawn or a return, not a walk: no bob or spread from it
+    if (walked > Math.max(0.3, MOVE_SPEED * dt * 3)) walked = 0;
     // The shortest way round: mouse look keeps the yaw in [-PI, PI], keys do not
     const turned =
       MathUtils.euclideanModulo(camera.rotation.y - l.yaw + Math.PI, 2 * Math.PI) - Math.PI;
@@ -770,8 +788,9 @@ const GameMotion = ({ crosshairRef, motionRef, reduced, noFlash, hitStop, onTick
     if (el) {
       const flag = String(moving);
       if (l.moving !== flag) el.dataset.moving = l.moving = flag;
-      // In px: 4 standing still, up to 14 running or right after a shot
-      const spread = Math.round(4 + (reduced ? (moving ? 6 : 0) : l.amp * 6) + m.recoil * 6);
+      // In px: 4 standing still, up to 14 running or right after a shot (no recoil with reduced
+      // motion: only moving widens it)
+      const spread = Math.round(4 + (reduced ? (moving ? 6 : 0) : l.amp * 6 + m.recoil * 6));
       if (spread !== l.spread) {
         l.spread = spread;
         el.style.setProperty('--spread', `${spread}px`);
@@ -795,6 +814,14 @@ const GameMotion = ({ crosshairRef, motionRef, reduced, noFlash, hitStop, onTick
  * Everything above, as one memoized layer: its props are all stable (refs and memoized values),
  * so HUD state in Cub3DWorld (the aim, the toast) never re-renders the 3D tree
  */
+// The shared geometries: made once per page load, used by every world. Each renderer that drew
+// them ties itself to them (a dispose listener), so they are freed with the layer; the next
+// world's renderer uploads them again
+const freeShared = () => {
+  Object.values(SHAPES).forEach((set) => Object.values(set).forEach((g) => g.dispose()));
+  VOXEL.dispose();
+};
+
 export const GameLayer = memo(function GameLayer({
   enemies,
   npcs,
@@ -813,6 +840,7 @@ export const GameLayer = memo(function GameLayer({
   motion,
   onTick,
 }) {
+  useEffect(() => freeShared, []);
   return (
     <>
       <Entities
@@ -830,9 +858,12 @@ export const GameLayer = memo(function GameLayer({
       />
       <Effects reduced={reduced} fxRef={fxRef} hitStop={hitStop} />
       {icons && (
-        <Suspense fallback={null}>
-          <TechIcons icons={icons} reduced={reduced} hitStop={hitStop} />
-        </Suspense>
+        // An icon that fails to load drops the icons only, not the game
+        <CanvasErrorBoundary sectionType='game mode tech icons' fallback={null}>
+          <Suspense fallback={null}>
+            <TechIcons icons={icons} reduced={reduced} hitStop={hitStop} />
+          </Suspense>
+        </CanvasErrorBoundary>
       )}
       <GameMotion
         crosshairRef={crosshairRef}

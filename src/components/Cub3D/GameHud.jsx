@@ -119,12 +119,13 @@ const HUD_BUTTON = `inline-flex h-11 items-center gap-2 rounded-xl ${GLASS} px-3
  * A labeled bar the game loop fills (`barRef`); it turns red under 30%. The loop writes the
  * number too, into the `data-readout` span beside the label (writeBar in Cub3DWorld)
  */
-const Meter = ({ label, barRef, tone }) => (
+const Meter = ({ label, barRef, tone, unit }) => (
   <div aria-hidden='true' data-meter='' className='w-40'>
     <p className='flex justify-between font-mono text-xs uppercase tracking-wider text-foreground'>
       {label}
-      <span data-readout='' className='tabular-nums'>
-        100%
+      <span className='tabular-nums'>
+        <span data-readout=''>100</span>
+        {unit}
       </span>
     </p>
     <div className='relative mt-1 h-1.5 overflow-hidden rounded-xs bg-background/80'>
@@ -167,11 +168,11 @@ export const VolumeSlider = ({ t, volume, onVolume, className = '' }) => {
         step={5}
         value={percent}
         onChange={(e) => onVolume(Number(e.target.value) / 100)}
-        aria-valuetext={`${percent}%`}
+        aria-valuetext={t('demos.game.percent', { value: percent })}
         className='w-24 accent-primary'
       />
-      <span aria-hidden='true' className='w-9 text-right font-mono text-xs text-foreground'>
-        {percent}%
+      <span aria-hidden='true' className='w-11 text-right font-mono text-xs text-foreground'>
+        {t('demos.game.percent', { value: percent })}
       </span>
     </div>
   );
@@ -465,8 +466,18 @@ export const GameHud = ({
         {t('demos.game.weapons')[weapon]}
       </p>
       <p className='font-mono text-xs text-foreground'>{t('demos.game.weaponRoles')[weapon]}</p>
-      <Meter label={t('demos.game.energy')} barRef={energyBar} tone='bg-info' />
-      <Meter label={t('demos.game.integrity')} barRef={integrityBar} tone='bg-success' />
+      <Meter
+        label={t('demos.game.energy')}
+        barRef={energyBar}
+        tone='bg-info'
+        unit={t('demos.game.percent', { value: '' })}
+      />
+      <Meter
+        label={t('demos.game.integrity')}
+        barRef={integrityBar}
+        tone='bg-success'
+        unit={t('demos.game.percent', { value: '' })}
+      />
     </div>
 
     {/* Facts from a neutralized threat: a live region that is always there, filled for 8 s */}
@@ -536,8 +547,9 @@ export const GameHud = ({
         className='ml-auto flex items-center gap-2 [@media(min-width:40rem)_and_(pointer:fine)]:hidden'
       >
         {t('demos.game.integrity')}
-        <span data-readout='' className='tabular-nums'>
-          100%
+        <span className='tabular-nums'>
+          <span data-readout=''>100</span>
+          {t('demos.game.percent', { value: '' })}
         </span>
         <span className='relative h-1.5 w-20 overflow-hidden rounded-xs bg-background/80'>
           <span

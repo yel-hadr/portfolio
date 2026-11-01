@@ -401,24 +401,14 @@ const SHADOW_MAP = { low: 512, medium: 1024, high: 2048 };
 /**
  * The post-processing, on its own so it is built once (per tier: it is keyed on it): Bloom, then
  * the passes that merge into one (grain, vignette, tone mapping), then the chromatic aberration
- * (a convolution: last, so it does not split them). Its buffers follow the pixel ratio, and are
- * freed on unmount. `noFlash` (Reduce flashing) drops the bloom
+ * (a convolution: last, so it does not split them). The composer itself follows the pixel ratio
+ * (it checks the renderer's size every frame) and frees its buffers and passes on unmount. `noFlash` (Reduce flashing) drops the bloom
  */
 const PostFx = memo(function PostFx({ aberration, graphics, noFlash }) {
-  const composer = useRef(null);
   const dpr = useThree((s) => s.viewport.dpr);
-  useEffect(() => {
-    composer.current?.setSize();
-  }, [dpr]);
-  // Freed in a layout cleanup: the wrapper's own layout cleanup removes the effect passes without
-  // disposing them, and on a remount (a new tier) this runs before it, while they are attached
-  useLayoutEffect(() => {
-    const made = composer.current;
-    return () => made?.dispose();
-  }, []);
   // MSAA only where the pixel ratio does not already supersample: it doubles two HalfFloat buffers
   return (
-    <EffectComposer ref={composer} multisampling={graphics === 'high' && dpr < 1.5 ? 4 : 0}>
+    <EffectComposer multisampling={graphics === 'high' && dpr < 1.5 ? 4 : 0}>
       {graphics !== 'low' && !noFlash && (
         <Bloom
           mipmapBlur

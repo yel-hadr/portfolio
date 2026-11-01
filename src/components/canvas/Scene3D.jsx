@@ -3,7 +3,6 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { View } from '@react-three/drei';
 
 import LoadingProgress from '../LoadingProgress';
-import ReleaseContext from './ReleaseContext';
 import { useStillMotion } from '../../hooks/useMotionPaused';
 import { onFrameRequest, useViewsOnScreen } from './viewPresence';
 
@@ -180,9 +179,9 @@ const Scene3D = () => {
         >
           <ScrollSync layer={layer} />
           <View.Port />
+          {/* A demo or Game Mode makes its own context right after this one goes: R3F 9 disposes
+              the renderer and loses the context as soon as the unmount commits */}
           <FrameDriver reduced={reduced} />
-          {/* A demo or Game Mode makes its own context right after this one goes */}
-          <ReleaseContext />
         </Canvas>
       </div>
     </>
