@@ -3,6 +3,7 @@ import { m } from 'framer-motion';
 
 import { styles } from '../styles';
 import { profile320, profile640 } from '../assets';
+import { PORTRAIT_SIZES } from '../heroPortrait';
 import { person } from '../constans';
 import { pressable, reveal, staggerContainer, wordReveal } from '../utils/motion';
 import { useStillMotion } from '../hooks/useMotionPaused';
@@ -82,7 +83,8 @@ const Hero = ({ onEnterGame }) => {
                 // Pre-cropped to the frame's 4:5; 320w for phones, 640w for the 304px desktop frame at 2x
                 src={profile640}
                 srcSet={`${profile320} 320w, ${profile640} 640w`}
-                sizes='(min-width: 1024px) 304px, (min-width: 768px) 176px, (min-width: 640px) 192px, 144px'
+                // Shared with the build's preload of it (build/preloadPortrait.js)
+                sizes={PORTRAIT_SIZES}
                 alt={t('hero.portraitAlt')}
                 width={640}
                 height={800}
@@ -146,8 +148,8 @@ const Hero = ({ onEnterGame }) => {
                   </m.a>
                 </Magnetic>
                 <Magnetic>
-                  {/* Below xs the size would wrap under the label: the label says it instead */}
-                  <ResumeLink metaClassName='hidden xs:inline' />
+                  {/* Below xs the size would wrap under the label: read, not shown */}
+                  <ResumeLink metaClassName='sr-only xs:not-sr-only' />
                 </Magnetic>
               </div>
               <a

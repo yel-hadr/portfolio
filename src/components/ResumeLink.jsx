@@ -13,8 +13,9 @@ import { pressable } from '../utils/motion';
  */
 const SIZE = import.meta.env.RESUME_KB;
 
-// `metaClassName`: where the size shows (the Hero hides it on the narrowest phones, where it
-// would wrap under the label; the accessible name always has it)
+// The visible text is the link's name (WCAG 2.5.3): "Download resume PDF · 111 KB", the size
+// included. `metaClassName`: how the size shows (the Hero keeps it for screen readers only on the
+// narrowest phones, where it would wrap under the label; the name still has it)
 const ResumeLink = ({ className = '', metaClassName = '' }) => {
   const { t } = useI18n();
   return (
@@ -22,7 +23,6 @@ const ResumeLink = ({ className = '', metaClassName = '' }) => {
       href={person.resume}
       download='Youssef_Elhadraoui_Resume.pdf'
       type='application/pdf'
-      aria-label={t('resume.aria', { size: SIZE })}
       onClick={() => track('resume-download')}
       className={`${styles.buttonGhost} flex-wrap gap-x-2 ${className}`}
       {...pressable}
@@ -40,7 +40,7 @@ const ResumeLink = ({ className = '', metaClassName = '' }) => {
         <path d='M10 3v10m0 0-4-4m4 4 4-4M4 16h12' />
       </svg>
       {/* On a narrow screen the size goes under the label, never into it */}
-      <span className='whitespace-nowrap'>{t('resume.label')}</span>
+      <span className='whitespace-nowrap'>{t('resume.label')}</span>{' '}
       <span
         className={`whitespace-nowrap text-sm font-medium text-foreground-muted ${metaClassName}`}
       >

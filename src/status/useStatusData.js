@@ -123,7 +123,13 @@ export const useStatusData = () => {
       try {
         const published = await loadPublished(signal);
         if (published) {
-          setData({ phase: 'ready', ...published });
+          // A history that failed to load this time keeps the last good samples: the charts and
+          // sparklines do not empty on one failed refresh
+          setData((prev) => ({
+            phase: 'ready',
+            ...published,
+            samples: published.samples ?? (prev.phase === 'ready' ? prev.samples : null),
+          }));
         } else if (first) {
           setData({ phase: 'none', pipelines: await loadLivePipelines(signal) });
         }
@@ -142,6 +148,9 @@ export const useStatusData = () => {
 
   return data;
 };
+
+/** How many pipelines the config lists: their placeholders while the data loads */
+export const configuredPipelineCount = (config.pipelines ?? []).length;
 
 /** The monitors and servers from the config, for listing them before any data exists */
 export const configuredMonitors = [

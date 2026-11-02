@@ -58,12 +58,20 @@ const Header = () => {
   return (
     <header className='border-b border-line bg-background/80 backdrop-blur-md'>
       <div className='mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-8'>
+        {/* The site's mark beside the name, as on the portfolio and the blog */}
         <a
           href={import.meta.env.BASE_URL}
           aria-label={t('statuspage.home')}
-          className='min-w-0 truncate rounded-md font-bold text-foreground transition-colors hover:text-primary-400'
+          className='flex min-w-0 items-center gap-2 rounded-md font-bold text-foreground transition-colors hover:text-primary-400'
         >
-          {t('statuspage.brand')}
+          <img
+            src={`${import.meta.env.BASE_URL}logo.svg`}
+            alt=''
+            width={36}
+            height={36}
+            className='h-9 w-9 shrink-0 object-contain'
+          />
+          <span className='truncate'>{t('statuspage.brand')}</span>
         </a>
         <div className='flex shrink-0 items-center gap-2'>
           <LanguageToggle />

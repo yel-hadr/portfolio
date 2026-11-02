@@ -39,7 +39,6 @@
   },
   "resume": {
     "label": "Télécharger mon CV",
-    "aria": "Télécharger mon CV en PDF ({size} Ko)",
     "meta": "PDF · {size} Ko"
   },
   "eyebrows": {
@@ -204,7 +203,7 @@
     "notConfigured": "Message non envoyé : le formulaire de contact n’est pas encore configuré. Réessayez plus tard.",
     "failed": "Message non envoyé : un problème est survenu de mon côté. Réessayez, ou écrivez-moi à {email}.",
     "offline": "Message non envoyé. Vérifiez votre connexion et réessayez.",
-    "tooMany": "Message non envoyé : trop de messages en peu de temps. Réessayez dans quelques minutes."
+    "tooMany": "Message non envoyé : trop de messages en peu de temps. Réessayez plus tard."
   },
   "footer": {
     "nav": "Pied de page",

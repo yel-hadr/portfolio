@@ -58,7 +58,9 @@ export const createContactHandler =
   ({ send, to, from, origins, limit }) =>
   async (request) => {
     const origin = request.headers.get('origin');
-    const allowed = Boolean(origin) && origins.includes(origin);
+    // A site given with a trailing slash (https://yel-hadr.github.io/) still matches: a browser's
+    // Origin header never has one, so the setting would otherwise refuse every message
+    const allowed = Boolean(origin) && origins.some((site) => site.replace(/\/+$/, '') === origin);
     const headers = allowed
       ? {
           'Access-Control-Allow-Origin': origin,
@@ -114,10 +116,10 @@ export const createContactHandler =
       return reply(502, { error: 'send', reason: 'network' });
     }
     if (error) {
+      // Resend's error type (validation_error, invalid_api_key, daily_quota_exceeded…) says what
+      // to fix, in the function's logs only: the reply tells a caller nothing about the account
       console.error('Resend refused the message:', error.name, error.message);
-      // Resend's error type (validation_error, invalid_api_key…) says what to fix; never its
-      // message, which can name the account's address
-      return reply(502, { error: 'send', reason: String(error.name ?? 'unknown') });
+      return reply(502, { error: 'send' });
     }
     return reply(200, { ok: true });
   };

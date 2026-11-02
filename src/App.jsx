@@ -248,7 +248,11 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
                   would unmount the whole root and leave a blank page. The sections say so, with a
                   page reload (rendering again cannot fetch the chunk) */}
               <ErrorBoundary sectionName='sections' reloadPage>
-                <Suspense fallback={null}>
+                {/* A screen's height until the sections arrive: the hero is only as tall as its
+                    content, so the footer (its own chunk, often first) sat right under it and
+                    jumped down when they landed (CLS 0.4 on desktop). Below the fold, it moves
+                    out of sight */}
+                <Suspense fallback={<div className='min-h-screen' aria-hidden='true' />}>
                   <BelowFold onReady={() => setSectionsReady(true)} />
                 </Suspense>
               </ErrorBoundary>
