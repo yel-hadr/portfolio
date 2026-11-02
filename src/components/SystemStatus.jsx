@@ -110,19 +110,21 @@ const Commits = ({ commits }) => {
   );
 };
 
-// Loading placeholder sized like the loaded widget, so nothing jumps when data arrives
-const Skeleton = () => {
+// Loading placeholder sized like the loaded widget, so nothing jumps when data arrives. It pulses
+// only once the request is out (`busy`): before the footer nears, nothing is being checked yet
+const Skeleton = ({ busy }) => {
   const { t } = useI18n();
+  const pulse = busy ? 'motion-safe:animate-pulse' : '';
   return (
     <>
       <p className='flex min-h-6 items-start gap-2.5'>
-        <Dot className='bg-foreground-muted motion-safe:animate-pulse' />
+        <Dot className={`bg-foreground-muted ${pulse}`} />
         <span className='text-sm font-semibold text-foreground-muted'>{t('status.checking')}</span>
       </p>
       <div aria-hidden='true' className='mt-4 flex flex-col gap-2.5 border-t border-line pt-3'>
         <span className='h-3 w-24 rounded-sm bg-surface-raised' />
         {[0, 1, 2].map((i) => (
-          <span key={i} className='h-3.5 rounded-sm bg-surface-raised motion-safe:animate-pulse' />
+          <span key={i} className={`h-3.5 rounded-sm bg-surface-raised ${pulse}`} />
         ))}
       </div>
     </>
@@ -145,7 +147,8 @@ const SystemStatus = () => {
       aria-labelledby='system-status-title'
       aria-busy={status === 'loading'}
       // inline-size containment: the nowrap commit lines must not widen the footer's grid track
-      className='w-full max-w-sm rounded-2xl border border-line bg-glass p-4 [contain:inline-size]'
+      // A live widget, not printed
+      className='w-full max-w-sm rounded-2xl border border-line bg-glass p-4 [contain:inline-size] print:hidden'
     >
       <h2
         id='system-status-title'
@@ -154,7 +157,7 @@ const SystemStatus = () => {
         {t('status.title')}
       </h2>
       {pending ? (
-        <Skeleton />
+        <Skeleton busy={status === 'loading'} />
       ) : (
         <>
           <Badge run={status === 'ready' ? run : null} />

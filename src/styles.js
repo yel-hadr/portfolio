@@ -26,12 +26,12 @@ const styles = {
   // a lit top edge on dark
   // (--shadow-button). Ghost: glass with a strong border (>= 3:1, a control boundary, so it
   // stays opaque grey rather than a faint white hairline); on hover its border brightens and its
-  // fill turns surface-raised. Both ease their colors over 200 ms and share one box (min-h-12:
+  // fill turns surface-raised. Both ease their colors over 150 ms and share one box (min-h-12:
   // 48 px whatever their border width), so side by side they line up
   buttonPrimary:
-    'inline-flex items-center justify-center rounded-xl border-2 border-transparent bg-primary min-h-12 px-7 py-2 font-bold text-on-primary shadow-(--shadow-button) transition-[color,background-color,border-color,box-shadow] duration-200 hover:bg-primary-hover',
+    'inline-flex items-center justify-center rounded-xl border-2 border-transparent bg-primary min-h-12 px-7 py-2 font-bold text-on-primary shadow-(--shadow-button) transition-[color,background-color,border-color,box-shadow] duration-150 hover:bg-primary-hover',
   buttonGhost:
-    'inline-flex items-center justify-center rounded-xl border border-line-strong bg-glass min-h-12 px-7 py-2 font-semibold text-foreground backdrop-blur-md transition-colors duration-200 hover:border-foreground-muted hover:bg-surface-raised',
+    'inline-flex items-center justify-center rounded-xl border border-line-strong bg-glass min-h-12 px-7 py-2 font-semibold text-foreground backdrop-blur-md transition-colors duration-150 hover:border-foreground-muted hover:bg-surface-raised',
   body: 'text-foreground-muted text-base leading-relaxed',
   // Focus ring of a 3D view (its wrapper has `group`): a layer above the canvas, since an inset
   // ring on the wrapper is painted under an opaque canvas. The ring sits on a band of the page

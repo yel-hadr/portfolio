@@ -14,9 +14,9 @@ import { SPRING } from '../utils/motion';
 import { CloseIcon, MenuIcon, MoonIcon, PauseIcon, PlayIcon, SunIcon, TerminalIcon } from './icons';
 
 // No display of its own: each button sets it (`hidden lg:inline-flex` must not meet an inline-flex).
-// Hover lightens the fill and lifts the button a touch (scale 1.05), eased over 200 ms
+// Hover lightens the fill and lifts the button a touch (scale 1.05), eased over 150 ms
 const ICON_BUTTON =
-  'relative h-10 w-10 items-center justify-center rounded-full text-foreground-muted transition-[color,background-color,box-shadow,transform] duration-200 ease-out hover:bg-surface-raised hover:text-foreground motion-safe:hover:scale-105';
+  'relative h-10 w-10 items-center justify-center rounded-full text-foreground-muted transition-[color,background-color,box-shadow,transform] duration-150 ease-out hover:bg-surface-raised hover:text-foreground motion-safe:hover:scale-105';
 
 // EN | FR segmented control. The accessible name ("English") contains the visible text ("EN").
 const LanguageToggle = () => {
@@ -117,7 +117,8 @@ const linkClass = (isActive) =>
 /**
  * Where the pill behind the current link should sit, measured from the link itself, and again
  * whenever the row resizes (a language switch, the web font arriving, the window).
- * @returns {{ x: number, width: number, shown: boolean } | null} null until a link has been current;
+ * @returns {{ x: number, width: number, from: number, shown: boolean } | null} null until a link
+ *   has been current; `from` is the width it had before (the pill grows or shrinks from it);
  *   shown is false while the current section has no link
  */
 const usePillPosition = (listRef, active) => {
@@ -129,8 +130,10 @@ const usePillPosition = (listRef, active) => {
       const link = list.querySelector(`a[href="#${active}"]`);
       // A section with no nav link (the blog, the tech stack, the top): the pill fades out where
       // it is, rather than staying lit under the last link while none is aria-current
-      if (link) setPill({ x: link.offsetLeft, width: link.offsetWidth, shown: true });
-      else setPill((prev) => (prev ? { ...prev, shown: false } : prev));
+      if (link) {
+        const width = link.offsetWidth;
+        setPill((prev) => ({ x: link.offsetLeft, width, from: prev?.width ?? width, shown: true }));
+      } else setPill((prev) => (prev ? { ...prev, shown: false } : prev));
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -181,6 +184,7 @@ const useNavScroll = (holdRef) => {
 
 // The sheet's spring: quick, a hint of overshoot, settled in about 0.4 s
 const SHEET_SPRING = { type: 'spring', stiffness: 380, damping: 34 };
+const SHEET_CLOSE = { duration: 0.2, ease: [0.4, 0, 1, 1] };
 
 /**
  * The mobile menu: a bottom sheet of frosted glass that springs up over a dimmed, blurred page.
@@ -224,7 +228,8 @@ const MobileSheet = ({ id, closing, onClose, onClosed, renderLinks, onTerminal }
         onKeyDown={onKeyDown}
         initial={{ y: '100%' }}
         animate={{ y: closing ? '100%' : '0%' }}
-        transition={SHEET_SPRING}
+        // Up on a spring, down quicker on an ease-in (200 ms): a sheet leaves faster than it comes
+        transition={closing ? SHEET_CLOSE : SHEET_SPRING}
         onAnimationComplete={() => {
           if (closing) onClosed();
         }}
@@ -413,15 +418,22 @@ const Navbar = ({ onOpenTerminal }) => {
       className='relative list-none hidden lg:flex items-center rounded-full bg-surface/80 p-1 shadow-track'
     >
       {pill && (
-        // The pill behind the current link: it springs from link to link (motion values on x
-        // and width, measured from the link: the look of a layoutId indicator without framer's
-        // layout bundle on the first paint), and fades out when no section is current. Instant
-        // under reduced motion
+        // The pill behind the current link: it springs from link to link, measured from the
+        // link (the look of a layoutId indicator without framer's layout bundle on the first
+        // paint), and fades out when no section is current. Transforms only (a FLIP): it takes
+        // the new link's width at once and scales from the old width back to 1 from its left
+        // edge, so no frame lays out the row again; at rest the scale is 1, so its rounded ends
+        // and ring are exact. Instant under reduced motion
         <m.li
           aria-hidden='true'
           className='pointer-events-none absolute inset-y-1 left-0 rounded-full bg-surface-raised ring-1 ring-line-strong'
+          style={{ width: pill.width, originX: 0 }}
           initial={false}
-          animate={{ x: pill.x, width: pill.width, opacity: active && pill.shown ? 1 : 0 }}
+          animate={{
+            x: pill.x,
+            scaleX: [pill.from / pill.width, 1],
+            opacity: active && pill.shown ? 1 : 0,
+          }}
           transition={reduced ? { duration: 0 } : SPRING}
         />
       )}
@@ -474,7 +486,8 @@ const Navbar = ({ onOpenTerminal }) => {
       aria-label={t('nav.main')}
       // A floating pill of frosted glass, clear of the page's edges. Never transformed itself: the
       // pill inside slides, so nothing here becomes a containing block
-      className='fixed inset-x-0 top-3 z-50'
+      // Not on paper: a fixed bar would repeat on every printed page
+      className='fixed inset-x-0 top-3 z-50 print:hidden'
       onFocus={() => setFocusInside(true)}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) setFocusInside(false);
@@ -486,13 +499,13 @@ const Navbar = ({ onOpenTerminal }) => {
         {/* The pill: blurred glass at 80%, slid away while reading down (transform only, so the
             page never shifts). The transparent border is its edge in forced colors */}
         <div
-          className={`relative isolate flex items-center justify-between gap-4 rounded-full border border-transparent bg-background/80 py-1.5 pl-2 pr-2 backdrop-blur-xl transition-transform duration-300 ease-out ${hidden ? '-translate-y-[calc(100%+1rem)]' : ''}`}
+          className={`relative isolate flex items-center justify-between gap-4 rounded-full border border-transparent bg-background/80 py-1.5 pl-2 pr-2 backdrop-blur-xl transition-transform duration-250 ease-out ${hidden ? '-translate-y-[calc(100%+1rem)]' : ''}`}
         >
           {/* Its edge: nothing at the top of the page, so it melts into the hero; a hairline (and
             the dark top highlight, the light shadow) fading in once the page scrolls */}
           <span
             aria-hidden='true'
-            className={`pointer-events-none absolute -inset-px -z-10 rounded-full border border-nav-edge shadow-card light:shadow-raised transition-opacity duration-300 ease-out ${scrolled ? 'opacity-100' : 'opacity-0'}`}
+            className={`pointer-events-none absolute -inset-px -z-10 rounded-full border border-nav-edge shadow-card light:shadow-raised transition-opacity duration-250 ease-out ${scrolled ? 'opacity-100' : 'opacity-0'}`}
           />
           {/* The page's film grain inside the glass too (the blur wipes out the page's own), so the
             pill reads as frosted glass rather than a flat sheet */}

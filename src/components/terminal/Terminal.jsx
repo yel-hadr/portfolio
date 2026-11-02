@@ -63,7 +63,7 @@ const useVisibleViewport = () => {
  * explore the portfolio. App renders it only while open; `onClose` closes it and restores focus.
  * `initialCommand` runs once on open (the games menu opens it on `game`).
  */
-const Terminal = ({ onClose, initialCommand = null }) => {
+const Terminal = ({ onClose, initialCommand = null, instant = false }) => {
   const { lang, setLang, t } = useI18n();
   const { theme, setTheme } = useTheme();
   const reduced = usePrefersReducedMotion();
@@ -89,8 +89,9 @@ const Terminal = ({ onClose, initialCommand = null }) => {
   const descriptionId = useId();
   const inputId = useId();
 
-  // The prompt takes focus on open and again when the challenge ends
-  useEffect(() => {
+  // The prompt takes focus on open and again when the challenge ends; before paint, so an Escape
+  // pressed right after opening already lands in the dialog
+  useLayoutEffect(() => {
     if (!playing) inputRef.current?.focus();
   }, [playing]);
 
@@ -371,8 +372,10 @@ const Terminal = ({ onClose, initialCommand = null }) => {
     typing.current = setTimeout(key, 60);
   };
 
-  const fade = reduced ? false : { opacity: 0 };
-  const rise = reduced ? false : { opacity: 0, y: 12, scale: 0.985 };
+  // No entrance after the loading window (`instant`): it already dimmed the page and showed the
+  // frame, so fading and rising in again would read as a blink
+  const fade = reduced || instant ? false : { opacity: 0 };
+  const rise = reduced || instant ? false : { opacity: 0, y: 12, scale: 0.985 };
 
   // Rendered into <body>, beside the page, so the page can be made inert without the terminal
   return createPortal(
@@ -380,8 +383,8 @@ const Terminal = ({ onClose, initialCommand = null }) => {
       ref={overlayRef}
       initial={fade}
       animate={{ opacity: 1 }}
-      // The backdrop dims and blurs in over 200 ms, as behind every dialog
-      transition={{ duration: 0.2, ease: 'easeOut' }}
+      // The backdrop dims and blurs in over 250 ms, as behind every dialog
+      transition={{ duration: 0.25, ease: 'easeOut' }}
       style={viewport ? { top: viewport.top, height: viewport.height, bottom: 'auto' } : undefined}
       className='fixed inset-0 z-[60] flex bg-background/80 backdrop-blur-sm md:items-center md:justify-center md:p-6'
       // Backdrop click closes (only reachable on larger screens; phones are full screen). The
@@ -400,7 +403,7 @@ const Terminal = ({ onClose, initialCommand = null }) => {
         aria-labelledby={titleId}
         initial={rise}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.18, ease: 'easeOut' }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
         // Focusable by script and by click (not by Tab), so a click on a non-interactive part
         // keeps focus inside the dialog and Escape and the Tab cycle keep working
         tabIndex={-1}

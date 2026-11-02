@@ -314,7 +314,7 @@ const InteractiveDiagram = ({ spec, ns, title, headingLevel = 'h3' }) => {
                     key={e.id}
                     d={toPath(edgePoints(e, boxes))}
                     fill='none'
-                    className={`${style.stroke} transition-[opacity,stroke-width] duration-200 ${active && !on ? 'opacity-30' : ''}`}
+                    className={`${style.stroke} transition-[opacity,stroke-width] duration-150 ${active && !on ? 'opacity-30' : ''}`}
                     strokeWidth={on ? 3 : 1.75}
                     strokeDasharray={style.dash}
                     strokeLinejoin='round'
@@ -428,7 +428,7 @@ const InteractiveDiagram = ({ spec, ns, title, headingLevel = 'h3' }) => {
                     height={n.h}
                     rx='12'
                     strokeWidth={isActive ? 2.5 : isNeighbour || selected === n.id ? 2 : 1.25}
-                    className={`transition-colors duration-200 ${
+                    className={`transition-colors duration-150 ${
                       isActive
                         ? 'fill-surface-raised stroke-primary'
                         : isNeighbour

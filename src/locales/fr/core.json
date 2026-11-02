@@ -22,6 +22,9 @@
     "pauseMotion": "Mettre en pause les animations d’arrière-plan",
     "openTerminal": "Ouvrir le terminal",
     "terminalShortcut": "Raccourci : Ctrl + `",
+    "terminalLoading": "Démarrage du terminal…",
+    "terminal": "Terminal",
+    "closeTerminal": "Fermer le terminal",
     "blog": "Blog",
     "menu": "Menu"
   },

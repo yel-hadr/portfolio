@@ -87,9 +87,9 @@
 
   /* Game Mode (src/components/Cub3D): used behind motion-safe, so reduced motion drops them */
   --animate-game-in: game-in 300ms ease-out;
-  /* A dialog's backdrop: the page dims and blurs in over 200 ms (opacity only; the blur fades
+  /* A dialog's backdrop: the page dims and blurs in over 250 ms (opacity only; the blur fades
      with it) */
-  --animate-backdrop-in: backdrop-in 200ms ease-out;
+  --animate-backdrop-in: backdrop-in var(--duration-panel) ease-out;
   --animate-game-out: game-out 250ms ease-in forwards;
   --animate-crt-in: crt-in 280ms ease-out;
   --animate-prompt-in: prompt-in 180ms ease-out;
@@ -146,6 +146,15 @@
       transform: translateX(14rem);
     }
   }
+}
+
+/* The page's two UI durations: small controls (hover, press, toggles, a link's bar) take 150 ms,
+   panels (dialogs and their backdrops, the navbar's fade and slide, a card's hover) 250 ms. In JSX
+   they are duration-150 and duration-250; a panel leaving (the mobile sheet) is a step quicker,
+   200 ms. Reveals, the scan line, Game Mode and the waves keep their own timings */
+:root {
+  --duration-control: 150ms;
+  --duration-panel: 250ms;
 }
 
 /* Tailwind v3's preflight defaults that v4 changed, kept so nothing on the page moves: a light grey
@@ -346,30 +355,31 @@
     --shadow-track: inset 0 1px 2px rgb(64 42 20 / 0.08);
   }
 
-  /* Language switch: the page content fades out, the text swaps, then fades back in
-     (I18nProvider adds the class for ~160 ms). Reduced motion swaps instantly. */
+  /* Language switch: the page content dims, the text swaps, then it comes back (I18nProvider
+     adds the class for ~150 ms). Only to 40%, so the page never blinks empty. Reduced motion
+     swaps instantly. */
   main,
   footer,
   nav ul {
-    transition: opacity 0.16s ease;
+    transition: opacity var(--duration-control) ease;
   }
   .lang-switching main,
   .lang-switching footer,
   .lang-switching nav ul {
-    opacity: 0;
+    opacity: 0.4;
   }
 
-  /* Theme switch: colors cross-fade for a moment (ThemeProvider adds the class briefly). */
+  /* Theme switch: colors cross-fade for a moment (ThemeProvider adds the class briefly).
+     Backgrounds, borders, text and icon fills only: shadows and the ::before/::after layers
+     (spotlights, hit areas, link bars) swap at once, which keeps the switch light on a low-end
+     phone, where transitioning every shadow on the page stuttered */
   .theme-transition,
-  .theme-transition *,
-  .theme-transition *::before,
-  .theme-transition *::after {
+  .theme-transition * {
     transition:
-      background-color 0.35s ease,
-      border-color 0.35s ease,
-      color 0.35s ease,
-      fill 0.35s ease,
-      box-shadow 0.35s ease !important;
+      background-color var(--duration-panel) ease,
+      border-color var(--duration-panel) ease,
+      color var(--duration-panel) ease,
+      fill var(--duration-panel) ease !important;
   }
 
   /* A two-state icon that morphs (the theme and pause toggles): both icons stacked, the current one
@@ -455,9 +465,9 @@
       inset 0 1px 0 var(--color-edge),
       var(--shadow-card);
     transition:
-      border-color 0.35s ease,
-      box-shadow 0.35s ease,
-      translate 0.35s ease;
+      border-color var(--duration-panel) ease,
+      box-shadow var(--duration-panel) ease,
+      translate var(--duration-panel) ease;
   }
   /* Under the pointer the hairline brightens (white 7% to 14% on dark, ink 7% to 11% on light)
      and the shadow deepens (--shadow-card-hover), eased, never snapped. On light the card also
@@ -515,7 +525,7 @@
   }
   @media (prefers-reduced-motion: no-preference) {
     .link-draw::after {
-      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: transform var(--duration-control) cubic-bezier(0.22, 1, 0.36, 1);
     }
   }
 
@@ -602,7 +612,7 @@
     border-radius: inherit;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--duration-panel) ease;
   }
   [data-lit] > .spotlight {
     opacity: 1;
@@ -707,10 +717,75 @@
 }
 
 /* The navbar's pause switch (useMotionPaused, WCAG 2.2.2) stops the CSS animations as well.
-   Outside the cascade layers, so it also beats the motion-safe:animate-pulse and animate-spin
-   utilities */
+   Outside the cascade layers, so it beats the utilities. Matched on the class text: the elements
+   carry motion-safe:animate-pulse / motion-safe:animate-spin, whose class names are not
+   .animate-pulse or .animate-spin */
 :root[data-motion='paused'] .scanline,
-:root[data-motion='paused'] .animate-pulse,
-:root[data-motion='paused'] .animate-spin {
+:root[data-motion='paused'] [class*='animate-pulse'],
+:root[data-motion='paused'] [class*='animate-spin'] {
   animation: none;
+}
+
+/* Print and Save as PDF. Sections reveal as they scroll into view (framer writes opacity 0 and an
+   offset inline until then), so on paper every one is shown as it ends; animations and
+   transitions stop, so nothing is caught mid-fade. The navbar, the waves, the 3D layer and the
+   game buttons are print:hidden in their components; ThemeProvider prints the light theme */
+@media print {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  main [style*='opacity'] {
+    opacity: 1 !important;
+  }
+  main [style*='transform'] {
+    transform: none !important;
+  }
+  .grain {
+    display: none !important;
+  }
+  /* The light theme's text on paper even if beforeprint never fired (some print-to-PDF tools):
+     the dark theme's pearl text would be 1.1:1 on white. Only :root, so a .scheme-dark island
+     keeps its own values */
+  :root {
+    --c-foreground: 26 26 46;
+    --c-foreground-muted: 87 83 78;
+    --c-eyebrow: 180 65 12;
+    --c-primary: 194 65 12;
+    --c-primary-400: 180 65 12;
+    --c-on-primary: 255 255 255;
+  }
+  /* A link that leaves the site prints where it goes. Its ::after is .link-draw's hover bar on
+     screen, so every property that bar sets is put back */
+  a[href^='http'] {
+    flex-wrap: wrap;
+  }
+  /* In a flex link (an icon and a label) the address takes a line of its own under them */
+  a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    position: static;
+    display: inline;
+    flex-basis: 100%;
+    height: auto;
+    background: none;
+    transform: none;
+    font-size: 0.8em;
+    font-weight: 400;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  /* Printing drops background colors: the orange buttons keep theirs, or their white text would
+     vanish on the paper */
+  [class*='bg-primary'] {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* Blur has nothing behind it on paper, and a card or a job is never cut across two pages */
+  .card-glass,
+  .vertical-timeline-element-content {
+    backdrop-filter: none !important;
+    break-inside: avoid;
+  }
 }

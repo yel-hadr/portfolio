@@ -6,7 +6,7 @@ import { I18nContext } from './context';
 
 const STORAGE_KEY = 'lang';
 // How long the page content fades out before the text swaps (see .lang-switching in index.css)
-const FADE_MS = 160;
+const FADE_MS = 150;
 
 const lookup = (dict, key) => key.split('.').reduce((node, part) => node?.[part], dict);
 

@@ -8,6 +8,7 @@ import CanvasErrorBoundary from './components/CanvasErrorBoundary';
 import ErrorBoundary from './components/ErrorBoundary';
 import Hero from './components/Hero';
 import Navbar from './components/Navbar';
+import TerminalLoading from './components/TerminalLoading';
 import WavesBackground from './components/WavesBackground';
 import WebGLFallback from './components/WebGLFallback';
 import { loadScene3D } from './components/canvas/loadScene3D';
@@ -78,6 +79,8 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
   const [terminalOpen, setTerminalOpen] = useState(false);
   // A command the terminal runs as it opens (the games menu starts the challenge this way)
   const [terminalCommand, setTerminalCommand] = useState(null);
+  // The loading window was on screen: the terminal that replaces it skips its own entrance
+  const [terminalInstant, setTerminalInstant] = useState(false);
   // Focus returns here when the terminal closes
   const terminalOpener = useRef(null);
   const [gamesOpen, setGamesOpen] = useState(false);
@@ -122,6 +125,7 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
   };
   const closeTerminal = () => {
     setTerminalOpen(false);
+    setTerminalInstant(false);
     requestAnimationFrame(() => terminalOpener.current?.focus?.());
   };
 
@@ -158,12 +162,18 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
     return () => observer.disconnect();
   }, [webgl, near3D, sectionsReady]);
 
-  // Ctrl+` opens the terminal from anywhere. An effect event: it reads the latest state, so the
+  // Ctrl+` opens (and closes) the terminal from anywhere. An effect event: it reads the latest state, so the
   // listener is added once
   const onShortcut = useEffectEvent((e) => {
     // Ctrl+` (the physical Backquote key, so it also works on AZERTY). A modifier is required,
     // so typing never triggers it (WCAG 2.1.4 Character Key Shortcuts)
-    if (e.code !== 'Backquote' || !e.ctrlKey || e.altKey || e.shiftKey || terminalOpen) return;
+    if (e.code !== 'Backquote' || !e.ctrlKey || e.altKey || e.shiftKey) return;
+    // A toggle, as in VS Code: pressed again, it closes the terminal (or its loading window)
+    if (terminalOpen) {
+      e.preventDefault();
+      closeTerminal();
+      return;
+    }
     // Another dialog (an architecture diagram) owns the keyboard while it is open
     if (document.querySelector('[aria-modal="true"]')) return;
     e.preventDefault();
@@ -237,8 +247,18 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
       {terminalOpen && (
         // As Game Mode below: a chunk that fails to load closes the overlay instead
         <CanvasErrorBoundary sectionType='terminal' onError={closeTerminal}>
-          <Suspense fallback={null}>
-            <Terminal onClose={closeTerminal} initialCommand={terminalCommand} />
+          {/* Until its code arrives, a loading window that Escape already closes: closed, the
+              terminal never opens late */}
+          <Suspense
+            fallback={
+              <TerminalLoading onClose={closeTerminal} onShown={() => setTerminalInstant(true)} />
+            }
+          >
+            <Terminal
+              onClose={closeTerminal}
+              initialCommand={terminalCommand}
+              instant={terminalInstant}
+            />
           </Suspense>
         </CanvasErrorBoundary>
       )}
