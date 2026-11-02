@@ -104,7 +104,8 @@
 /* Article body (rendered Markdown) ------------------------------------------------------------ */
 
 .prose-blog {
-  @apply max-w-prose text-base leading-relaxed text-foreground sm:text-lg sm:leading-relaxed;
+  /* Body text a step softer than the headings (text-prose), at about 70 characters a line */
+  @apply max-w-prose text-base leading-relaxed text-prose sm:text-lg sm:leading-relaxed;
 }
 .prose-blog > * + * {
   @apply mt-5;
@@ -232,4 +233,72 @@
 /* Featured posts on the index: the cover above the title */
 .post-cover {
   @apply aspect-[16/9] h-auto w-full rounded-2xl border border-line object-cover light:border-line-strong/40;
+}
+
+/* Long posts: linked headings, a table of contents, back to top ----------------------------- */
+
+/* A heading's text links to its own section; a "#" appears beside it on hover and focus. Not
+   styled as a body link (.prose-blog a): it stays the heading's color, with no underline */
+.prose-blog .heading-link {
+  @apply rounded-sm text-inherit no-underline;
+  /* The heading's weight, not the body links' medium */
+  font-weight: inherit;
+}
+.heading-hash {
+  @apply ml-2 font-normal text-primary-400 opacity-0 transition-opacity;
+}
+.heading-link:hover .heading-hash,
+.heading-link:focus-visible .heading-hash {
+  @apply opacity-100;
+}
+
+/* The article, and on wide screens its table of contents beside it, sticky while reading. The
+   contents come right after the post's header in the page (so they are reached first, by Tab and
+   by a screen reader), and the article's grid places them in a second column */
+.post-layout {
+  @apply mx-auto max-w-3xl;
+}
+@media (width >= 80rem) {
+  .post-layout.has-toc {
+    @apply max-w-none;
+  }
+  .post-layout.has-toc .post-article {
+    @apply grid items-start gap-x-12;
+    grid-template-columns: minmax(0, 1fr) 15rem;
+  }
+  .post-layout.has-toc .post-article > * {
+    grid-column: 1;
+  }
+  .post-layout.has-toc .post-article > .toc-side {
+    grid-column: 2;
+    grid-row: 1 / span 99;
+  }
+}
+.toc-side {
+  @apply sticky top-24 hidden max-h-[calc(100vh-8rem)] overflow-y-auto xl:block;
+}
+.toc-top {
+  @apply mt-8 rounded-2xl border border-line bg-glass px-5 py-3 xl:hidden;
+}
+.toc-top summary {
+  @apply flex min-h-11 cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden;
+}
+.toc-top details[open] .toc-chevron {
+  @apply rotate-90;
+}
+.toc-chevron {
+  @apply transition-transform;
+}
+.toc-heading {
+  @apply text-eyebrow font-semibold uppercase text-metal;
+}
+.toc-list {
+  @apply mt-3 flex flex-col gap-2 text-sm leading-snug;
+}
+.toc-list a {
+  @apply block rounded-sm py-1 text-foreground-muted transition-colors hover:text-foreground;
+}
+
+.back-to-top {
+  @apply inline-flex min-h-11 items-center gap-2 font-medium text-foreground-muted underline-offset-4 transition-colors hover:text-foreground hover:underline;
 }
