@@ -28,6 +28,7 @@
   --color-surface-raised: rgb(var(--c-surface-raised)); /* inputs, chips, hover */
   --color-foreground: rgb(var(--c-foreground)); /* headings and body */
   --color-foreground-muted: rgb(var(--c-foreground-muted)); /* secondary copy */
+  --color-prose: rgb(var(--c-prose)); /* long-form body text (the blog's posts) */
   --color-metal: rgb(var(--c-eyebrow)); /* section eyebrows: a metallic grey above the muted copy */
   --color-primary: rgb(var(--c-primary)); /* brand orange: button fill */
   --color-primary-400: rgb(var(--c-primary-400)); /* orange text on the page background */
@@ -195,6 +196,9 @@
     --c-surface-raised: 30 35 50;
     --c-foreground: 243 244 246;
     --c-foreground-muted: 156 163 175;
+    /* A post's body: a step below the headings' pearl, so thirteen minutes of reading do not
+       glare, still about 12:1 on the card */
+    --c-prose: 209 213 219;
     /* Eyebrows: a metallic slate, a step above the muted copy, so the small uppercase labels
        read before the body text without competing with the pearl headings (9.6:1 on the page) */
     --c-eyebrow: 190 198 211;
@@ -293,6 +297,8 @@
     --c-surface-raised: 243 238 231;
     --c-foreground: 26 26 46;
     --c-foreground-muted: 87 83 78;
+    /* A post's body: a softer ink than the headings, about 13:1 on the card */
+    --c-prose: 45 45 63;
     /* Eyebrows in the deep orange text color (5.3:1 on the page) */
     --c-eyebrow: 180 65 12;
     /* A deep orange under white text (5.18:1), darker on hover (7.31:1) */
@@ -754,6 +760,7 @@
   :root {
     --c-foreground: 26 26 46;
     --c-foreground-muted: 87 83 78;
+    --c-prose: 45 45 63;
     --c-eyebrow: 180 65 12;
     --c-primary: 194 65 12;
     --c-primary-400: 180 65 12;

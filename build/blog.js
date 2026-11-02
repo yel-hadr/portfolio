@@ -78,6 +78,14 @@ export const parseFrontMatter = (source) => {
   return { data, body: source.slice(match[0].length) };
 };
 
+// A hyphenated name in a title (django-tenants, cloud-1_42) never splits at its hyphen: each word
+// with an inner hyphen is kept on one line. Takes and returns escaped HTML
+// Only short words (16 characters or fewer): a long one may still break, so it never overflows
+const keepHyphens = (html) =>
+  html.replace(/[^\s<>]+-[^\s<>]+/g, (word) =>
+    word.length <= 16 ? `<span class="whitespace-nowrap">${word}</span>` : word
+  );
+
 // Lowercase ASCII id for heading anchors ("Why it happens" -> "why-it-happens")
 const slugify = (text) =>
   text
@@ -193,22 +201,33 @@ const imageSize = (file) => {
   throw new Error(`[blog] ${file}: not a PNG or WebP image`);
 };
 
-/** A local image as attributes: src under the base, its intrinsic size; the file must exist */
-const localImage = (ctx, path) => {
+/** The file in public/ behind a root-relative path; it must exist */
+const publicFile = (ctx, path) => {
   const file = resolve(ctx.root, 'public', path.replace(/^\//, ''));
   try {
     statSync(file);
   } catch {
     throw new Error(`[blog] image ${path} is not in public/`);
   }
-  const { width, height } = imageSize(file);
+  return file;
+};
+
+/** A local image as attributes: src under the base, its intrinsic size; the file must exist */
+const localImage = (ctx, path) => {
+  const { width, height } = imageSize(publicFile(ctx, path));
   return `src="${escapeHtml(ctx.href(path))}" width="${width}" height="${height}"`;
 };
 
-/** Markdown -> HTML with the blog's code blocks, heading anchors, figures and scrollable tables. */
+/**
+ * Markdown -> { html, headings } with the blog's code blocks, linked headings, figures and
+ * scrollable tables. `headings`: every h2 ({ id, html }), for the post's table of contents.
+ */
 const renderMarkdown = (markdown, strings, ctx) => {
   let codeCount = 0;
   let tableCount = 0;
+  const headings = [];
+  // Two headings with the same text get distinct ids (the second -2, and so on)
+  const seen = new Map();
   const img = ({ href, text }) => {
     // Every image in a post says what it shows
     if (!text.trim()) throw new Error(`[blog] image ${href} has no alt text`);
@@ -235,7 +254,15 @@ const renderMarkdown = (markdown, strings, ctx) => {
         const html = this.parser.parseInline(tokens);
         // h1 is the page title; Markdown headings start at h2
         const level = Math.min(Math.max(depth, 2), 6);
-        return `<h${level} id="${slugify(html)}">${html}</h${level}>\n`;
+        const base = slugify(html);
+        const count = seen.get(base) ?? 0;
+        seen.set(base, count + 1);
+        const id = count ? `${base}-${count + 1}` : base;
+        if (level === 2) headings.push({ id, html });
+        // The heading's text links to its own section, so a reader can share or bookmark it. A
+        // "#" shows on hover and focus, in the markup and hidden from screen readers (as CSS
+        // content it was part of every heading's name): the name stays the heading's text
+        return `<h${level} id="${id}"><a href="#${id}" class="heading-link">${html}<span class="heading-hash" aria-hidden="true">#</span></a></h${level}>\n`;
       },
       code({ text, lang }) {
         codeCount += 1;
@@ -260,7 +287,7 @@ const renderMarkdown = (markdown, strings, ctx) => {
       },
     },
   });
-  return marked.parse(markdown);
+  return { html: marked.parse(markdown), headings };
 };
 
 const countWords = (markdown) => (markdown.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) ?? []).length;
@@ -287,6 +314,10 @@ const loadIndex = async (root) => {
   const { posts } = await import(`${pathToFileURL(file).href}?v=${version}`);
   return byDate(posts);
 };
+
+// A post this long (sections and minutes) gets a table of contents; a short one reads at a glance
+const TOC_MIN_HEADINGS = 4;
+const TOC_MIN_MINUTES = 6;
 
 const SEO_TITLE_MAX = 60;
 const SEO_DESCRIPTION_MAX = 160;
@@ -353,6 +384,10 @@ const ICONS = {
   moon: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="theme-icon-moon h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>',
   arrowLeft:
     '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',
+  chevron:
+    '<svg aria-hidden="true" focusable="false" viewBox="0 0 20 20" class="toc-chevron h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l6 6-6 6"/></svg>',
+  arrowUp:
+    '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
   arrowRight:
     '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
 };
@@ -362,8 +397,11 @@ const tagList = (tags, label) =>
     .map((tag, i) => `<li class="tag ${tagColor(i)}">${escapeHtml(tag)}</li>`)
     .join('')}</ul>`;
 
+const readingMinutes = (post, lang) =>
+  Math.max(1, Math.round(countWords(post.langs[lang].body) / WPM));
+
 const postMeta = (post, lang, s) => {
-  const minutes = Math.max(1, Math.round(countWords(post.langs[lang].body) / WPM));
+  const minutes = readingMinutes(post, lang);
   return `<p class="post-meta"><span class="sr-only">${escapeHtml(s.published)} </span><time datetime="${post.date}">${formatDate(post.date, lang)}</time><span aria-hidden="true">·</span><span>${escapeHtml(fill(s.readingTime, { minutes }))}</span></p>`;
 };
 
@@ -401,6 +439,7 @@ const renderPage = (ctx, { lang, head, alternatePaths, current, main }) => {
     <link rel="apple-touch-icon" href="${href('/apple-touch-icon.png')}" />
     ${THEME_SCRIPT}
     ${head}
+    ${ctx.assets.font ? `<link rel="preload" as="font" type="font/woff2" href="${ctx.assets.font}" crossorigin />` : ''}
     ${ctx.assets.css.map((file) => `<link rel="stylesheet" href="${file}" />`).join('\n    ')}
     ${ctx.analytics}
   </head>
@@ -417,7 +456,7 @@ const renderPage = (ctx, { lang, head, alternatePaths, current, main }) => {
           <nav aria-label="${escapeHtml(s.nav)}">
             <ul class="flex items-center gap-1">
               <li><a href="${href(indexPath(lang))}" class="header-link"${current === 'index' ? ' aria-current="page"' : ''}>${escapeHtml(s.blog)}</a></li>
-              <li><a href="${href(feedPath(lang))}" class="header-link" type="application/rss+xml">${ICONS.rss}<span>${escapeHtml(s.rss)}</span></a></li>
+              <li><a href="${href(feedPath(lang))}" class="header-link" type="application/rss+xml">${ICONS.rss}<span class="sr-only xs:not-sr-only">${escapeHtml(s.rss)}</span></a></li>
             </ul>
           </nav>
           <div role="group" aria-label="${escapeHtml(s.language)}" class="lang-switch">${languageSwitch}</div>
@@ -501,7 +540,7 @@ const indexPage = (ctx, lang) => {
         ? `<img ${localImage(ctx, post.cover)} alt="" decoding="async" class="post-cover" />\n          `
         : '';
     return `        <li class="card-glass post-card${post.featured ? ' post-card-featured' : ''}">
-          ${cover}<h${level} class="text-xl font-bold text-foreground sm:text-2xl"><a href="${ctx.href(postPath(lang, post.slug))}" class="stretched-link">${escapeHtml(post.langs[lang].title)}</a></h${level}>
+          ${cover}<h${level} class="text-xl font-bold text-foreground sm:text-2xl"><a href="${ctx.href(postPath(lang, post.slug))}" class="stretched-link">${keepHyphens(escapeHtml(post.langs[lang].title))}</a></h${level}>
           ${postMeta(post, lang, s)}
           <p class="text-base leading-relaxed text-foreground-muted">${escapeHtml(post.langs[lang].summary)}</p>
           ${tagList(post.tags, s.topics)}
@@ -558,6 +597,9 @@ const postPage = (ctx, lang, index) => {
   const url = `${SITE_URL}${path}`;
   // With the site's name when it still fits in a search result's title
   const branded = fill(s.postTitle, { title: seo.title });
+  // Shared links show the post's own cover when it has one (the site's card otherwise), so the
+  // posts do not all look alike on LinkedIn or X
+  const cover = post.cover ? { path: post.cover, ...imageSize(publicFile(ctx, post.cover)) } : null;
   const head = headTags({
     title: branded.length <= SEO_TITLE_MAX ? branded : seo.title,
     description: seo.description,
@@ -570,6 +612,14 @@ const postPage = (ctx, lang, index) => {
     publishedTime: post.date,
     modifiedTime: post.date,
     tags: post.tags,
+    ...(cover
+      ? {
+          image: ctx.href(cover.path),
+          imageAlt: title,
+          imageWidth: cover.width,
+          imageHeight: cover.height,
+        }
+      : {}),
     jsonLd: {
       '@context': 'https://schema.org',
       '@type': 'BlogPosting',
@@ -581,43 +631,67 @@ const postPage = (ctx, lang, index) => {
       datePublished: post.date,
       dateModified: post.date,
       keywords: post.tags.join(', '),
-      image: `${SITE_URL}${ctx.href('/og-image.png')}`,
+      image: `${SITE_URL}${ctx.href(cover ? cover.path : '/og-image.png')}`,
       author: person(s),
       publisher: { '@id': `${SITE_URL}/#person` },
       isPartOf: { '@id': `${SITE_URL}${ctx.href(indexPath(lang))}#blog` },
     },
   });
 
-  // Previous and next in the index order (newest first)
+  // Older and newer posts. The index is newest first, so the older one is the next in it: on the
+  // left, as a previous page would be, and the newer one on the right
   const neighbor = (i, label, dir) => {
     const other = ctx.posts[i];
     if (!other) return '<span></span>';
     const icon = dir === 'prev' ? ICONS.arrowLeft : ICONS.arrowRight;
     return `<a href="${ctx.href(postPath(lang, other.slug))}" rel="${dir}" class="card-glass post-nav-link${dir === 'next' ? ' sm:text-right' : ''}">
             <span class="post-nav-label${dir === 'next' ? ' sm:justify-end' : ''}">${dir === 'prev' ? icon : ''}${escapeHtml(label)}${dir === 'next' ? icon : ''}</span>
-            <span class="font-semibold text-foreground">${escapeHtml(other.langs[lang].title)}</span>
+            <span class="font-semibold text-foreground">${keepHyphens(escapeHtml(other.langs[lang].title))}</span>
           </a>`;
   };
 
-  const main = `      <article class="mx-auto max-w-3xl" aria-labelledby="post-title">
+  const rendered = renderMarkdown(body, s, ctx);
+  // A table of contents for the long posts: sticky beside the article on wide screens, a
+  // disclosure above it on narrow ones
+  const contents =
+    rendered.headings.length >= TOC_MIN_HEADINGS && readingMinutes(post, lang) >= TOC_MIN_MINUTES
+      ? `<ol class="toc-list">${rendered.headings.map(({ id, html }) => `<li><a href="#${id}">${html}</a></li>`).join('')}</ol>`
+      : '';
+  const tocNav = (where) =>
+    contents
+      ? `<nav class="toc toc-${where}" aria-labelledby="toc-${where}">
+            ${
+              where === 'side'
+                ? `<h2 id="toc-${where}" class="toc-heading">${escapeHtml(s.contents)}</h2>${contents}`
+                : `<details><summary id="toc-${where}" class="toc-heading">${ICONS.chevron}${escapeHtml(s.contents)}</summary>${contents}</details>`
+            }
+          </nav>`
+      : '';
+
+  const main = `      <div class="${contents ? 'post-layout has-toc' : 'post-layout'}">
+      <article class="post-article" aria-labelledby="post-title">
         <p><a href="${ctx.href(indexPath(lang))}" class="back-link">${ICONS.arrowLeft}${escapeHtml(s.allPosts)}</a></p>
         <header class="mt-6">
-          <h1 id="post-title" class="text-3xl font-black leading-tight sm:leading-10 lg:leading-none tracking-tight text-foreground sm:text-4xl lg:text-5xl">${escapeHtml(title)}</h1>
+          <h1 id="post-title" class="text-3xl font-black leading-tight text-balance sm:leading-10 lg:leading-none tracking-tight text-foreground sm:text-4xl lg:text-5xl">${keepHyphens(escapeHtml(title))}</h1>
           <p class="mt-4 text-base leading-relaxed sm:leading-7 text-foreground-muted sm:text-lg">${escapeHtml(summary)}</p>
           <div class="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">
             ${postMeta(post, lang, s)}
             ${tagList(post.tags, s.topics)}
           </div>
         </header>
+        ${tocNav('side')}
+        ${tocNav('top')}
         <div class="card-glass mt-10 p-5 sm:p-10">
           <div class="prose-blog">
-${renderMarkdown(body, s, ctx)}
+${rendered.html}
           </div>
         </div>
+        ${contents ? `<p class="mt-6"><a href="#main" class="back-to-top">${ICONS.arrowUp}${escapeHtml(s.backToTop)}</a></p>` : ''}
       </article>
+      </div>
       <nav aria-label="${escapeHtml(s.morePosts)}" class="mx-auto mt-12 grid max-w-3xl gap-4 sm:grid-cols-2">
-          ${neighbor(index - 1, s.previous, 'prev')}
-          ${neighbor(index + 1, s.next, 'next')}
+          ${neighbor(index + 1, s.older, 'prev')}
+          ${neighbor(index - 1, s.newer, 'next')}
       </nav>`;
 
   return renderPage(ctx, {
@@ -795,9 +869,15 @@ export const feedPath = (lang) => \`\${blogPath(lang)}rss.xml\`;
       collect(jsFile);
       if (!css.size) this.warn('No CSS found for the blog entry; the pages would be unstyled');
 
+      // Geist's latin file, preloaded as on the home page (build/preloadFont.js): the headings
+      // and text would otherwise wait for the CSS to name it
+      const font = Object.keys(bundle).find((name) =>
+        /geist-latin-wght-normal-[^/]+\.woff2$/.test(name)
+      );
       const ctx = await context({
         js: href(`/${jsFile}`),
         css: [...css].map((f) => href(`/${f}`)),
+        font: font ? href(`/${font}`) : null,
       });
       const emit = (path, source) =>
         this.emitFile({ type: 'asset', fileName: path.replace(/^\//, ''), source });
