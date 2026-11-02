@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { m } from 'framer-motion';
 
 import { styles, tagColor } from '../styles';
@@ -9,17 +9,17 @@ import SectionHeader from './SectionHeader';
 import Spotlight from './Spotlight';
 import { tagName, useI18n } from '../i18n/context';
 import CanvasErrorBoundary from './CanvasErrorBoundary';
+import { useRetryLazy } from '../hooks/useRetryLazy';
+import { clearLoadNotice, notifyLoadFailure } from '../utils/loadNotice';
 import { GithubIcon } from './icons';
 
 // The diagram modal (SVG diagrams + text) loads only when a visitor opens one
 const loadDiagram = () => import('./diagrams/ArchitectureModal');
-const ArchitectureModal = lazy(loadDiagram);
 // The live demos (each with its own 3D scene) load only when a visitor runs one
 const DEMO_LOADERS = {
   cub3d: () => import('./Cub3D/Cub3DModal'),
   fdf: () => import('./Fdf/FdfModal'),
 };
-const DEMOS = { cub3d: lazy(DEMO_LOADERS.cub3d), fdf: lazy(DEMO_LOADERS.fdf) };
 // Starts a chunk's download when the pointer reaches its button or the button takes focus, so the
 // click finds it loaded. A failure here is ignored: the click's own load reports it
 const prefetch = (load) => {
@@ -157,9 +157,13 @@ const Works = () => {
   const [open, setOpen] = useState(null);
   // { demo, opener }, the same for a live demo
   const [running, setRunning] = useState(null);
-  // Said when a demo's chunk fails to load and its dialog closes again
-  const [demoNotice, setDemoNotice] = useState('');
-  const Demo = running && DEMOS[running.demo];
+  // The diagram and the demos load lazily: after a failed load (the boundary closes the dialog and
+  // a notice says so) the next open imports again rather than failing for good
+  const [ArchitectureModal, retryDiagram] = useRetryLazy(loadDiagram);
+  const [Cub3dDemo, retryCub3d] = useRetryLazy(DEMO_LOADERS.cub3d);
+  const [FdfDemo, retryFdf] = useRetryLazy(DEMO_LOADERS.fdf);
+  const demos = { cub3d: [Cub3dDemo, retryCub3d], fdf: [FdfDemo, retryFdf] };
+  const [Demo, retryDemo] = running ? demos[running.demo] : [];
   // `running?.`: the React Compiler reads this as the callback's memo dependency during render,
   // when no demo is running
   const closeDemo = () => {
@@ -173,7 +177,7 @@ const Works = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const demo = params.get('demo');
-    if (!demo || !Object.hasOwn(DEMOS, demo)) return;
+    if (!demo || !Object.hasOwn(DEMO_LOADERS, demo)) return;
     params.delete('demo');
     const query = params.toString();
     const { pathname, hash } = window.location;
@@ -197,10 +201,12 @@ const Works = () => {
           <ProjectCard
             key={project.id}
             {...project}
-            onOpenDiagram={(diagram, opener) => setOpen({ diagram, opener })}
+            onOpenDiagram={(diagram, opener) => {
+              clearLoadNotice();
+              setOpen({ diagram, opener });
+            }}
             onRunDemo={(demo, opener) => {
-              // Cleared first, so a second failure changes the live region and is said again
-              setDemoNotice('');
+              clearLoadNotice();
               // The card's box: the demo's dialog grows out of it
               setRunning({ demo, opener, origin: opener.closest('li')?.getBoundingClientRect() });
             }}
@@ -208,15 +214,26 @@ const Works = () => {
         ))}
       </ul>
       {open && (
-        <Suspense fallback={null}>
-          <ArchitectureModal
-            diagram={open.diagram}
-            onClose={() => {
-              open.opener?.focus();
-              setOpen(null);
-            }}
-          />
-        </Suspense>
+        // A diagram chunk that fails to load closes it again, instead of the whole section
+        <CanvasErrorBoundary
+          sectionType='diagram chunk'
+          onError={() => {
+            open.opener?.focus();
+            setOpen(null);
+            retryDiagram();
+            notifyLoadFailure('diagram');
+          }}
+        >
+          <Suspense fallback={null}>
+            <ArchitectureModal
+              diagram={open.diagram}
+              onClose={() => {
+                open.opener?.focus();
+                setOpen(null);
+              }}
+            />
+          </Suspense>
+        </CanvasErrorBoundary>
       )}
       {Demo && (
         // A demo chunk that fails to load closes it again (the card keeps its GitHub link)
@@ -225,7 +242,8 @@ const Works = () => {
           sectionType={`demo chunk ${running.demo}`}
           onError={() => {
             closeDemo();
-            setDemoNotice(t('works.demoFailed'));
+            retryDemo();
+            notifyLoadFailure('demo');
           }}
         >
           <Suspense fallback={null}>
@@ -233,9 +251,6 @@ const Works = () => {
           </Suspense>
         </CanvasErrorBoundary>
       )}
-      <p role='status' className='sr-only'>
-        {demoNotice}
-      </p>
     </>
   );
 };

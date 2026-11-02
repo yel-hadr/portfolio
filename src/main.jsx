@@ -10,23 +10,32 @@ import './index.css';
 import App from './App.jsx';
 
 // A deploy replaces every hashed chunk, so a tab opened before it 404s on its next lazy import
-// (the terminal, a demo, Game Mode). Reload once to pick up the new build; the timestamp guard
-// stops a loop when the chunk is missing for another reason, and the import then rejects into the
-// nearest error boundary as before. Offline, no reload: it would swap the page for the browser's
-// offline page, where the boundary keeps everything already loaded
-window.addEventListener('vite:preloadError', (event) => {
-  if (!navigator.onLine) return;
+// (the terminal, a demo, Game Mode). The failed import still rejects into its dialog's error
+// boundary, which closes the dialog, says so and can load it again (useRetryLazy). Then a HEAD
+// request asks whether the file is still there: gone (404) means a newer build, so the page
+// reloads once to pick it up; there, or no answer, means the network blinked, and the page stays
+// as it is (no lost form draft or Game Mode run). The timestamp guard stops a reload loop
+const FAILED_URL = /https?:\/\/[^\s'"]+|\/[^\s'"]+\.(?:js|css)\b/;
+const reloadForNewBuild = () => {
   const KEY = 'chunk-reload-at';
-  let last = 0;
   try {
-    last = Number(sessionStorage.getItem(KEY)) || 0;
+    const last = Number(sessionStorage.getItem(KEY)) || 0;
     if (Date.now() - last < 60_000) return;
     sessionStorage.setItem(KEY, String(Date.now()));
   } catch {
     return; // Storage blocked: no loop guard, so no reload
   }
-  event.preventDefault();
   window.location.reload();
+};
+window.addEventListener('vite:preloadError', (event) => {
+  if (!navigator.onLine) return;
+  const url = String(event.payload?.message ?? '').match(FAILED_URL)?.[0];
+  if (!url) return;
+  fetch(url, { method: 'HEAD', cache: 'no-store' })
+    .then((response) => {
+      if (response.status === 404) reloadForNewBuild();
+    })
+    .catch(() => {});
 });
 
 // The first render as a transition: React 19 renders it in slices and yields to the browser

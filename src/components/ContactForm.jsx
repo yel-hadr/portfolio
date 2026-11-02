@@ -1,4 +1,4 @@
-import { useActionState, useEffect, useId, useRef, useState } from 'react';
+import { useActionState, useEffect, useEffectEvent, useId, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { m } from 'framer-motion';
 
@@ -100,15 +100,20 @@ const SubmitButton = () => {
  * button that brings the form back. It takes focus as it appears (the submit button that had it is
  * gone), so its title and text are read
  */
-const SentPanel = ({ onAnother }) => {
+const SentPanel = ({ onAnother, onFocusSkipped }) => {
   const { t } = useI18n();
   const uid = useId();
   const panelRef = useRef(null);
+  // An effect event: the check runs once, as the panel appears, whatever the parent passes
+  const skipped = useEffectEvent(() => onFocusSkipped?.());
   useEffect(() => {
     // Only when focus went with the form (the submit button unmounted, so it is on <body>): a
     // visitor who moved on during the send keeps their place
     const current = document.activeElement;
     if (!current || current === document.body) panelRef.current?.focus();
+    // Not focused, it is not read either: the form's live region says it instead
+    // (already on the panel: StrictMode's second run in development, nothing was skipped)
+    else if (!panelRef.current?.contains(current)) skipped();
   }, []);
   return (
     <div
@@ -184,9 +189,13 @@ const ContactForm = () => {
     nameRef.current?.focus();
     setRefocus(false);
   }, [refocus]);
+  // The panel did not take focus (the visitor had moved on during the send): its message goes
+  // to the live region instead, so the success is still announced
+  const [sentSaid, setSentSaid] = useState(false);
   const sendAnother = () => {
     setDismissed(status);
     setRefocus(true);
+    setSentSaid(false);
   };
 
   const handleChange = (e) => {
@@ -239,6 +248,7 @@ const ContactForm = () => {
   const busy = (
     <p role='status' className='sr-only'>
       {pending ? t('contact.sending') : ''}
+      {!pending && sent && sentSaid ? `${t('contact.sentTitle')}. ${t('contact.sent')}` : ''}
     </p>
   );
 
@@ -246,7 +256,7 @@ const ContactForm = () => {
     return (
       <>
         {busy}
-        <SentPanel onAnother={sendAnother} />
+        <SentPanel onAnother={sendAnother} onFocusSkipped={() => setSentSaid(true)} />
       </>
     );
 

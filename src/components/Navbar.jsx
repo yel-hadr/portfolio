@@ -39,8 +39,9 @@ const LanguageToggle = () => {
           onClick={() => setLang(code)}
           // 44 px to tap: a hit area 6 px past the 32 px pill above and below (::before, no layout
           // change), and 44 px wide from xs; below it (a 320 px screen) the buttons stay narrow
-          // so the bar fits, and the hit area reaches 4 px past each side instead
-          className={`relative min-w-9 rounded-full px-2.5 py-1.5 transition-colors before:absolute before:-inset-x-1 before:-inset-y-1.5 xs:min-w-11 xs:before:inset-x-0 ${
+          // so the bar fits, and the hit area reaches 4 px past each outer side only, so the two
+          // never overlap
+          className={`relative min-w-9 rounded-full px-2.5 py-1.5 transition-colors before:absolute before:inset-x-0 before:-inset-y-1.5 first:before:-left-1 last:before:-right-1 xs:min-w-11 xs:first:before:left-0 xs:last:before:right-0 ${
             lang === code
               ? 'bg-primary text-on-primary forced-colors:underline forced-colors:decoration-2 forced-colors:underline-offset-4'
               : 'text-foreground-muted hover:text-foreground'
@@ -132,7 +133,14 @@ const usePillPosition = (listRef, active) => {
       // it is, rather than staying lit under the last link while none is aria-current
       if (link) {
         const width = link.offsetWidth;
-        setPill((prev) => ({ x: link.offsetLeft, width, from: prev?.width ?? width, shown: true }));
+        const x = link.offsetLeft;
+        // Unchanged (the ResizeObserver's first callback echoes the measure just made): the same
+        // state, so `from` keeps the old width and the pill still grows or shrinks from it
+        setPill((prev) =>
+          prev && prev.x === x && prev.width === width && prev.shown
+            ? prev
+            : { x, width, from: prev?.width ?? width, shown: true }
+        );
       } else setPill((prev) => (prev ? { ...prev, shown: false } : prev));
     };
     measure();

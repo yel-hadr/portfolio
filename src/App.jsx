@@ -8,6 +8,7 @@ import CanvasErrorBoundary from './components/CanvasErrorBoundary';
 import ErrorBoundary from './components/ErrorBoundary';
 import Hero from './components/Hero';
 import Navbar from './components/Navbar';
+import LoadNotice from './components/LoadNotice';
 import TerminalLoading from './components/TerminalLoading';
 import WavesBackground from './components/WavesBackground';
 import WebGLFallback from './components/WebGLFallback';
@@ -16,6 +17,7 @@ import { Near3DContext } from './components/canvas/Near3DContext';
 import { PageCanvasContext } from './components/canvas/PageCanvasContext';
 import { WebGLContext } from './components/canvas/WebGLContext';
 import { Lost3DContext } from './components/canvas/Lost3DContext';
+import { useRetryLazy } from './hooks/useRetryLazy';
 import { useSpotlight } from './hooks/useSpotlight';
 import { useWebGL } from './hooks/useWebGL';
 import I18nProvider from './i18n/I18nProvider';
@@ -23,6 +25,7 @@ import { useI18n } from './i18n/context';
 import ThemeProvider from './theme/ThemeProvider';
 import { afterSettle } from './utils/afterSettle';
 import { track } from './utils/analytics';
+import { clearLoadNotice, notifyLoadFailure } from './utils/loadNotice';
 
 // Below the hero: the sections and the footer are their own chunks, loading with the first render
 // so the first paint waits only on the navbar and the hero
@@ -30,11 +33,10 @@ const BelowFold = lazy(() => import('./components/BelowFold'));
 const Footer = lazy(() => import('./components/Footer'));
 // The terminal overlay loads on first open
 const loadTerminal = () => import('./components/terminal/Terminal');
-const Terminal = lazy(loadTerminal);
 // The games dialog (Packet Snake is a further chunk inside it) loads on first open
-const GameMenu = lazy(() => import('./components/Games/GameMenu'));
+const loadGameMenu = () => import('./components/Games/GameMenu');
 // Game Mode (the cub3D world full screen, with its own Canvas) loads on first open
-const GameMode = lazy(() => import('./components/Cub3D/GameMode'));
+const loadGameMode = () => import('./components/Cub3D/GameMode');
 
 function App() {
   const { supported } = useWebGL();
@@ -76,6 +78,11 @@ function App() {
 }
 
 const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
+  // The three dialogs App opens, each lazily: after a failed load (its boundary closes it) the
+  // next open imports again instead of failing for good, and a notice says what happened
+  const [Terminal, retryTerminal] = useRetryLazy(loadTerminal);
+  const [GameMenu, retryGameMenu] = useRetryLazy(loadGameMenu);
+  const [GameMode, retryGameMode] = useRetryLazy(loadGameMode);
   const { t } = useI18n();
   const [terminalOpen, setTerminalOpen] = useState(false);
   // A command the terminal runs as it opens (the games menu starts the challenge this way)
@@ -91,6 +98,7 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
 
   // Handlers stay stable across renders through the React Compiler (no useCallback)
   const openTerminal = () => {
+    clearLoadNotice();
     terminalOpener.current = document.activeElement;
     setTerminalCommand(null);
     setTerminalOpen(true);
@@ -98,6 +106,7 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
   };
 
   const openGames = () => {
+    clearLoadNotice();
     gamesOpener.current = document.activeElement;
     setGamesOpen(true);
     track('games-open');
@@ -107,6 +116,7 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
     requestAnimationFrame(() => gamesOpener.current?.focus?.());
   };
   const enterGameMode = () => {
+    clearLoadNotice();
     gameModeOpener.current = document.activeElement;
     setGameModeOpen(true);
     track('game-mode-open');
@@ -118,6 +128,7 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
   // From the games menu: the terminal replaces it, and closing the terminal returns focus to the
   // footer button that opened the menu
   const playTerminalChallenge = () => {
+    clearLoadNotice();
     setGamesOpen(false);
     terminalOpener.current = gamesOpener.current;
     setTerminalCommand('game');
@@ -254,7 +265,14 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
 
       {terminalOpen && (
         // As Game Mode below: a chunk that fails to load closes the overlay instead
-        <CanvasErrorBoundary sectionType='terminal' onError={closeTerminal}>
+        <CanvasErrorBoundary
+          sectionType='terminal'
+          onError={() => {
+            closeTerminal();
+            retryTerminal();
+            notifyLoadFailure('terminal');
+          }}
+        >
           {/* Until its code arrives, a loading window that Escape already closes: closed, the
               terminal never opens late */}
           <Suspense
@@ -272,7 +290,14 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
       )}
 
       {gamesOpen && (
-        <CanvasErrorBoundary sectionType='games' onError={closeGames}>
+        <CanvasErrorBoundary
+          sectionType='games'
+          onError={() => {
+            closeGames();
+            retryGameMenu();
+            notifyLoadFailure('games');
+          }}
+        >
           <Suspense fallback={null}>
             <GameMenu onClose={closeGames} onPlayTerminal={playTerminalChallenge} />
           </Suspense>
@@ -281,12 +306,22 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
 
       {gameModeOpen && (
         // A Game Mode chunk that fails to load closes it instead of blanking the page
-        <CanvasErrorBoundary sectionType='game mode' onError={exitGameMode}>
+        <CanvasErrorBoundary
+          sectionType='game mode'
+          onError={() => {
+            exitGameMode();
+            retryGameMode();
+            notifyLoadFailure('gameMode');
+          }}
+        >
           <Suspense fallback={null}>
             <GameMode onClose={exitGameMode} />
           </Suspense>
         </CanvasErrorBoundary>
       )}
+
+      {/* Says why a dialog closed when its code could not load */}
+      <LoadNotice />
     </div>
   );
 };

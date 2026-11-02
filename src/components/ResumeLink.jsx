@@ -13,7 +13,9 @@ import { pressable } from '../utils/motion';
  */
 const SIZE = import.meta.env.RESUME_KB;
 
-const ResumeLink = ({ className = '' }) => {
+// `metaClassName`: where the size shows (the Hero hides it on the narrowest phones, where it
+// would wrap under the label; the accessible name always has it)
+const ResumeLink = ({ className = '', metaClassName = '' }) => {
   const { t } = useI18n();
   return (
     <m.a
@@ -39,7 +41,9 @@ const ResumeLink = ({ className = '' }) => {
       </svg>
       {/* On a narrow screen the size goes under the label, never into it */}
       <span className='whitespace-nowrap'>{t('resume.label')}</span>
-      <span className='whitespace-nowrap text-sm font-medium text-foreground-muted'>
+      <span
+        className={`whitespace-nowrap text-sm font-medium text-foreground-muted ${metaClassName}`}
+      >
         {t('resume.meta', { size: SIZE })}
       </span>
     </m.a>
