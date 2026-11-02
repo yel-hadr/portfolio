@@ -78,3 +78,18 @@ export const CrosshairIcon = (props) => (
     <path d='M12 2v5M12 17v5M2 12h5M17 12h5' />
   </Svg>
 );
+
+export const CheckIcon = (props) => (
+  <Svg {...stroke} {...props}>
+    <path d='M5 12.5l4.5 4.5L19 7.5' />
+  </Svg>
+);
+
+// A busy ring: a faint full circle under a quarter arc, for the caller to spin
+// (motion-safe:animate-spin)
+export const SpinnerIcon = (props) => (
+  <Svg {...stroke} {...props}>
+    <circle cx='12' cy='12' r='8' className='opacity-25' />
+    <path d='M12 4a8 8 0 0 1 8 8' />
+  </Svg>
+);

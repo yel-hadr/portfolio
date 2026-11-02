@@ -11,11 +11,24 @@ import { readBest } from './storage';
 // Packet Snake is its own chunk, fetched when the visitor picks it
 const PacketSnake = lazy(() => import('./PacketSnake'));
 
+// Packet Snake: a snake turning up the grid (drawn like TerminalIcon: a 1.75 stroke in
+// currentColor), its head ahead and the orange packet it is after
 const PacketIcon = (props) => (
-  <svg aria-hidden='true' viewBox='0 0 24 24' className='h-5 w-5' {...props}>
-    <rect x='3' y='9' width='6' height='6' rx='1.5' className='fill-primary opacity-60' />
-    <rect x='9' y='9' width='6' height='6' rx='1.5' className='fill-primary opacity-80' />
-    <rect x='15' y='9' width='6' height='6' rx='1.5' className='fill-primary' />
+  <svg
+    aria-hidden='true'
+    focusable='false'
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='1.75'
+    strokeLinecap='round'
+    strokeLinejoin='round'
+    className='h-5 w-5'
+    {...props}
+  >
+    <path d='M3 17h6a2.5 2.5 0 0 0 2.5-2.5v-5A2.5 2.5 0 0 1 14 7h2' />
+    <circle cx='18.25' cy='7' r='1.75' fill='currentColor' />
+    <rect x='15.5' y='14.5' width='4' height='4' rx='1' className='fill-primary stroke-none' />
   </svg>
 );
 

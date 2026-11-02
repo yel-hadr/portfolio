@@ -8,8 +8,11 @@ import { pressable } from '../utils/motion';
 
 /**
  * "Download resume" button. The download attribute saves the PDF instead of opening it in the
- * browser's viewer; the visible text is part of the accessible name (WCAG 2.5.3).
+ * browser's viewer; the visible text is part of the accessible name (WCAG 2.5.3). Its format and
+ * size (read from the file at build time, vite.config.js) say what a tap will download.
  */
+const SIZE = import.meta.env.RESUME_KB;
+
 const ResumeLink = ({ className = '' }) => {
   const { t } = useI18n();
   return (
@@ -17,9 +20,9 @@ const ResumeLink = ({ className = '' }) => {
       href={person.resume}
       download='Youssef_Elhadraoui_Resume.pdf'
       type='application/pdf'
-      aria-label={t('resume.aria')}
+      aria-label={t('resume.aria', { size: SIZE })}
       onClick={() => track('resume-download')}
-      className={`${styles.buttonGhost} gap-2 ${className}`}
+      className={`${styles.buttonGhost} flex-wrap gap-x-2 ${className}`}
       {...pressable}
     >
       <svg
@@ -34,7 +37,11 @@ const ResumeLink = ({ className = '' }) => {
       >
         <path d='M10 3v10m0 0-4-4m4 4 4-4M4 16h12' />
       </svg>
-      {t('resume.label')}
+      {/* On a narrow screen the size goes under the label, never into it */}
+      <span className='whitespace-nowrap'>{t('resume.label')}</span>
+      <span className='whitespace-nowrap text-sm font-medium text-foreground-muted'>
+        {t('resume.meta', { size: SIZE })}
+      </span>
     </m.a>
   );
 };

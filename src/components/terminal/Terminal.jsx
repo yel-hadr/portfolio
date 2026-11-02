@@ -405,7 +405,10 @@ const Terminal = ({ onClose, initialCommand = null }) => {
         // keeps focus inside the dialog and Escape and the Tab cycle keep working
         tabIndex={-1}
         onKeyDown={onDialogKeyDown}
-        className='flex h-full w-full flex-col overflow-hidden bg-glass-strong font-mono text-sm text-foreground backdrop-blur-md md:h-[min(44rem,85vh)] md:max-w-4xl md:rounded-2xl md:border md:border-line-strong md:shadow-modal outline-hidden'
+        // The whole window is a dark island in either theme (scheme-dark: every token takes its
+        // dark value inside), so its title bar and screen read as one piece on the light page too.
+        // There the dark glass is near opaque: over the bright page it would turn grey
+        className="scheme-dark flex h-full w-full flex-col overflow-hidden bg-glass-strong [:root[data-theme='light']_&]:bg-background/95 font-mono text-sm text-foreground backdrop-blur-md md:h-[min(44rem,85vh)] md:max-w-4xl md:rounded-2xl md:border md:border-line-strong md:shadow-modal outline-hidden"
       >
         {/* Title bar */}
         <div className='flex items-center gap-3 border-b border-line bg-surface-raised/60 py-1.5 pl-4 pr-1.5'>
@@ -435,9 +438,7 @@ const Terminal = ({ onClose, initialCommand = null }) => {
           {t('terminal.description')}
         </p>
 
-        {/* The screen stays dark in either theme (scheme-dark: every token takes its dark value
-            inside); the window's frame and title bar follow the page */}
-        <div className="scheme-dark flex min-h-0 flex-1 flex-col text-foreground [:root[data-theme='light']_&]:bg-background/95">
+        <div className='flex min-h-0 flex-1 flex-col text-foreground'>
           {/* Output: only ever appended to (or cleared on request), announced politely. The click
             handler is a mouse convenience only; the input is always reachable by keyboard. */}
           <div

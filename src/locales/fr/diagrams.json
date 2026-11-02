@@ -9,6 +9,8 @@
     "with": "avec",
     "legend": "Légende",
     "scrollHint": "Faites défiler horizontalement pour voir tout le schéma, ou ouvrez la liste plus bas.",
+    "scrollHintPhone": "Faites défiler horizontalement pour voir tout le schéma.",
+    "showDiagram": "Afficher le schéma",
     "diagramLabel": "Schéma interactif : {name}. Chaque composant est un bouton qui affiche ses détails.",
     "list": "Tous les composants sous forme de liste ({count})",
     "flows": {

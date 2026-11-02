@@ -45,6 +45,68 @@ const GROW = (() => {
 // Closing: quick and accelerating, as the opening is a settling spring
 const SHRINK_MS = 260;
 
+// Without WebGL a demo shows what it looks like instead: the blog posts' own screenshots
+// (public/blog-media/), sized from the files so nothing shifts as they load
+const MEDIA = `${import.meta.env.BASE_URL}blog-media/`;
+const SCREENSHOTS = {
+  cub3d: [{ key: 'map', src: 'cub3d-raycasting-from-c-to-webgl/cub3d-demo.webp', w: 1142, h: 686 }],
+  fdf: [
+    {
+      key: 'julia',
+      src: 'fdf-isometric-projection-and-memory/julia-altitude.webp',
+      w: 862,
+      h: 694,
+    },
+    {
+      key: 'mars',
+      src: 'fdf-isometric-projection-and-memory/mars-iso-vs-perspective.webp',
+      w: 1200,
+      h: 480,
+    },
+  ],
+};
+
+/** No WebGL: the notice, then the demo's screenshots with their captions, scrolling in the panel */
+const Screenshots = ({ id, noticeId }) => {
+  const { t } = useI18n();
+  return (
+    // A named, focusable region: the dialog's Tab cycle reaches it, so the keyboard scrolls it
+    // (inset ring: the panel's rounded edge clips an outline)
+    <div
+      tabIndex={0}
+      role='region'
+      aria-label={t('demos.screenshots.label')}
+      className='absolute inset-0 overflow-y-auto overscroll-contain p-4 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus md:p-6'
+    >
+      <p
+        id={noticeId}
+        role='status'
+        className='mx-auto max-w-2xl text-center leading-relaxed text-foreground'
+      >
+        {`${t('demos.noWebgl')} ${t('demos.screenshots.intro')}`}
+      </p>
+      <div className='mx-auto mt-6 grid max-w-4xl gap-6'>
+        {(SCREENSHOTS[id] ?? []).map(({ key, src, w, h }) => (
+          <figure key={key}>
+            <img
+              src={`${MEDIA}${src}`}
+              width={w}
+              height={h}
+              loading='lazy'
+              decoding='async'
+              alt={t(`demos.screenshots.${key}.alt`)}
+              className='h-auto w-full rounded-xl border border-line'
+            />
+            <figcaption className='mt-2 text-sm leading-relaxed text-foreground-muted'>
+              {t(`demos.screenshots.${key}.caption`)}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 /** A message in place of the demo: loading, no WebGL, or a failure */
 const Notice = ({ id, role, children }) => (
   <div className='flex h-full items-center justify-center p-6'>
@@ -60,8 +122,8 @@ const Notice = ({ id, role, children }) => (
  *
  * The demo brings its own Canvas, so the page's shared Canvas is paused while the dialog is open
  * and the demo mounts once R3F has released the page's WebGL context (useDemoCanvas): never two
- * contexts at once. Without WebGL, or if the demo fails, the dialog says so and keeps the
- * source link.
+ * contexts at once. Without WebGL the dialog says so and shows the demo's screenshots; if the
+ * demo fails, it says so. Either way it keeps the source link.
  *
  * Opened from a project card, the panel grows out of that card (`origin`, the card's box): it
  * starts at the card's position and size and springs to its own, then its content fades in. The
@@ -204,9 +266,10 @@ const DemoShell = ({ id, repo, onClose, origin, children }) => {
           {t(`demos.${id}.description`)}
         </p>
         <div className='relative min-h-[22rem] flex-1 md:min-h-0'>
-          {(!webgl || !ready) && (
+          {!webgl && <Screenshots id={id} noticeId={noticeId} />}
+          {webgl && !ready && (
             <Notice id={noticeId} role='status'>
-              {webgl ? t('demos.loading') : `${t('demos.noWebgl')} ${t('demos.sourceHint')}`}
+              {t('demos.loading')}
             </Notice>
           )}
           {webgl && ready && (
