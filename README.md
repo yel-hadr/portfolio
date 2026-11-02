@@ -102,6 +102,5 @@ Then run the workflow once on `main` to start the chain. The cron stays as a bac
 
 ## Credits
 
-- 3D globe model from Sketchfab (license in `public/planet/license.txt`).
 - Technology icons from [devicon](https://github.com/devicons/devicon), MIT license (`src/assets/tech/LICENSE-devicon.txt`).
 - The waves background is adapted from ReactBits' "Interactive Waves Background".

@@ -340,14 +340,14 @@
     --shadow-modal: 0 8px 16px rgb(64 42 20 / 0.06), 0 32px 64px -12px rgb(64 42 20 / 0.2);
     --glow: 0;
     --c-focus: 168 67 0;
-    /* Grain as matte paper: overlay keeps the ground's tone (a lighter blend would grey it), and
-       the spotlight is a gloss, a faint white sheen with no rim (a glowing rim reads muddy on
-       light) */
+    /* Grain as matte paper: overlay keeps the ground's tone (a lighter blend would grey it). The
+       spotlight is a warm rim in the deep orange, kept faint (a quarter strength, with a whisper
+       of fill): a white sheen on these near-white cards showed nothing, a full rim read muddy */
     --grain-alpha: 0.045;
     --grain-blend: overlay;
-    --c-spot: 255 255 255;
-    --spot-rim: 0;
-    --spot-fill: 0.4;
+    --c-spot: 232 93 4;
+    --spot-rim: 0.25;
+    --spot-fill: 0.04;
     --color-edge: rgb(255 255 255 / 0.7);
     --color-edge-ring: rgb(26 26 46 / 0.05);
     --color-nav-edge: rgb(0 0 0 / 0.06);

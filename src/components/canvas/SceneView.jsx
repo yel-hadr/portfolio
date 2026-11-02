@@ -2,6 +2,7 @@ import { Suspense, lazy, useContext, useEffect, useRef, useState } from 'react';
 
 import CanvasErrorBoundary from '../CanvasErrorBoundary';
 import { Near3DContext } from './Near3DContext';
+import { Lost3DContext } from './Lost3DContext';
 import { WebGLContext } from './WebGLContext';
 import { changeViewsOnScreen } from './viewPresence';
 
@@ -29,6 +30,8 @@ const INNER = 'flex h-full w-full items-center justify-center';
  * @param {number} [index] - draw order; lower renders first (stars use 1)
  * @param {number} [frames] - how many frames drei measures the box; 1 for fixed boxes
  * @param {React.ReactNode} [fallback] - static DOM shown instead of the scene
+ * @param {React.ReactNode} [placeholder] - static DOM shown while the scene is not there yet
+ *   (before it mounts, while its chunk loads), so a slow load is not an empty hole
  */
 const SceneView = ({
   sectionType,
@@ -37,15 +40,19 @@ const SceneView = ({
   index = 2,
   frames = Infinity,
   fallback = null,
+  placeholder = null,
   children,
 }) => {
   const webgl = useContext(WebGLContext);
+  const lost = useContext(Lost3DContext);
   // The 3D half (and three.js with it) loads once the page's 3D layer mounts
   const near = useContext(Near3DContext);
   const [failed, setFailed] = useState(false);
   const box = useRef(null);
   const [close, setClose] = useState(false);
-  const live = webgl && !failed && near;
+  // Not while the context is lost: a static box does not count as a view on screen, so the frame
+  // driver stops ticking a dead context
+  const live = webgl && !failed && near && !lost;
 
   // Mounts the scene once the box is close; while the scene is live, counts the box as on screen
   // for the frame loop
@@ -88,10 +95,15 @@ const SceneView = ({
       {fallback}
     </div>
   );
-  const empty = <div className={INNER} aria-hidden='true' />;
+  const empty = (
+    <div className={INNER} aria-hidden='true'>
+      {placeholder}
+    </div>
+  );
 
   let content;
-  if (!webgl || failed) content = staticSlot;
+  // A lost context (until the GPU restores it) shows the static fallback too, not an empty box
+  if (!webgl || failed || lost) content = staticSlot;
   // Until the 3D layer is up and the box is close, the same empty box the loading state shows
   else if (!near || !close) content = empty;
   else {
@@ -106,6 +118,7 @@ const SceneView = ({
             frames={frames}
             a11y={a11y}
             onError={() => setFailed(true)}
+            placeholder={placeholder}
           >
             {children}
           </SceneViewImpl>

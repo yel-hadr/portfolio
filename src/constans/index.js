@@ -1,8 +1,4 @@
 import {
-  mobile,
-  backend,
-  creator,
-  web,
   aws,
   terraform,
   ansible,
@@ -38,25 +34,8 @@ export const navLinks = [
   { id: 'contact' },
 ];
 
-// Labels: about.services.<id>
-const services = [
-  {
-    id: 'backend',
-    icon: backend,
-  },
-  {
-    id: 'cloud',
-    icon: web,
-  },
-  {
-    id: 'devops',
-    icon: mobile,
-  },
-  {
-    id: 'automation',
-    icon: creator,
-  },
-];
+// Labels: about.services.<id>; each one's line icon is in About.jsx (SERVICE_ICONS)
+const services = [{ id: 'backend' }, { id: 'cloud' }, { id: 'devops' }, { id: 'automation' }];
 
 // The Tech section's bento: a large card, two medium ones and three single tools. Each technology
 // names its group; titles and descriptions are tech.groups.<id> in the locales

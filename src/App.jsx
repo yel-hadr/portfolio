@@ -15,6 +15,7 @@ import { loadScene3D } from './components/canvas/loadScene3D';
 import { Near3DContext } from './components/canvas/Near3DContext';
 import { PageCanvasContext } from './components/canvas/PageCanvasContext';
 import { WebGLContext } from './components/canvas/WebGLContext';
+import { Lost3DContext } from './components/canvas/Lost3DContext';
 import { useSpotlight } from './hooks/useSpotlight';
 import { useWebGL } from './hooks/useWebGL';
 import I18nProvider from './i18n/I18nProvider';
@@ -141,6 +142,9 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
   // is within a viewport of the screen, so the first paint and first input never wait on it. A
   // deep link below the hero mounts it at once; once mounted it stays
   const [near3D, setNear3D] = useState(false);
+  // The GPU dropped the page's WebGL context (until it hands it back): the views show their
+  // static fallbacks meanwhile
+  const [lost3D, setLost3D] = useState(false);
   // The sections below the hero are a lazy chunk: #tech exists once it has rendered
   const [sectionsReady, setSectionsReady] = useState(false);
   useEffect(() => {
@@ -149,8 +153,10 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
   }, [webgl]);
   useEffect(() => {
     if (!webgl || near3D || !sectionsReady) return undefined;
-    const target = document.getElementById('tech');
-    if (!target || typeof IntersectionObserver === 'undefined') {
+    // Every section with a 3D scene: a jump straight to Contact (a deep link, or the nav under
+    // reduced motion, where the scroll is instant) never passes near Tech
+    const targets = ['tech', 'contact'].map((id) => document.getElementById(id)).filter(Boolean);
+    if (!targets.length || typeof IntersectionObserver === 'undefined') {
       setNear3D(true);
       return undefined;
     }
@@ -158,7 +164,7 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
       (entries) => entries.some((e) => e.isIntersecting) && setNear3D(true),
       { rootMargin: '100% 0px' }
     );
-    observer.observe(target);
+    targets.forEach((target) => observer.observe(target));
     return () => observer.disconnect();
   }, [webgl, near3D, sectionsReady]);
 
@@ -205,7 +211,7 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
       {showCanvas && near3D && (
         <CanvasErrorBoundary sectionType='canvas' onError={onCanvasError}>
           <Suspense fallback={null}>
-            <Scene3D />
+            <Scene3D onContextLost={setLost3D} />
           </Suspense>
         </CanvasErrorBoundary>
       )}
@@ -214,28 +220,30 @@ const AppContent = ({ webgl, showCanvas, supported, onCanvasError }) => {
       <Navbar onOpenTerminal={openTerminal} />
 
       <div className='relative z-10'>
-        <Near3DContext.Provider value={near3D}>
-          <main id='main' tabIndex={-1}>
-            <ErrorBoundary sectionName='hero'>
-              <Hero onEnterGame={enterGameMode} />
-            </ErrorBoundary>
+        <Lost3DContext.Provider value={lost3D}>
+          <Near3DContext.Provider value={near3D}>
+            <main id='main' tabIndex={-1}>
+              <ErrorBoundary sectionName='hero'>
+                <Hero onEnterGame={enterGameMode} />
+              </ErrorBoundary>
 
-            {/* A live region mounted from the start, so a late 3D failure is announced */}
-            <div role='status'>
-              {!webgl && <WebGLFallback reason={supported ? 'failed' : 'unsupported'} />}
-            </div>
+              {/* A live region mounted from the start, so a late 3D failure is announced */}
+              <div role='status'>
+                {!webgl && <WebGLFallback reason={supported ? 'failed' : 'unsupported'} />}
+              </div>
 
-            {/* A lazy chunk that fails to load (a flaky network; a stale tab after a deploy is
-                reloaded by main.jsx) drops only what it holds: an uncaught lazy() rejection
-                would unmount the whole root and leave a blank page. The sections say so, with a
-                page reload (rendering again cannot fetch the chunk) */}
-            <ErrorBoundary sectionName='sections' reloadPage>
-              <Suspense fallback={null}>
-                <BelowFold onReady={() => setSectionsReady(true)} />
-              </Suspense>
-            </ErrorBoundary>
-          </main>
-        </Near3DContext.Provider>
+              {/* A lazy chunk that fails to load (a flaky network; a stale tab after a deploy is
+                  reloaded by main.jsx) drops only what it holds: an uncaught lazy() rejection
+                  would unmount the whole root and leave a blank page. The sections say so, with a
+                  page reload (rendering again cannot fetch the chunk) */}
+              <ErrorBoundary sectionName='sections' reloadPage>
+                <Suspense fallback={null}>
+                  <BelowFold onReady={() => setSectionsReady(true)} />
+                </Suspense>
+              </ErrorBoundary>
+            </main>
+          </Near3DContext.Provider>
+        </Lost3DContext.Provider>
 
         <CanvasErrorBoundary sectionType='footer'>
           <Suspense fallback={null}>

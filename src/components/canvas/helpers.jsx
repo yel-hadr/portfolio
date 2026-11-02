@@ -1,10 +1,26 @@
-import { useLayoutEffect, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 
 import { useStillMotion } from '../../hooks/useMotionPaused';
 
 const ORIGIN = [0, 0, 0];
+
+/**
+ * Compiles the shaders of the view it is in (inside a drei View, `scene` is the view's own) as
+ * soon as it mounts, off the frame that first draws it. Scenes mount a viewport ahead of their
+ * box, so the GPU driver has time to compile in parallel. Unlike drei's Preload, it renders
+ * nothing into a cube target (whose linear output compiled extra programs the screen never used)
+ */
+export const WarmUp = () => {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  useEffect(() => {
+    gl.compileAsync(scene, camera).catch(() => {});
+  }, [gl, scene, camera]);
+  return null;
+};
 
 /**
  * Per-view camera that looks at `target`. Each <View> needs its own default camera,

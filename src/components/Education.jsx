@@ -6,14 +6,17 @@ import { SectionWrapper } from '../hoc';
 import { reveal } from '../utils/motion';
 import SectionHeader from './SectionHeader';
 import { useI18n } from '../i18n/context';
+import Spotlight from './Spotlight';
 
 // `wide`: the only entry, across the page with two columns from md (the school, degree and dates
 // on the left, the curriculum on the right), so neither half of the page is left empty
 const EducationCard = ({ school, degree, date, points, wide }) => (
   <m.li
     variants={reveal()}
-    className={`${styles.card} flex flex-col ${wide ? 'md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-10' : ''}`}
+    data-spotlight
+    className={`${styles.card} relative flex flex-col ${wide ? 'md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-10' : ''}`}
   >
+    <Spotlight />
     <div>
       <h3 className='text-2xl font-bold text-foreground'>{school}</h3>
       <p className='mt-1 font-semibold text-primary-400'>{degree}</p>
