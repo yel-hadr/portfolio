@@ -1,5 +1,7 @@
 import { useI18n } from '../i18n/context';
 import StateLabel from './StateLabel';
+import { CardPlaceholders } from './Placeholder';
+import { configuredPipelineCount } from './useStatusData';
 import { PIPELINE_TONE } from './tones';
 import {
   dateTime,
@@ -128,6 +130,13 @@ const Pipelines = ({ data, now, stale }) => {
         {t('statuspage.pipelines.lead')}
         {data.phase === 'none' && <> {t('statuspage.pipelines.live')}</>}
       </p>
+      {data.phase === 'loading' && (
+        <CardPlaceholders
+          count={configuredPipelineCount}
+          className='mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3'
+          height='min-h-[22rem]'
+        />
+      )}
       {data.phase !== 'loading' && (
         <ul className='mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
           {pipelines.map((pipeline) => (

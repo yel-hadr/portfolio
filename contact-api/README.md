@@ -13,8 +13,8 @@ What it does (`lib/contact.js`):
   inline styles, every typed value escaped, a Reply button) with a plain-text version, and the
   visitor's address as the reply-to;
 - drops messages that fill the form's hidden `website` field (bots), answering as if it worked;
-- rate-limits what it would send (`lib/rateLimit.js`): 5 messages per client per 10 minutes and 30
-  per hour for everyone, answering 429 with `Retry-After` past either. The counts live in the
+- rate-limits what it would send (`lib/rateLimit.js`): 5 messages per client per hour and 30
+  per hour for everyone (one client can use at most a sixth of the shared quota), answering 429 with `Retry-After` past either. The counts live in the
   function's memory, so they hold while an instance is warm and restart with a new one.
 
 For a limit that survives every instance, add a rule in the Vercel project's **Firewall** (Rate

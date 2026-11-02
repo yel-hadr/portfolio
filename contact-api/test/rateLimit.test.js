@@ -10,18 +10,32 @@ const clock = () => {
   return { now: () => t, advance: (ms) => (t += ms) };
 };
 
-test('per client: five in ten minutes, then a wait until the oldest leaves the window', () => {
+test('per client: five an hour, then a wait until the oldest leaves the window', () => {
   const c = clock();
   const limit = createRateLimiter({ now: c.now });
   for (let i = 0; i < 5; i += 1) {
     assert.equal(limit('a').ok, true);
-    c.advance(MINUTE);
+    c.advance(10 * MINUTE);
   }
   const held = limit('a');
   assert.equal(held.ok, false);
-  assert.equal(held.retryAfter, 5 * 60);
-  c.advance(5 * MINUTE);
+  assert.equal(held.retryAfter, 10 * 60);
+  c.advance(10 * MINUTE);
   assert.equal(limit('a').ok, true);
+});
+
+test("one client pacing itself cannot fill everyone's quota", () => {
+  const c = clock();
+  const limit = createRateLimiter({ now: c.now });
+  // Five tries every ten minutes for two hours: at most five an hour get through
+  let sent = 0;
+  for (let round = 0; round < 12; round += 1) {
+    for (let i = 0; i < 5; i += 1) if (limit('spammer').ok) sent += 1;
+    c.advance(10 * MINUTE);
+  }
+  assert.ok(sent <= 10, `${sent} sent in two hours`);
+  // A real visitor still gets through
+  assert.equal(limit('visitor').ok, true);
 });
 
 test('for everyone: thirty an hour, whatever the client', () => {
@@ -40,7 +54,7 @@ test('a refused attempt is not counted against the client', () => {
   const limit = createRateLimiter({ perClient: 1, now: c.now });
   assert.equal(limit('a').ok, true);
   for (let i = 0; i < 10; i += 1) assert.equal(limit('a').ok, false);
-  c.advance(10 * MINUTE);
+  c.advance(60 * MINUTE);
   assert.equal(limit('a').ok, true);
 });
 

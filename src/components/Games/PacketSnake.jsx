@@ -562,6 +562,9 @@ const PacketSnake = () => {
 
   // Swipes on the board steer (the buttons are the single-pointer alternative: WCAG 2.5.1)
   const startSwipe = (e) => {
+    // Not from a button (Start, Play again, the pad): its own click acts, and a swipe begun on it
+    // would start the game a second time
+    if (e.target.closest?.('button')) return;
     swipe.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
   };
   const onPointerMove = (e) => {

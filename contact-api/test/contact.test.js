@@ -137,13 +137,13 @@ test('the hidden field: a bot is told it worked, nothing is sent', async () => {
   assert.equal(sent.length, 0);
 });
 
-test('a Resend error is a 502 with its type, never its message', async () => {
+test('a Resend error is a 502 that names neither its type nor its message', async () => {
   const { handler } = setup({
     error: { name: 'validation_error', message: 'You can only send to yourself' },
   });
   const res = await handler(post(valid));
   assert.equal(res.status, 502);
-  assert.deepEqual(await res.json(), { error: 'send', reason: 'validation_error' });
+  assert.deepEqual(await res.json(), { error: 'send' });
 });
 
 test('a send that throws is a 502, not an unhandled error', async () => {
@@ -190,4 +190,15 @@ test('over the limit: 429 with Retry-After, nothing more sent', async () => {
 test('no key or no recipient: 503, nothing sent', async () => {
   assert.equal((await setup({ send: false }).handler(post(valid))).status, 503);
   assert.equal((await setup({ to: '' }).handler(post(valid))).status, 503);
+});
+
+test('an allowed origin set with a trailing slash still matches', async () => {
+  const handler = createContactHandler({
+    send: async () => ({ error: null }),
+    to: 'me@example.com',
+    from: 'Portfolio <onboarding@resend.dev>',
+    origins: ['https://yel-hadr.github.io/'],
+  });
+  const res = await handler(post(valid));
+  assert.equal(res.status, 200);
 });

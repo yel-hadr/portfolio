@@ -255,9 +255,24 @@ const Terminal = ({ onClose, initialCommand = null, instant = false }) => {
     }
   }, [value]);
 
+  // The quick commands' typing (runQuick, below): declared before the key handler reads them
+  const typing = useRef(0);
+  // The quick command being typed, so Enter mid-way runs it whole (once) instead of the letters
+  // typed so far, followed by the command anyway when the timer ends
+  const typingName = useRef(null);
+
   const onInputKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      // A quick command still typing itself: run it now, and only it
+      if (typingName.current) {
+        clearTimeout(typing.current);
+        const name = typingName.current;
+        typingName.current = null;
+        setValue('');
+        run(name);
+        return;
+      }
       run(value);
       setValue('');
     } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -345,11 +360,11 @@ const Terminal = ({ onClose, initialCommand = null, instant = false }) => {
   // (45 to 115 ms), then runs: it reads as typed, not pasted. At once under reduced motion; a key
   // the visitor presses meanwhile takes over (onChange cancels it). The run is read through a ref,
   // so a command that lands after a re-render runs with the latest history
-  const typing = useRef(0);
   const runLatest = useLiveRef(run);
   useEffect(() => () => clearTimeout(typing.current), []);
   const runQuick = (name) => {
     clearTimeout(typing.current);
+    typingName.current = name;
     inputRef.current?.focus({ preventScroll: true });
     if (reduced) {
       runLatest.current(name);
@@ -364,6 +379,7 @@ const Terminal = ({ onClose, initialCommand = null, instant = false }) => {
         return;
       }
       typing.current = setTimeout(() => {
+        typingName.current = null;
         setValue('');
         runLatest.current(name);
       }, 160);
@@ -490,6 +506,7 @@ const Terminal = ({ onClose, initialCommand = null, instant = false }) => {
                   value={value}
                   onChange={(e) => {
                     clearTimeout(typing.current);
+                    typingName.current = null;
                     setValue(e.target.value);
                     browse.current.index = null;
                   }}

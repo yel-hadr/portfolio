@@ -106,10 +106,11 @@ export const socialTags = ({
 }) => {
   const url = absoluteUrl(path);
   const links = normalizeAlternates(alternates);
-  // Without explicit alternates the page itself serves both languages (the portfolio)
-  const otherLangs = (
-    links.length ? links.map((entry) => entry.hreflang) : Object.keys(LOCALES)
-  ).filter((code) => code !== lang && LOCALES[code]);
+  // Other locales only where they have URLs of their own (the blog's pages): the portfolio picks
+  // French in the browser, so its one URL is indexed in English and advertises no other locale
+  const otherLangs = links
+    .map((entry) => entry.hreflang)
+    .filter((code) => code !== lang && LOCALES[code]);
   const custom = Boolean(image);
   const imageUrl = absoluteUrl(image ?? OG_IMAGE.path);
   const alt = imageAlt ?? (custom ? title : (OG_IMAGE.alt[lang] ?? OG_IMAGE.alt.en));
@@ -341,8 +342,10 @@ export const sitemapXml = (posts, buildDate = new Date()) => {
   const group = (paths) => Object.fromEntries(paths);
 
   const entries = [
-    { path: '/', lastmod: today },
-    { path: '/status/', lastmod: today },
+    // No lastmod for the home and status pages: the build date would say "changed today" on every
+    // deploy, and search engines learn to ignore a date that always moves
+    { path: '/' },
+    { path: '/status/' },
     ...langs.map((lang) => ({
       path: blogPath(lang),
       lastmod: latest,
@@ -366,7 +369,7 @@ export const sitemapXml = (posts, buildDate = new Date()) => {
     [
       '  <url>',
       `    <loc>${escapeHtml(absoluteUrl(path))}</loc>`,
-      `    <lastmod>${lastmod}</lastmod>`,
+      ...(lastmod ? [`    <lastmod>${lastmod}</lastmod>`] : []),
       ...normalizeAlternates(alternates).map(
         ({ hreflang, href }) =>
           `    <xhtml:link rel="alternate" hreflang="${hreflang}" href="${escapeHtml(href)}" />`

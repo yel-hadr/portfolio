@@ -2,6 +2,7 @@ import { useI18n } from '../i18n/context';
 import Sparkline from './Sparkline';
 import StateLabel from './StateLabel';
 import { configuredMonitors } from './useStatusData';
+import { CardPlaceholders } from './Placeholder';
 import { MONITOR_TONE } from './tones';
 import { DAY, displayName, formatMs, formatPct, isHttpUrl, seriesOf } from './format';
 
@@ -113,6 +114,15 @@ const Monitors = ({ data, now, stale }) => {
         <p className='mt-3 max-w-prose text-sm text-foreground-muted'>
           {t('statuspage.monitors.historyMissing')}
         </p>
+      )}
+      {/* While loading, cards of the same size hold the place, so nothing below jumps when
+          the data arrives */}
+      {data.phase === 'loading' && (
+        <CardPlaceholders
+          count={configuredMonitors.length}
+          className='mt-5 grid gap-4 md:grid-cols-2'
+          height='min-h-[17rem]'
+        />
       )}
       {data.phase !== 'loading' && (
         <ul className='mt-5 grid gap-4 md:grid-cols-2'>

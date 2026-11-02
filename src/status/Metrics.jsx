@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { useI18n } from '../i18n/context';
 import ResponseChart from './ResponseChart';
+import { CardPlaceholders } from './Placeholder';
 import { TONE_TEXT, uptimeTone } from './tones';
 import { DAY, dayStart, displayName, formatPct, seriesOf, shortDay, statsOf } from './format';
 
@@ -136,7 +137,9 @@ const Metrics = ({ data, now }) => {
           <p className='mt-1 max-w-prose text-sm text-foreground-muted'>
             {t('statuspage.metrics.ownNote')}
           </p>
-          {data.phase === 'loading' ? null : hasHistory && selected ? (
+          {data.phase === 'loading' ? (
+            <CardPlaceholders count={2} className='mt-5 grid gap-4' height='min-h-[19rem]' />
+          ) : hasHistory && selected ? (
             <>
               <div className='card-glass mt-5 p-5'>
                 <h3 className='font-semibold text-foreground'>

@@ -9,13 +9,16 @@ const MINUTE = 60 * 1000;
 const MAX_CLIENTS = 5000;
 
 /**
+ * The client window is an hour, so one client can use at most a sixth of everyone's quota: with
+ * 5 per 10 minutes (30 an hour) a single sender pacing itself filled the global cap for good and
+ * locked every real visitor out.
  * @param perClient     messages one client may send per clientWindow
  * @param global        messages everyone together may send per globalWindow
  * @returns (client) => { ok: true } | { ok: false, retryAfter: seconds }
  */
 export const createRateLimiter = ({
   perClient = 5,
-  clientWindow = 10 * MINUTE,
+  clientWindow = 60 * MINUTE,
   global = 30,
   globalWindow = 60 * MINUTE,
   now = Date.now,

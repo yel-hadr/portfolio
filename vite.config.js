@@ -7,6 +7,7 @@ import tailwindcss from '@tailwindcss/vite';
 import blog from './build/blog.js';
 import seo from './build/seo.js';
 import preloadFont from './build/preloadFont.js';
+import preloadPortrait from './build/preloadPortrait.js';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -21,6 +22,7 @@ export default defineConfig({
     blog(),
     seo(),
     preloadFont(),
+    preloadPortrait(),
   ],
   // The resume's size, shown beside its download link, read from the file at build time so it
   // stays right when the PDF is replaced
