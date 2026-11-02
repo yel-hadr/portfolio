@@ -191,7 +191,7 @@ La visionneuse propose six cartes de test du dépôt :
 
 Chaque carte a sa propre échelle d’altitude, pour que son relief se lise à une taille raisonnable, là où l’original règle l’échelle au clavier. Le relevé affiche la ligne de commande du build bonus pour la carte montrée : le lien avec le programme en C reste visible.
 
-![julia.fdf avec la palette par altitude : le même ensemble de Julia, du bleu aux points les plus bas à l’orange aux plus hauts](/blog-media/fdf-isometric-projection-and-memory/julia-altitude.webp "La même carte avec la palette par altitude : le bleu, le cyan-vert et l’orange du site, du plus bas au plus haut.")
+![julia.fdf avec la palette par altitude : le même ensemble de Julia, du bleu ardoise aux points les plus bas à l’orange aux plus hauts, en passant par le violet](/blog-media/fdf-isometric-projection-and-memory/julia-altitude.webp "La même carte avec la palette par altitude : le bleu ardoise, le violet et l’orange du site, du plus bas au plus haut.")
 
 ## À retenir
 

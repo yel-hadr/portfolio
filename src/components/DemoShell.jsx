@@ -1,4 +1,12 @@
-import { Suspense, useEffect, useEffectEvent, useId, useLayoutEffect, useRef } from 'react';
+import {
+  Suspense,
+  useEffect,
+  useEffectEvent,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 import CanvasErrorBoundary from './CanvasErrorBoundary';
@@ -135,6 +143,11 @@ const DemoShell = ({ id, repo, onClose, origin, children }) => {
   const { webgl, ready } = useDemoCanvas();
   const titleId = useId();
   const descId = useId();
+  // On a phone or a short screen the description folds behind "About this project", so the demo
+  // keeps the height (read once: a later resize keeps the visitor's choice)
+  const [compact] = useState(
+    () => window.matchMedia('(max-width: 767px), (max-height: 500px)').matches
+  );
   const noticeId = useId();
   const reduced = usePrefersReducedMotion();
   // Closing shrinks the panel back into its card first (below); a second close meanwhile is ignored
@@ -259,12 +272,37 @@ const DemoShell = ({ id, repo, onClose, origin, children }) => {
             <CloseIcon className='h-5 w-5' />
           </button>
         </div>
-        <p
-          id={descId}
-          className='border-b border-line px-4 py-2 text-sm leading-relaxed text-foreground-muted md:px-6'
-        >
-          {t(`demos.${id}.description`)}
-        </p>
+        {/* Still the dialog's description when folded: aria-describedby reads hidden text */}
+        {compact ? (
+          <details className='group/about border-b border-line px-4 py-1.5 text-sm md:px-6'>
+            <summary className='-mx-1 flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-sm px-1 font-semibold [&::-webkit-details-marker]:hidden text-foreground-muted focus:outline-hidden focus-visible:ring-2 focus-visible:ring-focus'>
+              {/* A flex summary drops the browser's marker: the chevron says it opens */}
+              <svg
+                aria-hidden='true'
+                viewBox='0 0 20 20'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                className='h-4 w-4 shrink-0 transition-transform group-open/about:rotate-90'
+              >
+                <path d='M7 4l6 6-6 6' />
+              </svg>
+              {t('demos.about')}
+            </summary>
+            <p id={descId} className='pb-1.5 leading-relaxed text-foreground-muted'>
+              {t(`demos.${id}.description`)}
+            </p>
+          </details>
+        ) : (
+          <p
+            id={descId}
+            className='border-b border-line px-4 py-2 text-sm leading-relaxed text-foreground-muted md:px-6'
+          >
+            {t(`demos.${id}.description`)}
+          </p>
+        )}
         <div className='relative min-h-[22rem] flex-1 md:min-h-0'>
           {!webgl && <Screenshots id={id} noticeId={noticeId} />}
           {webgl && !ready && (

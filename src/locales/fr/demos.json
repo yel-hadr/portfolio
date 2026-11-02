@@ -3,6 +3,7 @@
   "source": "Voir le code",
   "sourceAria": "Voir le code : {name} sur GitHub (s’ouvre dans un nouvel onglet)",
   "noWebgl": "Cette démo a besoin de WebGL 2, que ce navigateur ou cet appareil ne propose pas.",
+  "about": "À propos du projet",
   "cub3d": {
     "name": "cub3D",
     "title": "cub3D, dans le navigateur",
@@ -58,7 +59,8 @@
       "turnRight": "Tourner à droite",
       "door": "Porte"
     },
-    "panelsHeading": "Lire les murs"
+    "panelsHeading": "Lire les murs",
+    "keysHeading": "Commandes"
   },
   "fdf": {
     "name": "FdF",
@@ -67,6 +69,7 @@
     "viewLabel": "Fil de fer FdF",
     "canvasLabel": "Fil de fer de {file}, {width} points sur {height}, {shape}, projection {projection}",
     "help": "Glisser : déplacer · clic droit ou deux doigts : tourner · molette ou + − : zoom · flèches : déplacer · R, Maj+R : tourner · P : projection · M, Maj+M : carte",
+    "helpTouch": "Glisser : déplacer · deux doigts : tourner et zoomer · commandes ci-dessous : zoom, rotation, projection, carte",
     "map": "Carte",
     "maps": {
       "42": {
@@ -143,8 +146,8 @@
       "caption": "La démo, construite à partir de maps/map.cub du dépôt."
     },
     "julia": {
-      "alt": "julia.fdf avec la palette par altitude : le même ensemble de Julia, du bleu aux points les plus bas à l’orange aux plus hauts",
-      "caption": "julia.fdf avec la palette par altitude : le bleu, le cyan-vert et l’orange du site, du plus bas au plus haut."
+      "alt": "julia.fdf avec la palette par altitude : le même ensemble de Julia, du bleu ardoise aux points les plus bas à l’orange aux plus hauts, en passant par le violet",
+      "caption": "julia.fdf avec la palette par altitude : le bleu ardoise, le violet et l’orange du site, du plus bas au plus haut."
     },
     "mars": {
       "alt": "mars.fdf côte à côte : la vue isométrique à gauche, où les bords de la grille restent parallèles, et la vue en perspective à droite, où ils convergent",

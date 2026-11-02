@@ -21,10 +21,12 @@ import {
   MOUSE,
   OrthographicCamera,
   PerspectiveCamera,
+  Sphere,
   TOUCH,
   Vector3,
 } from 'three';
 
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import { styles } from '../../styles';
 import { readTheme } from '../../utils/themeColors';
@@ -84,21 +86,32 @@ const buildGeometry = (map) => {
   return geometry;
 };
 
+// Written straight into the typed arrays: a 500 x 500 map is a quarter of a million points, and
+// three's setXYZ per point (with a color blend each) held the page for a sixth of a second
 const setHeights = (geometry, map, zScale) => {
   const { width, height, z, altitude } = map;
   const position = geometry.getAttribute('position');
-  for (let row = 0; row < height; row += 1) {
-    for (let col = 0; col < width; col += 1) {
-      const i = row * width + col;
-      position.setXYZ(i, col - (width - 1) / 2, z[i] * altitude * zScale, row - (height - 1) / 2);
+  const array = position.array;
+  const k = altitude * zScale;
+  for (let row = 0, i = 0; row < height; row += 1) {
+    const y = row - (height - 1) / 2;
+    for (let col = 0; col < width; col += 1, i += 1) {
+      array[i * 3] = col - (width - 1) / 2;
+      array[i * 3 + 1] = z[i] * k;
+      array[i * 3 + 2] = y;
     }
   }
   position.needsUpdate = true;
-  geometry.computeBoundingSphere();
+  // The grid's bounds are known: no scan of every point (three's computeBoundingSphere)
+  const half = ((map.max - map.min) / 2) * k;
+  geometry.boundingSphere = new Sphere(
+    new Vector3(0, ((map.max + map.min) / 2) * k, 0),
+    Math.hypot((width - 1) / 2, (height - 1) / 2, half)
+  );
 };
 
-// Altitude colors: the fdf-low/mid/high tokens, ocean blue through cyan-green to the brand orange
-// in the dark theme, indigo through teal to burnt crimson in the light one; every point along
+// Altitude colors: the fdf-low/mid/high tokens, a muted slate-blue through violet to the brand orange
+// in the dark theme, slate through deep violet to burnt crimson in the light one; every point along
 // them keeps 4.5:1 on its background, since WebGL draws no lines thicker than 1 px. The "original"
 // palette is one color, as the original draws every line in one (white by default): here the
 // theme's text color. "file" takes the map's own colors (",0xRRGGBB", one per altitude) and the
@@ -113,27 +126,31 @@ const setColors = (geometry, map, palette) => {
     palette === 'altitude'
       ? [color('fdf-low'), color('fdf-mid'), color('fdf-high')]
       : [color('foreground')];
-  const out = new Color();
   const attribute = geometry.getAttribute('color');
+  const array = attribute.array;
   const { z, min, max, colors } = map;
-  if (palette === 'file' && colors) {
-    // One Color per altitude, not per point
-    const byAltitude = new Map();
-    z.forEach((value, i) => {
-      if (!byAltitude.has(value)) {
-        byAltitude.set(value, new Color(colors[value] ?? FILE_DEFAULT));
-      }
-      const c = byAltitude.get(value);
-      attribute.setXYZ(i, c.r, c.g, c.b);
-    });
-  } else {
-    const range = max - min || 1;
-    z.forEach((value, i) => {
+  const range = max - min || 1;
+  // One color per altitude, not per point (a fractal has a hundred altitudes for its quarter of a
+  // million points): a table of the normalized bytes the attribute holds, indexed by altitude
+  const table = new Uint8Array((max - min + 1) * 3);
+  const c = new Color();
+  for (let value = min; value <= max; value += 1) {
+    if (palette === 'file' && colors) c.set(colors[value] ?? FILE_DEFAULT);
+    else {
       const k = ((value - min) / range) * (stops.length - 1);
       const lo = Math.floor(k);
-      out.copy(stops[lo]).lerp(stops[Math.min(lo + 1, stops.length - 1)], k - lo);
-      attribute.setXYZ(i, out.r, out.g, out.b);
-    });
+      c.copy(stops[lo]).lerp(stops[Math.min(lo + 1, stops.length - 1)], k - lo);
+    }
+    const at = (value - min) * 3;
+    table[at] = Math.round(c.r * 255);
+    table[at + 1] = Math.round(c.g * 255);
+    table[at + 2] = Math.round(c.b * 255);
+  }
+  for (let i = 0; i < z.length; i += 1) {
+    const at = (z[i] - min) * 3;
+    array[i * 3] = table[at];
+    array[i * 3 + 1] = table[at + 1];
+    array[i * 3 + 2] = table[at + 2];
   }
   attribute.needsUpdate = true;
 };
@@ -227,6 +244,17 @@ const Model = ({ map, materials, zScale, palette, turns, reduced, scanId, onScan
   );
 };
 
+// The load scan's sheet in the theme's orange. Fainter on the light page: on this transparent,
+// unpremultiplied canvas a translucent fill over clear pixels comes out darker than its color,
+// and at the dark theme's strength it read as a grey slab beside the map. Module-level: the
+// memoized material is written here, not in the component (the React Compiler rejects it)
+const SHEET_OPACITY = { dark: 0.3, light: 0.08 };
+const paintSheet = (material) => {
+  const theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  material.color.set(`rgb(${readTheme(['primary-400'])['primary-400'].replace(/ /g, ',')})`);
+  material.opacity = SHEET_OPACITY[theme];
+};
+
 /**
  * The materials, made once per Canvas and shared by each map's Model (keyed by map id, so a switch
  * frees the last map's geometry) so a switch compiles no shaders. Not created in JSX: freed here
@@ -237,15 +265,20 @@ const Wireframe = ({ map, ...props }) => {
       lines: new LineBasicMaterial({ vertexColors: true }),
       // Two-sided, so it shows whichever way the model is turned
       sheet: new MeshBasicMaterial({
-        color: new Color(`rgb(${readTheme(['primary-400'])['primary-400'].replace(/ /g, ',')})`),
         transparent: true,
-        opacity: 0.3,
         depthWrite: false,
         side: DoubleSide,
       }),
     }),
     []
   );
+  // Painted before the first frame, and again when the theme changes
+  useLayoutEffect(() => {
+    paintSheet(materials.sheet);
+    const observer = new MutationObserver(() => paintSheet(materials.sheet));
+    observer.observe(document.documentElement, { attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, [materials]);
   useEffect(
     () => () => {
       materials.lines.dispose();
@@ -578,6 +611,8 @@ const MapPicker = ({ t, value, onChange, reduced }) => {
 /** The FdF viewer: the canvas and its control panel */
 const FdfViewer = ({ t }) => {
   const reduced = usePrefersReducedMotion();
+  // A touch screen gets its own help line: no wheel, right-drag or keys there
+  const touch = useMediaQuery('(pointer: coarse)');
   // The map drawn, and the one picked (ahead of it while its file loads)
   const [map, setMap] = useState(DEFAULT_MAP);
   const [picked, setPicked] = useState(DEFAULT_MAP.id);
@@ -754,7 +789,16 @@ const FdfViewer = ({ t }) => {
           id={helpId}
           className={`pointer-events-none absolute bottom-3 left-3 max-w-sm rounded-xl ${onNight ? 'bg-background' : 'bg-background/80'} px-3 py-2 text-sm text-foreground-muted`}
         >
-          {t('demos.fdf.help')}
+          {/* The touch line on screen; the keys stay in the description (a tablet with a
+              keyboard reports a coarse pointer too) */}
+          {touch ? (
+            <>
+              <span aria-hidden='true'>{t('demos.fdf.helpTouch')}</span>
+              <span className='sr-only'>{t('demos.fdf.help')}</span>
+            </>
+          ) : (
+            t('demos.fdf.help')
+          )}
         </p>
         {/* The focus ring, drawn above the canvas */}
         <span aria-hidden='true' className={styles.viewFocusRing} />
