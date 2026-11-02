@@ -211,10 +211,12 @@
     --c-info: 103 232 249;
     --c-flow-control: 167 139 250;
     --c-line-strong: 107 114 134;
-    /* FdF altitude gradient, low to high: ocean blue, cyan-green, the brand orange. Every point
-       along it is >= 4.5:1 on the background, surfaces and glass (1 px lines) */
-    --c-fdf-low: 91 155 248;
-    --c-fdf-mid: 45 212 191;
+    /* FdF altitude gradient, low to high: a muted slate-blue, violet, the brand orange. The low
+       ground (most of a map) stays quiet so the peaks lead; no teal, the one hue off the page's
+       palette. Every point along it (blended in linear RGB, as the viewer does) is >= 4.7:1 on
+       the background, surfaces and glass (1 px lines) */
+    --c-fdf-low: 124 141 181;
+    --c-fdf-mid: 167 139 250;
     --c-fdf-high: 249 115 22;
     /* Night: the dark background in both themes, for what is drawn on the original's dark window */
     --c-night: 11 14 20;
@@ -306,9 +308,9 @@
     --c-info: 3 105 161;
     --c-flow-control: 79 70 229;
     --c-line-strong: 140 131 122;
-    /* Indigo, teal, burnt crimson: deep inks that hold >= 4.5:1 on the light glass */
-    --c-fdf-low: 76 29 149;
-    --c-fdf-mid: 14 114 104;
+    /* Slate, deep violet, burnt crimson: deep inks that hold >= 6:1 on the light glass */
+    --c-fdf-low: 71 85 105;
+    --c-fdf-mid: 109 40 217;
     --c-fdf-high: 167 42 14;
     /* Cards: a warm white that stands off the off-white page (renders about #FEFDFB) */
     --color-glass: rgb(255 254 252 / 0.88);

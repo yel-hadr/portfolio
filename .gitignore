@@ -47,6 +47,8 @@ htmlcov/
 # Compressed files
 *.zip
 *.gz
+# The FdF viewer's maps are gzipped binary on purpose (src/data/fdfMaps.js)
+!public/fdf/*.z16.gz
 *.tar
 *.tgz
 *.bz2

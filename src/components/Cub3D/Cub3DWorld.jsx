@@ -1285,6 +1285,15 @@ const Cub3DWorld = ({
   const [message, setMessage] = useState('');
   const wrapperRef = useRef(null);
   const minimapRef = useRef(null);
+  // The demo's help strip fades once the player has moved (the pose changed since the spawn):
+  // the keys stay in the "Read the walls" panel. And a press of Door with no door ahead shows a
+  // brief chip
+  const [moved, setMoved] = useState(false);
+  const movedRef = useRef(false);
+  const startPose = useRef(null);
+  const [noDoor, setNoDoor] = useState(false);
+  const noDoorTimer = useRef(0);
+  useEffect(() => () => clearTimeout(noDoorTimer.current), []);
   const staticLayer = useRef(null);
   const radarRef = useRef(null);
   const radarLayer = useRef(null);
@@ -2017,6 +2026,15 @@ const Cub3DWorld = ({
       cameraRef.current = camera;
       // Game Mode's radar is drawn every frame instead (onTick)
       if (!game) drawMinimap(camera);
+      if (!game && !movedRef.current) {
+        const { x, z } = camera.position;
+        const pose = `${x.toFixed(2)} ${z.toFixed(2)} ${camera.rotation.y.toFixed(2)}`;
+        if (startPose.current === null) startPose.current = pose;
+        else if (pose !== startPose.current) {
+          movedRef.current = true;
+          setMoved(true);
+        }
+      }
       if (game) {
         const { x, z } = camera.position;
         const here = roomAt(x, z);
@@ -2078,6 +2096,12 @@ const Cub3DWorld = ({
     const ahead = game && nearDoorCell.current >= 0 ? nearDoorCell.current : doorAhead();
     if (ahead < 0) {
       announce(t('demos.cub3d.sr.noDoor'));
+      // Seen too, so a press against a plain wall is not lost (Game Mode says so in its HUD)
+      if (!game) {
+        setNoDoor(true);
+        clearTimeout(noDoorTimer.current);
+        noDoorTimer.current = setTimeout(() => setNoDoor(false), 1500);
+      }
       return;
     }
     const closed = !doors.current[ahead];
@@ -3232,9 +3256,20 @@ const Cub3DWorld = ({
         <canvas
           ref={minimapRef}
           aria-hidden='true'
-          className='pointer-events-none absolute right-3 top-3 z-30 rounded-md border border-line-strong'
+          // A phone held sideways: drawn at 60%, so the touch pad below it clears it
+          className='pointer-events-none absolute right-3 top-3 z-30 origin-top-right rounded-md border border-line-strong [@media(max-height:26rem)]:scale-[0.6]'
           style={{ width: W * MINIMAP_CELL, height: H * MINIMAP_CELL }}
         />
+      )}
+      {noDoor && (
+        // Already announced (the live region): this is only the visual confirmation
+        <p
+          aria-hidden='true'
+          // Above the touch pad in portrait (it holds the bottom right there)
+          className={`pointer-events-none absolute ${touch ? 'bottom-60 [@media(max-height:26rem)]:bottom-16' : 'bottom-16'} left-1/2 z-30 -translate-x-1/2 rounded-full bg-background/85 px-3 py-1.5 text-sm font-semibold text-foreground`}
+        >
+          {t('demos.cub3d.sr.noDoor')}
+        </p>
       )}
       <p
         id={helpId}
@@ -3242,7 +3277,9 @@ const Cub3DWorld = ({
           // Game Mode has the status bar there; the keys stay in the briefing and the description
           game
             ? 'sr-only'
-            : 'absolute bottom-3 left-3 z-30 max-w-md rounded-xl bg-background/80 px-3 py-2 text-sm text-foreground-muted'
+            : // Fades once the player has moved (hidden at once under reduced motion); on a phone
+              // held sideways it gives its room to the maze as soon as play starts
+              `absolute bottom-3 left-3 z-30 max-w-md rounded-xl bg-background/80 px-3 py-2 text-sm text-foreground-muted motion-safe:transition-opacity motion-safe:duration-700 ${moved ? 'pointer-events-none opacity-0 motion-reduce:hidden' : ''} ${started ? '[@media(max-height:26rem)]:hidden' : ''}`
         }
       >
         {/* The welcome card's key list, as a reminder */}
@@ -3263,6 +3300,16 @@ const Cub3DWorld = ({
               ))}
             </section>
           ))}
+          {/* The keys, once the help strip has gone: the welcome card that lists them is gone
+              after Start */}
+          <section className='mt-2'>
+            <h3 className='font-bold text-primary-400'>{t('demos.cub3d.keysHeading')}</h3>
+            <ul>
+              {t(keysKey).map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </section>
         </details>
       )}
 
@@ -3281,7 +3328,9 @@ const Cub3DWorld = ({
         <div
           // Game Mode: bottom left, under the left thumb, clear of the radar (the radar and the
           // weapon card hold the right; there is no Mouse look button on touch)
-          className={`absolute z-30 grid grid-cols-3 gap-1.5 ${game ? 'bottom-12 left-3' : 'bottom-16 right-3'}`}
+          // The demo's pad sits at the bottom right, lower on a phone held sideways (its help
+          // strip is gone there), so the maze keeps its height
+          className={`absolute z-30 grid grid-cols-3 gap-1.5 ${game ? 'bottom-12 left-3' : 'bottom-16 right-3 [@media(max-height:26rem)]:bottom-3'}`}
           role='group'
           aria-label={t('demos.cub3d.touch.label')}
         >

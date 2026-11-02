@@ -1,7 +1,10 @@
 // The FdF viewer's maps: six of the FdF project's test_maps (github.com/yel-hadr/my_fdf_42), its
-// own .fdf files. 42.fdf is inline (the default, drawn at once); the others are JSON files in
-// public/fdf/, made from the .fdf files by scripts/fdf/build-maps.mjs and fetched only when
-// picked: the two 500 x 500 fractals are a quarter of a million points each.
+// own .fdf files. 42.fdf is inline (the default, drawn at once); the others are binary files in
+// public/fdf/ (<id>.z16.gz, each altitude a little-endian 16-bit integer, row by row, gzipped,
+// plus <id>.colors.json for maps with their own colors), made from the .fdf files by
+// scripts/fdf/build-maps.mjs and fetched only when picked: the two 500 x 500 fractals are a
+// quarter of a million points each, read straight into an Int16Array (parsing them as JSON
+// blocked the page for about a quarter of a second).
 //
 // Each entry: `file` its path in the repo; its grid, altitude range and whether it carries its
 // own colors (",0xRRGGBB", one per altitude); `altitude` the world height per altitude unit at a
@@ -22,7 +25,31 @@ export const MAP_42 = `0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0`;
 
-const src = (id) => `${import.meta.env.BASE_URL}fdf/${id}.json`;
+const src = (id, file) => `${import.meta.env.BASE_URL}fdf/${id}${file}`;
+
+const GZIP = [0x1f, 0x8b];
+
+// The altitudes, row by row. The file is gzipped bytes; a server that sends it with
+// Content-Encoding has already unzipped it (no gzip magic left), else the browser's own
+// DecompressionStream does, off the page's JavaScript
+const altitudes = async (id) => {
+  const response = await fetch(src(id, '.z16.gz'));
+  if (!response.ok) throw new Error(`${response.status} ${src(id, '.z16.gz')}`);
+  let buffer = await response.arrayBuffer();
+  const head = new Uint8Array(buffer, 0, 2);
+  if (head[0] === GZIP[0] && head[1] === GZIP[1]) {
+    const stream = new Blob([buffer]).stream().pipeThrough(new DecompressionStream('gzip'));
+    buffer = await new Response(stream).arrayBuffer();
+  }
+  // Little-endian, as written; every browser that runs WebGL2 is
+  return new Int16Array(buffer);
+};
+
+const fileColors = async (id) => {
+  const response = await fetch(src(id, '.colors.json'));
+  if (!response.ok) throw new Error(`${response.status} ${src(id, '.colors.json')}`);
+  return response.json();
+};
 
 export const FDF_MAPS = [
   { id: '42', width: 19, height: 11, min: 0, max: 10, colors: false, altitude: 0.1 },
@@ -55,23 +82,19 @@ const loaded = new Map([['42', Promise.resolve(DEFAULT_MAP)]]);
 export const loadMap = (id) => {
   if (!loaded.has(id)) {
     const meta = entry(id);
-    const promise = fetch(src(id))
-      .then((response) => {
-        if (!response.ok) throw new Error(`${response.status} ${src(id)}`);
-        return response.json();
-      })
-      .then(({ rows, colors }) => {
-        const width = Math.min(...rows.map((row) => row.length));
-        // 16-bit: every altitude in these maps fits, in a quarter of a plain array's memory
-        const z = Int16Array.from(rows.flatMap((row) => row.slice(0, width)));
-        let min = Infinity;
-        let max = -Infinity;
-        z.forEach((value) => {
-          if (value < min) min = value;
-          if (value > max) max = value;
-        });
-        return ready(meta, { width, height: rows.length, z, min, max }, colors ?? null);
-      });
+    // The grid and its altitude range come from the map's entry: nothing to scan
+    const promise = Promise.all([altitudes(id), meta.colors ? fileColors(id) : null]).then(
+      ([z, colors]) => {
+        const { width, height, min, max } = meta;
+        if (z.length !== width * height) throw new Error(`${id}: ${z.length} points`);
+        // The colors and bounds are built from the entry's range: an altitude past it would draw
+        // black lines, so a file that drifted from its entry fails to load instead
+        for (let i = 0; i < z.length; i += 1) {
+          if (z[i] < min || z[i] > max) throw new Error(`${id}: z ${z[i]} outside ${min}..${max}`);
+        }
+        return ready(meta, { width, height, z, min, max }, colors);
+      }
+    );
     promise.catch(() => loaded.delete(id));
     loaded.set(id, promise);
   }

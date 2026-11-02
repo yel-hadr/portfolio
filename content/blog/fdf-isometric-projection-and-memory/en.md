@@ -191,7 +191,7 @@ The viewer offers six of the repository’s test maps:
 
 Each map has its own altitude scale, so its relief reads at a sensible size, where the original scales by key. The readout prints the bonus build’s command line for the map shown, so the link to the C program stays visible.
 
-![julia.fdf in the altitude palette: the same Julia set shaded from blue at the lowest points to orange at the highest](/blog-media/fdf-isometric-projection-and-memory/julia-altitude.webp "The same map with the altitude palette: the site’s blue, cyan-green and orange, from lowest to highest.")
+![julia.fdf in the altitude palette: the same Julia set shaded from slate-blue at the lowest points through violet to orange at the highest](/blog-media/fdf-isometric-projection-and-memory/julia-altitude.webp "The same map with the altitude palette: the site’s slate-blue, violet and orange, from lowest to highest.")
 
 ## Takeaways
 

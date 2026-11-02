@@ -3,6 +3,7 @@
   "source": "View source",
   "sourceAria": "View source: {name} on GitHub (opens in a new tab)",
   "noWebgl": "This demo needs WebGL 2, which this browser or device does not provide.",
+  "about": "About this project",
   "cub3d": {
     "name": "cub3D",
     "title": "cub3D, in the browser",
@@ -58,7 +59,8 @@
       "turnRight": "Turn right",
       "door": "Door"
     },
-    "panelsHeading": "Read the walls"
+    "panelsHeading": "Read the walls",
+    "keysHeading": "Keys"
   },
   "fdf": {
     "name": "FdF",
@@ -67,6 +69,7 @@
     "viewLabel": "FdF wireframe",
     "canvasLabel": "{file} wireframe, {width} by {height} points, {shape}, {projection} projection",
     "help": "Drag: move · right-drag or two fingers: turn · wheel or + −: zoom · arrows: move · R, Shift+R: rotate · P: projection · M, Shift+M: map",
+    "helpTouch": "Drag: move · two fingers: turn and zoom · controls below: zoom, rotate, projection, map",
     "map": "Map",
     "maps": {
       "42": {
@@ -143,8 +146,8 @@
       "caption": "The demo running the repository’s maps/map.cub."
     },
     "julia": {
-      "alt": "julia.fdf in the altitude palette: the same Julia set shaded from blue at the lowest points to orange at the highest",
-      "caption": "julia.fdf with the altitude palette: the site’s blue, cyan-green and orange, from lowest to highest."
+      "alt": "julia.fdf in the altitude palette: the same Julia set shaded from slate-blue at the lowest points through violet to orange at the highest",
+      "caption": "julia.fdf with the altitude palette: the site’s slate-blue, violet and orange, from lowest to highest."
     },
     "mars": {
       "alt": "mars.fdf side by side: the isometric view on the left, where the grid’s edges stay parallel, and the perspective view on the right, where they converge",
