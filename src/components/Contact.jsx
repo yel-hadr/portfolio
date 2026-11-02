@@ -6,7 +6,8 @@ import { SectionWrapper } from '../hoc';
 import { reveal } from '../utils/motion';
 import ContactForm from './ContactForm';
 import SectionHeader from './SectionHeader';
-import { Earth, SceneView } from './canvas';
+import { Globe, SceneView } from './canvas';
+import GlobeArt from './GlobeArt';
 import { useI18n } from '../i18n/context';
 
 const Contact = () => {
@@ -34,9 +35,16 @@ const Contact = () => {
         </m.div>
 
         <m.div variants={reveal(0.1)} className='h-80 md:h-96 xl:h-auto'>
-          <SceneView sectionType='earth' className='h-full w-full'>
-            {/* Mounts once Contact is a viewport away; it compiles its shaders while it loads */}
-            <Earth warmUp />
+          {/* Without 3D (no WebGL2, a lost context) the globe drawn flat; while the 3D one
+              loads, the same drawing faded, so the slot is never an empty hole */}
+          <SceneView
+            sectionType='globe'
+            className='h-full w-full'
+            fallback={<GlobeArt className='h-auto max-h-full w-4/5 max-w-sm' />}
+            placeholder={<GlobeArt className='h-auto max-h-full w-4/5 max-w-sm opacity-30' />}
+          >
+            {/* Mounts once Contact is a viewport away */}
+            <Globe />
           </SceneView>
         </m.div>
       </div>

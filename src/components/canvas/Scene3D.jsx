@@ -145,7 +145,18 @@ const ScrollSync = ({ layer }) => {
  * SceneView through <View.Port />. The layer is absolutely positioned at the top of the page
  * and follows the scroll position (ScrollSync), on its own compositor layer (will-change).
  */
-const Scene3D = () => {
+const Scene3D = ({ onContextLost }) => {
+  // Set as this Canvas unmounts: R3F then forces the context lost itself (a demo or Game Mode
+  // takes over), which is not the GPU dropping it and must not swap the views for fallbacks
+  const gone = useRef(false);
+  // (cleared on mount too: StrictMode's test unmount in development must not leave it set). A
+  // layout effect: R3F forces the loss from its own layout cleanup, so a passive one ran too late
+  useLayoutEffect(() => {
+    gone.current = false;
+    return () => {
+      gone.current = true;
+    };
+  }, []);
   const reduced = useStillMotion();
   const layer = useRef(null);
   // Place the layer before R3F measures the canvas (its measuring effect runs after layout
@@ -174,8 +185,17 @@ const Scene3D = () => {
             powerPreference: 'default',
           }}
           onCreated={({ gl, invalidate }) => {
-            // Redraw once the GPU hands the context back after a loss
-            gl.domElement.addEventListener('webglcontextrestored', () => invalidate());
+            // A new context (the page's Canvas back after a demo, whose unmount lost the old one)
+            onContextLost?.(false);
+            // While the GPU holds the context back, the views show their static fallbacks
+            // (onContextLost); once it is handed back, they return and redraw
+            gl.domElement.addEventListener('webglcontextlost', () => {
+              if (!gone.current) onContextLost?.(true);
+            });
+            gl.domElement.addEventListener('webglcontextrestored', () => {
+              onContextLost?.(false);
+              invalidate();
+            });
           }}
         >
           <ScrollSync layer={layer} />

@@ -93,3 +93,38 @@ export const SpinnerIcon = (props) => (
     <path d='M12 4a8 8 0 0 1 8 8' />
   </Svg>
 );
+
+// "What I do" (About): one line icon per service, in the brand orange where they are shown
+
+// Backend architecture: a stack of servers
+export const ServerIcon = (props) => (
+  <Svg {...stroke} {...props}>
+    <rect x='3.5' y='4' width='17' height='6.5' rx='1.75' />
+    <rect x='3.5' y='13.5' width='17' height='6.5' rx='1.75' />
+    <path d='M7.5 7.25h.01M7.5 16.75h.01M11 7.25h5.5M11 16.75h5.5' />
+  </Svg>
+);
+
+// Cloud infrastructure
+export const CloudIcon = (props) => (
+  <Svg {...stroke} {...props}>
+    <path d='M7 18.5h10a4 4 0 0 0 .6-7.96A5.5 5.5 0 0 0 7.1 9.6 4.5 4.5 0 0 0 7 18.5Z' />
+  </Svg>
+);
+
+// DevOps & GitOps: a branch merging back
+export const GitBranchIcon = (props) => (
+  <Svg {...stroke} {...props}>
+    <circle cx='6.5' cy='5.5' r='2' />
+    <circle cx='6.5' cy='18.5' r='2' />
+    <circle cx='17.5' cy='8.5' r='2' />
+    <path d='M6.5 7.5v9M17.5 10.5c0 4-4 4.5-9.5 6.5' />
+  </Svg>
+);
+
+// Automation & observability: a monitoring trace
+export const ActivityIcon = (props) => (
+  <Svg {...stroke} {...props}>
+    <path d='M3 12h4l2.5-6 5 12 2.5-6h4' />
+  </Svg>
+);

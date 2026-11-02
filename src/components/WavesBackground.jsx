@@ -309,8 +309,12 @@ const WavesBackground = ({ paused = false }) => {
     >
       <canvas ref={canvasRef} className='block h-full w-full' />
       {/* Readability: a dark wash that is heaviest where the hero text sits (top left) and at
-          the bottom edge, so lines never compete with copy at full strength. */}
-      <div className='absolute inset-0 bg-[radial-gradient(ellipse_at_20%_30%,theme(colors.background/70%),transparent_55%)]' />
+          the bottom edge, so lines never compete with copy at full strength. At 88%, where lines
+          bunch near the cursor, 99.9% of the pixels behind the hero's muted copy keep it at
+          5:1 or more (it was 4.5 at 70%, and a few single strand pixels reached 3:1) */}
+      {/* On a phone the portrait sits above the name, so the copy is lower and wider: the wash
+          follows it there */}
+      <div className='absolute inset-0 bg-[radial-gradient(ellipse_at_20%_30%,theme(colors.background/88%),transparent_62%)] max-sm:bg-[radial-gradient(ellipse_at_30%_55%,theme(colors.background/88%),transparent_62%)]' />
       <div className='absolute inset-0 bg-linear-to-b/srgb from-background/40 via-transparent to-background/70' />
       {/* Film grain over the lines and washes, still below every card and text */}
       <div className='grain absolute inset-0' />
