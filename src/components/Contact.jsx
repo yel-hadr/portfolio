@@ -27,7 +27,8 @@ const Contact = () => {
         </a>
       </m.p>
 
-      <div className='mt-12 grid gap-10 xl:grid-cols-2'>
+      {/* The form and the globe are for the screen; on paper the email above is the contact */}
+      <div className='mt-12 grid gap-10 xl:grid-cols-2 print:hidden'>
         <m.div variants={reveal()} className={styles.card}>
           <ContactForm />
         </m.div>

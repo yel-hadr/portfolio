@@ -19,7 +19,7 @@ const Footer = ({ onOpenGames, onEnterGame }) => {
     // A grounded band: in light a shade darker than the page (ground), in dark the page itself
     <footer className='relative border-t border-line bg-ground/80 backdrop-blur-md'>
       <div
-        className={`${styles.container} grid gap-10 py-12 md:grid-cols-[1fr_auto_auto] md:gap-16`}
+        className={`${styles.container} grid gap-10 py-12 md:grid-cols-[1fr_auto_auto] md:gap-16 print:grid-cols-3`}
       >
         <div className='flex flex-col gap-6'>
           <div>
@@ -61,12 +61,12 @@ const Footer = ({ onOpenGames, onEnterGame }) => {
               <span className='sr-only'>{t('footer.newTab')}</span>
             </a>
           </li>
-          <li>
+          <li className='print:hidden'>
             <button type='button' aria-haspopup='dialog' onClick={onOpenGames} className={LINK}>
               {t('footer.games')}
             </button>
           </li>
-          <li>
+          <li className='print:hidden'>
             <button type='button' aria-haspopup='dialog' onClick={onEnterGame} className={LINK}>
               {t('gameMode')}
             </button>

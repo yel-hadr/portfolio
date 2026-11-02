@@ -56,7 +56,8 @@ const Hero = ({ onEnterGame }) => {
     >
       {/* The page's one orchestrated entrance: portrait, name, headline, then the actions. */}
       <m.div
-        variants={staggerContainer(0.12, 0.1)}
+        // A short cascade (0.06 s, no lead-in): the buttons are in place about half a second in
+        variants={staggerContainer(0.06)}
         initial='hidden'
         animate='show'
         // Two columns from md (a tablet has room beside the name); on a short, wide screen (a phone
@@ -133,7 +134,11 @@ const Hero = ({ onEnterGame }) => {
             <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
               <div className='grid w-full gap-3 sm:flex sm:w-auto sm:gap-4'>
                 <Magnetic>
-                  <m.a href='#works' className={styles.buttonPrimary} {...pressable}>
+                  <m.a
+                    href='#works'
+                    className={`${styles.buttonPrimary} print:hidden`}
+                    {...pressable}
+                  >
                     {t('hero.seeProjects')}
                   </m.a>
                 </Magnetic>
@@ -153,7 +158,7 @@ const Hero = ({ onEnterGame }) => {
               aria-haspopup='dialog'
               onClick={onEnterGame}
               {...pressable}
-              className='mt-6 inline-flex items-center gap-2 rounded-full border border-dashed border-primary-400 bg-glass px-4 py-1.5 text-sm font-semibold text-foreground backdrop-blur-md transition-colors hover:bg-surface-raised short:mt-3'
+              className='mt-6 inline-flex items-center gap-2 rounded-full border border-dashed print:hidden border-primary-400 bg-glass px-4 py-1.5 text-sm font-semibold text-foreground backdrop-blur-md transition-colors hover:bg-surface-raised short:mt-3'
             >
               <CrosshairIcon className='h-4 w-4 text-primary-400' />
               {t('gameMode')}

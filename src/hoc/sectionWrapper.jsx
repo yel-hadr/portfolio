@@ -16,8 +16,10 @@ const SectionWrapper = (Component, idName) =>
         variants={staggerContainer()}
         initial='hidden'
         whileInView='show'
-        // Once, as the section's top passes 100px into the viewport
-        viewport={{ once: true, margin: '-100px' }}
+        // Once, as the section's top passes 10% above the viewport's bottom. The root reaches
+        // far above the screen, so a section jumped past (End, a deep link, a fast scroll) counts
+        // as seen and is shown, rather than waiting invisible for a scroll back up
+        viewport={{ once: true, margin: '100000px 0px -10% 0px' }}
         className={`${styles.container} ${styles.section} relative`}
       >
         <Component />

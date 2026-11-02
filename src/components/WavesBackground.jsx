@@ -303,7 +303,10 @@ const WavesBackground = ({ paused = false }) => {
   }, [still]);
 
   return (
-    <div aria-hidden='true' className='pointer-events-none fixed inset-0 overflow-hidden'>
+    <div
+      aria-hidden='true'
+      className='pointer-events-none fixed inset-0 overflow-hidden print:hidden'
+    >
       <canvas ref={canvasRef} className='block h-full w-full' />
       {/* Readability: a dark wash that is heaviest where the hero text sits (top left) and at
           the bottom edge, so lines never compete with copy at full strength. */}

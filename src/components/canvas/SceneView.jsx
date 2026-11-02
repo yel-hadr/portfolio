@@ -114,9 +114,10 @@ const SceneView = ({
     );
   }
 
-  // The outer box keeps one element through every state, for the observers above
+  // The outer box keeps one element through every state, for the observers above. Not on paper:
+  // the 3D layer is not printed, and an empty box would leave a gap (the names beside it remain)
   return (
-    <div ref={box} className={className}>
+    <div ref={box} className={`${className} print:hidden`}>
       {content}
     </div>
   );

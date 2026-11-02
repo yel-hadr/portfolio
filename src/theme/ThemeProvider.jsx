@@ -31,6 +31,25 @@ const ThemeProvider = ({ children }) => {
     document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', theme);
   }, [theme]);
 
+  // On paper the page is always the light theme: printing drops background colors, so the dark
+  // theme's pearl text would land on white. Switched without the cross-fade (a print is taken at
+  // once) and put back after
+  useEffect(() => {
+    const root = document.documentElement;
+    const toPaper = () => {
+      root.dataset.theme = 'light';
+    };
+    const back = () => {
+      root.dataset.theme = theme;
+    };
+    window.addEventListener('beforeprint', toPaper);
+    window.addEventListener('afterprint', back);
+    return () => {
+      window.removeEventListener('beforeprint', toPaper);
+      window.removeEventListener('afterprint', back);
+    };
+  }, [theme]);
+
   // Stable across renders through the React Compiler (no useCallback / useMemo)
   const setTheme = (next) => {
     if (next !== 'light' && next !== 'dark') return;
@@ -40,7 +59,7 @@ const ThemeProvider = ({ children }) => {
       // One cross-fade window, restarted by each toggle (a quick second toggle keeps it)
       root.classList.add('theme-transition');
       window.clearTimeout(fadeTimer.current);
-      fadeTimer.current = window.setTimeout(() => root.classList.remove('theme-transition'), 400);
+      fadeTimer.current = window.setTimeout(() => root.classList.remove('theme-transition'), 300);
     }
     setThemeState(next);
     try {

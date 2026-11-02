@@ -22,6 +22,9 @@
     "pauseMotion": "Pause background animations",
     "openTerminal": "Open terminal",
     "terminalShortcut": "Shortcut: Ctrl + `",
+    "terminalLoading": "Starting the terminal…",
+    "terminal": "Terminal",
+    "closeTerminal": "Close terminal",
     "blog": "Blog",
     "menu": "Menu"
   },

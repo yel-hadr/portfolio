@@ -60,7 +60,7 @@ const FrameDriver = ({ reduced }) => {
 
   // A card lifting on hover (index.css: `translate`, light theme) moves the 3D views inside it:
   // redraw every frame for a short window after such a transition starts (longer than its
-  // 0.35 s), so a ball stays in its box even with the ambient ticks off (paused, or no motion).
+  // 250 ms), so a ball stays in its box even with the ambient ticks off (paused, or no motion).
   // A window rather than counting starts and ends: a transition on an element that leaves the
   // page never ends, and a counter would then keep drawing forever. Events bubble to the document
   useEffect(() => {
@@ -114,8 +114,9 @@ const LAYER = CLIP
     // ahead of the main thread (the largest lead measured was 100 px). There is no overscan
     // above: drei never draws a view whose bottom is above the viewport, so on a fast upward
     // scroll a scene entering from the top appears on the next drawn frame.
-    'pointer-events-none absolute inset-x-0 top-0 z-20 h-[125vh] will-change-transform'
-  : 'pointer-events-none fixed inset-0 z-20';
+    // Never printed (a WebGL canvas prints blank or a stale frame, over the text)
+    'pointer-events-none absolute inset-x-0 top-0 z-20 h-[125vh] will-change-transform print:hidden'
+  : 'pointer-events-none fixed inset-0 z-20 print:hidden';
 
 // The last position written, so an ambient frame with no scroll writes no style
 let followedY = NaN;

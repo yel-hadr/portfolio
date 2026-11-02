@@ -84,7 +84,8 @@ const ProjectCard = ({
             onFocus={() => prefetch(DEMO_LOADERS[demo])}
             aria-haspopup='dialog'
             aria-label={t('works.runDemoAria', { name })}
-            className={styles.buttonPrimary}
+            // Screen-only controls are not printed
+            className={`${styles.buttonPrimary} print:hidden`}
             {...pressable}
           >
             {t('works.runDemo')}
@@ -111,7 +112,7 @@ const ProjectCard = ({
               onPointerEnter={() => prefetch(loadDiagram)}
               onFocus={() => prefetch(loadDiagram)}
               aria-haspopup='dialog'
-              className='link-draw inline-flex w-fit items-center gap-2 rounded-xl font-semibold text-primary-400 transition-colors hover:text-foreground'
+              className='link-draw inline-flex w-fit items-center gap-2 rounded-xl font-semibold text-primary-400 transition-colors hover:text-foreground print:hidden'
             >
               <svg
                 aria-hidden='true'
