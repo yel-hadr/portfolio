@@ -36,7 +36,8 @@
   },
   "resume": {
     "label": "Download resume",
-    "aria": "Download resume PDF"
+    "aria": "Download resume (PDF, {size} KB)",
+    "meta": "PDF · {size} KB"
   },
   "eyebrows": {
     "about": "Profile",
@@ -195,9 +196,12 @@
     },
     "send": "Send message",
     "sending": "Sending…",
-    "sent": "Message sent. I'll get back to you as soon as possible.",
+    "sentTitle": "Message sent",
+    "sent": "Thanks for writing. I'll get back to you as soon as possible.",
+    "sendAnother": "Send another message",
     "notConfigured": "Message not sent: the contact form isn't configured yet. Please try again later.",
-    "failed": "Message not sent. Check your connection and try again.",
+    "failed": "Message not sent: something went wrong on my side. Please try again, or email me at {email}.",
+    "offline": "Message not sent. Check your connection and try again.",
     "tooMany": "Message not sent: too many messages in a short time. Please try again in a few minutes."
   },
   "footer": {

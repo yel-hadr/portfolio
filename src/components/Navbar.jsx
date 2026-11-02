@@ -37,7 +37,10 @@ const LanguageToggle = () => {
           lang={code}
           aria-pressed={lang === code}
           onClick={() => setLang(code)}
-          className={`rounded-full px-2.5 py-1.5 transition-colors ${
+          // 44 px to tap: a hit area 6 px past the 32 px pill above and below (::before, no layout
+          // change), and 44 px wide from xs; below it (a 320 px screen) the buttons stay narrow
+          // so the bar fits, and the hit area reaches 4 px past each side instead
+          className={`relative min-w-9 rounded-full px-2.5 py-1.5 transition-colors before:absolute before:-inset-x-1 before:-inset-y-1.5 xs:min-w-11 xs:before:inset-x-0 ${
             lang === code
               ? 'bg-primary text-on-primary forced-colors:underline forced-colors:decoration-2 forced-colors:underline-offset-4'
               : 'text-foreground-muted hover:text-foreground'
@@ -503,7 +506,9 @@ const Navbar = ({ onOpenTerminal }) => {
           <a
             href='#top'
             aria-label={t('nav.home')}
-            className='flex shrink-0 items-center gap-2'
+            // The 36 px logo is tapped through a 44 px area (::before, 4 px past it on every
+            // side), so the logo stays aligned with the content's edge
+            className='relative flex shrink-0 items-center gap-2 before:absolute before:-inset-1'
             onClick={() => setActive('')}
           >
             <img src={logo} alt='' width={36} height={36} className='h-9 w-9 object-contain' />

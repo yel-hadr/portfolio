@@ -7,7 +7,7 @@ import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 // Every stroke meets 3:1 against the diagram background in both themes.
 const FLOWS = {
   request: { stroke: 'stroke-primary', fill: 'fill-primary', dash: undefined },
-  control: { stroke: 'stroke-secondary', fill: 'fill-secondary', dash: '8 5' },
+  control: { stroke: 'stroke-flow-control', fill: 'fill-flow-control', dash: '8 5' },
   network: { stroke: 'stroke-info', fill: 'fill-info', dash: '2 5' },
 };
 
@@ -155,6 +155,10 @@ const LegendSwatch = ({ flow }) => (
  * ns: the translation prefix holding nodes.<id>, edges.<id> and groups.<id>.
  * headingLevel: the tag for component names, one below the heading that contains the diagram.
  */
+// A disclosure's summary row: the list of components, and on a phone the diagram itself
+const SUMMARY =
+  'flex min-h-11 cursor-pointer items-center gap-2 rounded-2xl px-5 py-3 font-semibold text-foreground';
+
 const InteractiveDiagram = ({ spec, ns, title, headingLevel = 'h3' }) => {
   const { t } = useI18n();
   const reduced = usePrefersReducedMotion();
@@ -166,6 +170,9 @@ const InteractiveDiagram = ({ spec, ns, title, headingLevel = 'h3' }) => {
   const [paused, setPaused] = useState(false);
   const active = hovered ?? focused ?? selected;
   const detailsRef = useRef(null);
+  // On a phone the diagram needs sideways scrolling, so the list of components comes first there,
+  // open, and the diagram is one tap away below it (read once: a later resize keeps the layout)
+  const [phone] = useState(() => window.matchMedia('(max-width: 767px)').matches);
 
   const boxes = Object.fromEntries([...spec.groups, ...spec.nodes].map((b) => [b.id, b]));
   const nodeIds = new Set(spec.nodes.map((n) => n.id));
@@ -211,291 +218,337 @@ const InteractiveDiagram = ({ spec, ns, title, headingLevel = 'h3' }) => {
     }
   };
 
-  return (
-    <div>
-      <div className='grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]'>
-        <div className='min-w-0'>
-          <ul
-            aria-label={t('diagrams.modal.legend')}
-            className='mb-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-foreground-muted'
+  const diagram = (
+    <div className='grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]'>
+      <div className='min-w-0'>
+        <ul
+          aria-label={t('diagrams.modal.legend')}
+          className='mb-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-foreground-muted'
+        >
+          {spec.legend.map(({ flow, key }) => (
+            <li key={flow} className='flex items-center gap-2'>
+              <LegendSwatch flow={flow} />
+              {t(key)}
+            </li>
+          ))}
+        </ul>
+        {!reduced && packetPaths.length > 0 && (
+          <button
+            type='button'
+            aria-pressed={paused}
+            onClick={() => setPaused((p) => !p)}
+            className='mb-3 inline-flex items-center gap-2 rounded-lg border border-line-strong px-3 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-surface-raised'
           >
-            {spec.legend.map(({ flow, key }) => (
-              <li key={flow} className='flex items-center gap-2'>
-                <LegendSwatch flow={flow} />
-                {t(key)}
-              </li>
-            ))}
-          </ul>
-          {!reduced && packetPaths.length > 0 && (
-            <button
-              type='button'
-              aria-pressed={paused}
-              onClick={() => setPaused((p) => !p)}
-              className='mb-3 inline-flex items-center gap-2 rounded-lg border border-line-strong px-3 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-surface-raised'
-            >
-              <svg aria-hidden='true' viewBox='0 0 16 16' className='h-4 w-4' fill='currentColor'>
-                {paused ? <path d='M4 2.5v11l9-5.5z' /> : <path d='M4 2.5h3v11H4zM9 2.5h3v11H9z' />}
-              </svg>
-              {t('diagrams.modal.pauseAnimation')}
-            </button>
-          )}
-          <p className='mb-2 text-sm text-foreground-muted xl:hidden'>
-            {t('diagrams.modal.scrollHint')}
-          </p>
-          <div className='overflow-x-auto overscroll-x-contain rounded-2xl border border-line bg-background'>
-            <svg
-              viewBox={`0 0 ${spec.width} ${spec.height}`}
-              role='group'
-              aria-label={t('diagrams.modal.diagramLabel', { name: title })}
-              className='block h-auto w-full min-w-[52rem] select-none xl:min-w-0'
-            >
-              <defs>
-                {Object.entries(FLOWS).map(([flow, style]) => (
-                  <marker
-                    key={flow}
-                    id={`${uid}-${flow}`}
-                    viewBox='0 0 10 10'
-                    refX='9'
-                    refY='5'
-                    markerWidth='9'
-                    markerHeight='9'
-                    markerUnits='userSpaceOnUse'
-                    orient='auto-start-reverse'
+            <svg aria-hidden='true' viewBox='0 0 16 16' className='h-4 w-4' fill='currentColor'>
+              {paused ? <path d='M4 2.5v11l9-5.5z' /> : <path d='M4 2.5h3v11H4zM9 2.5h3v11H9z' />}
+            </svg>
+            {t('diagrams.modal.pauseAnimation')}
+          </button>
+        )}
+        <p className='mb-2 text-sm text-foreground-muted xl:hidden'>
+          {t(phone ? 'diagrams.modal.scrollHintPhone' : 'diagrams.modal.scrollHint')}
+        </p>
+        <div className='overflow-x-auto overscroll-x-contain rounded-2xl border border-line bg-background'>
+          <svg
+            viewBox={`0 0 ${spec.width} ${spec.height}`}
+            role='group'
+            aria-label={t('diagrams.modal.diagramLabel', { name: title })}
+            className='block h-auto w-full min-w-[52rem] select-none xl:min-w-0'
+          >
+            <defs>
+              {Object.entries(FLOWS).map(([flow, style]) => (
+                <marker
+                  key={flow}
+                  id={`${uid}-${flow}`}
+                  viewBox='0 0 10 10'
+                  refX='9'
+                  refY='5'
+                  markerWidth='9'
+                  markerHeight='9'
+                  markerUnits='userSpaceOnUse'
+                  orient='auto-start-reverse'
+                >
+                  <path d='M0 0L10 5L0 10z' className={style.fill} />
+                </marker>
+              ))}
+            </defs>
+
+            {/* Boundaries (cloud, VM, cluster) and networks: context, not interactive */}
+            <g aria-hidden='true'>
+              {spec.groups.map((g) => (
+                <g key={g.id}>
+                  <rect
+                    x={g.x}
+                    y={g.y}
+                    width={g.w}
+                    height={g.h}
+                    rx={g.kind === 'network' ? 14 : 20}
+                    className={
+                      g.kind === 'network'
+                        ? 'fill-info/5 stroke-info'
+                        : 'fill-foreground/[0.02] stroke-line-strong'
+                    }
+                    strokeWidth='1.25'
+                    strokeDasharray={g.kind === 'network' ? '3 5' : '7 6'}
+                  />
+                  <text
+                    x={g.label[0]}
+                    y={g.label[1]}
+                    fontSize={LABEL}
+                    fontWeight='600'
+                    className={g.kind === 'network' ? 'fill-info' : 'fill-foreground-muted'}
                   >
-                    <path d='M0 0L10 5L0 10z' className={style.fill} />
-                  </marker>
-                ))}
-              </defs>
-
-              {/* Boundaries (cloud, VM, cluster) and networks: context, not interactive */}
-              <g aria-hidden='true'>
-                {spec.groups.map((g) => (
-                  <g key={g.id}>
-                    <rect
-                      x={g.x}
-                      y={g.y}
-                      width={g.w}
-                      height={g.h}
-                      rx={g.kind === 'network' ? 14 : 20}
-                      className={
-                        g.kind === 'network'
-                          ? 'fill-info/5 stroke-info'
-                          : 'fill-foreground/[0.02] stroke-line-strong'
-                      }
-                      strokeWidth='1.25'
-                      strokeDasharray={g.kind === 'network' ? '3 5' : '7 6'}
-                    />
-                    <text
-                      x={g.label[0]}
-                      y={g.label[1]}
-                      fontSize={LABEL}
-                      fontWeight='600'
-                      className={g.kind === 'network' ? 'fill-info' : 'fill-foreground-muted'}
-                    >
-                      {t(`${ns}.groups.${g.id}.label`)}
-                    </text>
-                  </g>
-                ))}
-              </g>
-
-              {/* Edges, then their labels on a halo so they stay legible over lines */}
-              <g aria-hidden='true'>
-                {spec.edges.map((e) => {
-                  const on = linked(e);
-                  const style = FLOWS[e.flow];
-                  return (
-                    <path
-                      key={e.id}
-                      d={toPath(edgePoints(e, boxes))}
-                      fill='none'
-                      className={`${style.stroke} transition-[opacity,stroke-width] duration-200 ${active && !on ? 'opacity-30' : ''}`}
-                      strokeWidth={on ? 3 : 1.75}
-                      strokeDasharray={style.dash}
-                      strokeLinejoin='round'
-                      markerEnd={`url(#${uid}-${e.flow})`}
-                      markerStart={e.both ? `url(#${uid}-${e.flow})` : undefined}
-                    />
-                  );
-                })}
-              </g>
-
-              {!reduced && !paused && packetPaths.length > 0 && (
-                <g aria-hidden='true' className='pointer-events-none'>
-                  {packetPaths.map((d, i) =>
-                    [0, 1].map((k) => (
-                      <circle key={`${i}-${k}`} r='4.5' className='fill-primary'>
-                        <animateMotion
-                          dur='4.8s'
-                          repeatCount='indefinite'
-                          path={d}
-                          begin={`${(i * 1.6 + k * 2.4).toFixed(1)}s`}
-                        />
-                      </circle>
-                    ))
-                  )}
+                    {t(`${ns}.groups.${g.id}.label`)}
+                  </text>
                 </g>
-              )}
+              ))}
+            </g>
 
-              <g aria-hidden='true'>
-                {spec.edges.map((e) => {
-                  const [x, y, anchor = 'start'] = e.label;
-                  return (
-                    <text
-                      key={e.id}
-                      x={x}
-                      y={y}
-                      textAnchor={anchor}
-                      fontSize={LABEL}
-                      fontWeight={linked(e) ? 600 : 500}
-                      stroke='currentColor'
-                      strokeWidth='5'
-                      strokeLinejoin='round'
-                      paintOrder='stroke'
-                      className={`text-background ${linked(e) ? 'fill-primary-400' : 'fill-foreground-muted'}`}
-                    >
-                      {t(`${ns}.edges.${e.id}`)}
-                    </text>
-                  );
-                })}
-              </g>
-
-              {/* Components */}
-              {spec.nodes.map((n) => {
-                const isActive = n.id === active;
-                const isNeighbour = neighbours.has(n.id);
-                const meta = t(`${ns}.nodes.${n.id}.meta`);
-                const lines = [
-                  {
-                    text: t(`${ns}.nodes.${n.id}.name`),
-                    size: NAME,
-                    cls: 'fill-foreground',
-                    weight: 700,
-                  },
-                  {
-                    text: t(`${ns}.nodes.${n.id}.role`),
-                    size: ROLE,
-                    cls: 'fill-primary-400',
-                    weight: 600,
-                  },
-                  ...(Array.isArray(meta) ? meta : []).map((m) => ({
-                    text: m,
-                    size: META,
-                    cls: 'fill-foreground-muted',
-                    weight: 500,
-                  })),
-                ];
-                const podsH = n.pods ? POD_ROW : 0;
-                const blockH = lines.reduce((sum, l) => sum + l.size[1], 0) + podsH;
-                let y = n.y + (n.h - blockH) / 2;
-                const cx = n.x + n.w / 2;
-
+            {/* Edges, then their labels on a halo so they stay legible over lines */}
+            <g aria-hidden='true'>
+              {spec.edges.map((e) => {
+                const on = linked(e);
+                const style = FLOWS[e.flow];
                 return (
-                  <g
-                    key={n.id}
-                    role='button'
-                    tabIndex={0}
-                    aria-label={t(`${ns}.nodes.${n.id}.name`)}
-                    aria-pressed={selected === n.id}
-                    className='group cursor-pointer outline-hidden'
-                    onMouseEnter={() => setHovered(n.id)}
-                    onMouseLeave={() => setHovered(null)}
-                    onFocus={() => setFocused(n.id)}
-                    onBlur={() => setFocused(null)}
-                    onClick={() => onNodeClick(n.id)}
-                    onKeyDown={(e) => onNodeKeyDown(e, n.id)}
-                  >
-                    {/* Keyboard focus ring (SVG elements get no reliable outline) */}
-                    <rect
-                      x={n.x - 5}
-                      y={n.y - 5}
-                      width={n.w + 10}
-                      height={n.h + 10}
-                      rx='16'
-                      fill='none'
-                      strokeWidth='2.5'
-                      className='stroke-focus opacity-0 group-focus-visible:opacity-100'
-                    />
-                    <rect
-                      x={n.x}
-                      y={n.y}
-                      width={n.w}
-                      height={n.h}
-                      rx='12'
-                      strokeWidth={isActive ? 2.5 : isNeighbour || selected === n.id ? 2 : 1.25}
-                      className={`transition-colors duration-200 ${
-                        isActive
-                          ? 'fill-surface-raised stroke-primary'
-                          : isNeighbour
-                            ? 'fill-surface stroke-primary-400'
-                            : selected === n.id
-                              ? 'fill-surface stroke-primary'
-                              : 'fill-surface stroke-line-strong group-hover:stroke-foreground-muted'
-                      }`}
-                    />
-                    {lines.map((l, i) => {
-                      y += l.size[1];
-                      return (
-                        <text
-                          key={i}
-                          x={cx}
-                          y={y - (l.size[1] - l.size[0]) / 2 - 2}
-                          textAnchor='middle'
-                          fontSize={l.size[0]}
-                          fontWeight={l.weight}
-                          className={l.cls}
-                        >
-                          {l.text}
-                        </text>
-                      );
-                    })}
-                    {n.pods &&
-                      Array.from({ length: n.pods }, (_, i) => (
-                        <circle
-                          key={i}
-                          aria-hidden='true'
-                          cx={cx + (i - (n.pods - 1) / 2) * 18}
-                          cy={y + POD_ROW / 2}
-                          r='5.5'
-                          className='fill-primary/25 stroke-primary'
-                          strokeWidth='1.5'
-                        />
-                      ))}
-                  </g>
+                  <path
+                    key={e.id}
+                    d={toPath(edgePoints(e, boxes))}
+                    fill='none'
+                    className={`${style.stroke} transition-[opacity,stroke-width] duration-200 ${active && !on ? 'opacity-30' : ''}`}
+                    strokeWidth={on ? 3 : 1.75}
+                    strokeDasharray={style.dash}
+                    strokeLinejoin='round'
+                    markerEnd={`url(#${uid}-${e.flow})`}
+                    markerStart={e.both ? `url(#${uid}-${e.flow})` : undefined}
+                  />
                 );
               })}
-            </svg>
-          </div>
-        </div>
+            </g>
 
-        <div
-          ref={detailsRef}
-          aria-live='polite'
-          aria-label={t('diagrams.modal.detailsLabel')}
-          role='region'
-          className='self-start rounded-2xl border border-line bg-surface p-5 xl:sticky xl:top-0'
+            {!reduced && !paused && packetPaths.length > 0 && (
+              <g aria-hidden='true' className='pointer-events-none'>
+                {packetPaths.map((d, i) =>
+                  [0, 1].map((k) => (
+                    <circle key={`${i}-${k}`} r='4.5' className='fill-primary'>
+                      <animateMotion
+                        dur='4.8s'
+                        repeatCount='indefinite'
+                        path={d}
+                        begin={`${(i * 1.6 + k * 2.4).toFixed(1)}s`}
+                      />
+                    </circle>
+                  ))
+                )}
+              </g>
+            )}
+
+            <g aria-hidden='true'>
+              {spec.edges.map((e) => {
+                const [x, y, anchor = 'start'] = e.label;
+                return (
+                  <text
+                    key={e.id}
+                    x={x}
+                    y={y}
+                    textAnchor={anchor}
+                    fontSize={LABEL}
+                    fontWeight={linked(e) ? 600 : 500}
+                    stroke='currentColor'
+                    strokeWidth='5'
+                    strokeLinejoin='round'
+                    paintOrder='stroke'
+                    className={`text-background ${linked(e) ? 'fill-primary-400' : 'fill-foreground-muted'}`}
+                  >
+                    {t(`${ns}.edges.${e.id}`)}
+                  </text>
+                );
+              })}
+            </g>
+
+            {/* Components */}
+            {spec.nodes.map((n) => {
+              const isActive = n.id === active;
+              const isNeighbour = neighbours.has(n.id);
+              const meta = t(`${ns}.nodes.${n.id}.meta`);
+              const lines = [
+                {
+                  text: t(`${ns}.nodes.${n.id}.name`),
+                  size: NAME,
+                  cls: 'fill-foreground',
+                  weight: 700,
+                },
+                {
+                  text: t(`${ns}.nodes.${n.id}.role`),
+                  size: ROLE,
+                  cls: 'fill-primary-400',
+                  weight: 600,
+                },
+                ...(Array.isArray(meta) ? meta : []).map((m) => ({
+                  text: m,
+                  size: META,
+                  cls: 'fill-foreground-muted',
+                  weight: 500,
+                })),
+              ];
+              const podsH = n.pods ? POD_ROW : 0;
+              const blockH = lines.reduce((sum, l) => sum + l.size[1], 0) + podsH;
+              let y = n.y + (n.h - blockH) / 2;
+              const cx = n.x + n.w / 2;
+
+              return (
+                <g
+                  key={n.id}
+                  role='button'
+                  tabIndex={0}
+                  aria-label={t(`${ns}.nodes.${n.id}.name`)}
+                  aria-pressed={selected === n.id}
+                  className='group cursor-pointer outline-hidden'
+                  onMouseEnter={() => setHovered(n.id)}
+                  onMouseLeave={() => setHovered(null)}
+                  onFocus={() => setFocused(n.id)}
+                  onBlur={() => setFocused(null)}
+                  onClick={() => onNodeClick(n.id)}
+                  onKeyDown={(e) => onNodeKeyDown(e, n.id)}
+                >
+                  {/* Keyboard focus ring (SVG elements get no reliable outline) */}
+                  <rect
+                    x={n.x - 5}
+                    y={n.y - 5}
+                    width={n.w + 10}
+                    height={n.h + 10}
+                    rx='16'
+                    fill='none'
+                    strokeWidth='2.5'
+                    className='stroke-focus opacity-0 group-focus-visible:opacity-100'
+                  />
+                  <rect
+                    x={n.x}
+                    y={n.y}
+                    width={n.w}
+                    height={n.h}
+                    rx='12'
+                    strokeWidth={isActive ? 2.5 : isNeighbour || selected === n.id ? 2 : 1.25}
+                    className={`transition-colors duration-200 ${
+                      isActive
+                        ? 'fill-surface-raised stroke-primary'
+                        : isNeighbour
+                          ? 'fill-surface stroke-primary-400'
+                          : selected === n.id
+                            ? 'fill-surface stroke-primary'
+                            : 'fill-surface stroke-line-strong group-hover:stroke-foreground-muted'
+                    }`}
+                  />
+                  {lines.map((l, i) => {
+                    y += l.size[1];
+                    return (
+                      <text
+                        key={i}
+                        x={cx}
+                        y={y - (l.size[1] - l.size[0]) / 2 - 2}
+                        textAnchor='middle'
+                        fontSize={l.size[0]}
+                        fontWeight={l.weight}
+                        className={l.cls}
+                      >
+                        {l.text}
+                      </text>
+                    );
+                  })}
+                  {n.pods &&
+                    Array.from({ length: n.pods }, (_, i) => (
+                      <circle
+                        key={i}
+                        aria-hidden='true'
+                        cx={cx + (i - (n.pods - 1) / 2) * 18}
+                        cy={y + POD_ROW / 2}
+                        r='5.5'
+                        className='fill-primary/25 stroke-primary'
+                        strokeWidth='1.5'
+                      />
+                    ))}
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      </div>
+
+      <div
+        ref={detailsRef}
+        aria-live='polite'
+        aria-label={t('diagrams.modal.detailsLabel')}
+        role='region'
+        className='self-start rounded-2xl border border-line bg-surface p-5 xl:sticky xl:top-0'
+      >
+        {active ? (
+          <NodeDetails
+            ns={ns}
+            id={active}
+            edges={spec.edges}
+            nameOf={nameOf}
+            headingLevel={headingLevel}
+          />
+        ) : (
+          <p className='text-sm leading-relaxed text-foreground-muted'>
+            {t('diagrams.modal.intro')}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
+  const list = (
+    <details
+      open={phone}
+      className={`group/list rounded-2xl border border-line bg-surface ${phone ? '' : 'mt-6'}`}
+    >
+      <summary className={SUMMARY}>
+        <svg
+          aria-hidden='true'
+          viewBox='0 0 20 20'
+          className='h-4 w-4 shrink-0 transition-transform group-open/list:rotate-90'
+          fill='none'
+          stroke='currentColor'
+          strokeWidth='2'
+          strokeLinecap='round'
+          strokeLinejoin='round'
         >
-          {active ? (
+          <path d='M7 4l6 6-6 6' />
+        </svg>
+        {t('diagrams.modal.list', { count: spec.nodes.length })}
+      </summary>
+      <ul className='grid grid-cols-1 gap-4 border-t border-line p-5 md:grid-cols-2'>
+        {spec.nodes.map((n) => (
+          <li key={n.id} className='rounded-xl border border-line bg-background/40 p-4'>
             <NodeDetails
               ns={ns}
-              id={active}
+              id={n.id}
               edges={spec.edges}
               nameOf={nameOf}
               headingLevel={headingLevel}
             />
-          ) : (
-            <p className='text-sm leading-relaxed text-foreground-muted'>
-              {t('diagrams.modal.intro')}
-            </p>
-          )}
-        </div>
-      </div>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
 
-      <details className='group/list mt-6 rounded-2xl border border-line bg-surface'>
-        <summary className='flex min-h-11 cursor-pointer items-center gap-2 rounded-2xl px-5 py-3 font-semibold text-foreground'>
+  if (!phone)
+    return (
+      <div>
+        {diagram}
+        {list}
+      </div>
+    );
+  return (
+    <div>
+      {list}
+      <details className='group/diagram mt-6'>
+        <summary className={`${SUMMARY} mb-4 rounded-2xl border border-line bg-surface`}>
           <svg
             aria-hidden='true'
             viewBox='0 0 20 20'
-            className='h-4 w-4 shrink-0 transition-transform group-open/list:rotate-90'
+            className='h-4 w-4 shrink-0 transition-transform group-open/diagram:rotate-90'
             fill='none'
             stroke='currentColor'
             strokeWidth='2'
@@ -504,21 +557,9 @@ const InteractiveDiagram = ({ spec, ns, title, headingLevel = 'h3' }) => {
           >
             <path d='M7 4l6 6-6 6' />
           </svg>
-          {t('diagrams.modal.list', { count: spec.nodes.length })}
+          {t('diagrams.modal.showDiagram')}
         </summary>
-        <ul className='grid grid-cols-1 gap-4 border-t border-line p-5 md:grid-cols-2'>
-          {spec.nodes.map((n) => (
-            <li key={n.id} className='rounded-xl border border-line bg-background/40 p-4'>
-              <NodeDetails
-                ns={ns}
-                id={n.id}
-                edges={spec.edges}
-                nameOf={nameOf}
-                headingLevel={headingLevel}
-              />
-            </li>
-          ))}
-        </ul>
+        {diagram}
       </details>
     </div>
   );

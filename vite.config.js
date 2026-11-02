@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -21,6 +22,15 @@ export default defineConfig({
     seo(),
     preloadFont(),
   ],
+  // The resume's size, shown beside its download link, read from the file at build time so it
+  // stays right when the PDF is replaced
+  define: {
+    'import.meta.env.RESUME_KB': JSON.stringify(
+      Math.round(
+        statSync(resolve(import.meta.dirname, 'public/Youssef_Elhadraoui_Resume.pdf')).size / 1024
+      )
+    ),
+  },
   build: {
     // vendor-three is three.js whole (about 690 kB minified, 178 kB gzipped): one library, loaded
     // only when the page's 3D layer, a demo or Game Mode needs it, never on the first paint.

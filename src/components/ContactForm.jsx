@@ -1,9 +1,12 @@
-import { useActionState, useId, useRef, useState } from 'react';
+import { useActionState, useEffect, useId, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { m } from 'framer-motion';
 
+import { person } from '../constans';
 import { useI18n } from '../i18n/context';
+import { styles } from '../styles';
 import { pressable } from '../utils/motion';
+import { CheckIcon, SpinnerIcon } from './icons';
 
 const FIELD =
   'w-full rounded-xl border border-line-strong bg-surface-raised px-5 py-4 font-medium text-foreground ' +
@@ -52,12 +55,14 @@ const send = async (form) => {
     });
     if (response.ok) return { type: 'success', key: 'contact.sent' };
     console.error(`Contact endpoint answered ${response.status}`);
+    // An answer that is not a success is the endpoint's failure, not the visitor's connection
     const key =
       { 503: 'contact.notConfigured', 429: 'contact.tooMany' }[response.status] ?? 'contact.failed';
     return { type: 'error', key };
   } catch (error) {
+    // No answer at all (offline, a network error or the 15 s timeout)
     console.error(error);
-    return { type: 'error', key: 'contact.failed' };
+    return { type: 'error', key: 'contact.offline' };
   }
 };
 
@@ -69,7 +74,10 @@ const keepDraft = (form) => {
   draft = form;
 };
 
-/** The submit button: its label and busy state come from the form's pending action */
+const FOCUS_RING =
+  'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+
+/** The submit button: its label, spinner and busy state come from the form's pending action */
 const SubmitButton = () => {
   const { t } = useI18n();
   const { pending } = useFormStatus();
@@ -79,10 +87,57 @@ const SubmitButton = () => {
       type='submit'
       aria-disabled={pending || undefined}
       {...pressable}
-      className='rounded-xl border-2 border-transparent bg-primary px-8 py-3 font-bold text-on-primary transition-colors hover:bg-primary-hover aria-disabled:cursor-wait focus:outline-hidden focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+      className={`${styles.buttonPrimary} gap-2 aria-disabled:cursor-wait ${FOCUS_RING}`}
     >
+      {pending && <SpinnerIcon className='h-5 w-5 motion-safe:animate-spin' />}
       {pending ? t('contact.sending') : t('contact.send')}
     </m.button>
+  );
+};
+
+/**
+ * In place of the form once a message is sent: a check, a title and the confirmation, and a
+ * button that brings the form back. It takes focus as it appears (the submit button that had it is
+ * gone), so its title and text are read
+ */
+const SentPanel = ({ onAnother }) => {
+  const { t } = useI18n();
+  const uid = useId();
+  const panelRef = useRef(null);
+  useEffect(() => {
+    // Only when focus went with the form (the submit button unmounted, so it is on <body>): a
+    // visitor who moved on during the send keeps their place
+    const current = document.activeElement;
+    if (!current || current === document.body) panelRef.current?.focus();
+  }, []);
+  return (
+    <div
+      ref={panelRef}
+      tabIndex={-1}
+      role='group'
+      aria-labelledby={`${uid}title`}
+      aria-describedby={`${uid}text`}
+      className='flex flex-col items-start gap-4 rounded-2xl border border-line bg-surface-raised/60 p-6 outline-hidden'
+    >
+      <span className='inline-flex h-11 w-11 items-center justify-center rounded-full border border-success/40 bg-success/10 text-success'>
+        <CheckIcon className='h-6 w-6' />
+      </span>
+      <div>
+        <p id={`${uid}title`} className='text-lg font-bold text-foreground'>
+          {t('contact.sentTitle')}
+        </p>
+        <p id={`${uid}text`} className='mt-1 leading-relaxed text-foreground-muted'>
+          {t('contact.sent')}
+        </p>
+      </div>
+      <button
+        type='button'
+        onClick={onAnother}
+        className={`link-draw inline-flex min-h-11 items-center rounded-sm font-semibold text-primary-400 underline decoration-line-strong underline-offset-4 transition-colors hover:text-foreground ${FOCUS_RING}`}
+      >
+        {t('contact.sendAnother')}
+      </button>
+    </div>
   );
 };
 
@@ -103,7 +158,8 @@ const ContactForm = () => {
   // { name: key | null, ... }: shown under each field once a submit found it wrong, and cleared as
   // soon as it is right
   const [errors, setErrors] = useState({});
-  const fieldRefs = { name: useRef(null), email: useRef(null), message: useRef(null) };
+  const nameRef = useRef(null);
+  const fieldRefs = { name: nameRef, email: useRef(null), message: useRef(null) };
   // Controlled fields: a failed send keeps what was typed, a sent one clears them
   const [form, setForm] = useState(() => draft);
   // { type: 'success' | 'error', key } shown in a live region instead of alert(); a key, not
@@ -118,6 +174,20 @@ const ContactForm = () => {
     }
     return result;
   }, null);
+  // The sent result the visitor has moved on from ("Send another message"): the form is back
+  const [dismissed, setDismissed] = useState(null);
+  const sent = !pending && status?.type === 'success' && status !== dismissed;
+  // Back from the sent panel, the form's first field takes focus (the panel's button is gone)
+  const [refocus, setRefocus] = useState(false);
+  useEffect(() => {
+    if (!refocus) return;
+    nameRef.current?.focus();
+    setRefocus(false);
+  }, [refocus]);
+  const sendAnother = () => {
+    setDismissed(status);
+    setRefocus(true);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -164,8 +234,25 @@ const ContactForm = () => {
       </p>
     );
 
+  // The busy state, announced: the button's own label change is not read while it has focus.
+  // First in both branches, so React keeps the same live region across the swap to the panel
+  const busy = (
+    <p role='status' className='sr-only'>
+      {pending ? t('contact.sending') : ''}
+    </p>
+  );
+
+  if (sent)
+    return (
+      <>
+        {busy}
+        <SentPanel onAnother={sendAnother} />
+      </>
+    );
+
   return (
     <>
+      {busy}
       {/* Read with each field (aria-describedby): a <form> without a name is not announced */}
       <p id={ids.hint} className='mb-6 text-sm text-foreground-muted'>
         {t('contact.required')}
@@ -218,11 +305,8 @@ const ContactForm = () => {
 
         <div className='flex flex-wrap items-center gap-4'>
           <SubmitButton />
-          <p role='status' className='text-sm font-medium text-success'>
-            {!pending && status?.type === 'success' ? t(status.key) : ''}
-          </p>
           <p role='alert' className='text-sm font-medium text-danger'>
-            {!pending && status?.type === 'error' ? t(status.key) : ''}
+            {!pending && status?.type === 'error' ? t(status.key, { email: person.email }) : ''}
           </p>
         </div>
       </form>

@@ -153,7 +153,7 @@ const Hero = ({ onEnterGame }) => {
               aria-haspopup='dialog'
               onClick={onEnterGame}
               {...pressable}
-              className='mt-6 inline-flex items-center gap-2 rounded-full border border-dashed border-primary-400 bg-glass px-4 py-1.5 text-sm font-semibold text-foreground backdrop-blur-md transition-colors hover:bg-primary/15 short:mt-3'
+              className='mt-6 inline-flex items-center gap-2 rounded-full border border-dashed border-primary-400 bg-glass px-4 py-1.5 text-sm font-semibold text-foreground backdrop-blur-md transition-colors hover:bg-surface-raised short:mt-3'
             >
               <CrosshairIcon className='h-4 w-4 text-primary-400' />
               {t('gameMode')}

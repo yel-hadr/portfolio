@@ -135,6 +135,22 @@
   "loading": "Starting the demo…",
   "failed": "This demo could not start on this device.",
   "sourceHint": "The View source link at the top of this dialog shows the project.",
+  "screenshots": {
+    "label": "Screenshots",
+    "intro": "Here is what it looks like, and the View source link at the top of this dialog shows the project.",
+    "map": {
+      "alt": "The live cub3D demo: the repository’s own map.cub with a different texture on each wall side, and the minimap’s rays in the top right corner",
+      "caption": "The demo running the repository’s maps/map.cub."
+    },
+    "julia": {
+      "alt": "julia.fdf in the altitude palette: the same Julia set shaded from blue at the lowest points to orange at the highest",
+      "caption": "julia.fdf with the altitude palette: the site’s blue, cyan-green and orange, from lowest to highest."
+    },
+    "mars": {
+      "alt": "mars.fdf side by side: the isometric view on the left, where the grid’s edges stay parallel, and the perspective view on the right, where they converge",
+      "caption": "mars.fdf in both projections: isometric (parallel) on the left, perspective (conic) on the right."
+    }
+  },
   "game": {
     "title": "Game Mode",
     "description": "The portfolio as a first-person mission, built on cub3D: six rooms, one for each section of the profile, threats to neutralize between them, and terminals that open the live demos.",

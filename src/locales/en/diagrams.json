@@ -9,6 +9,8 @@
     "with": "with",
     "legend": "Legend",
     "scrollHint": "Scroll sideways to see the whole diagram, or open the list below.",
+    "scrollHintPhone": "Scroll sideways to see the whole diagram.",
+    "showDiagram": "Show the diagram",
     "diagramLabel": "Interactive diagram: {name}. Each component is a button that shows its details.",
     "list": "All components as a list ({count})",
     "flows": {

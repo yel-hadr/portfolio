@@ -135,6 +135,22 @@
   "loading": "Lancement de la démo…",
   "failed": "Cette démo n’a pas pu démarrer sur cet appareil.",
   "sourceHint": "Le lien Voir le code en haut de cette fenêtre montre le projet.",
+  "screenshots": {
+    "label": "Captures d’écran",
+    "intro": "Voici à quoi elle ressemble, et le lien Voir le code en haut de cette fenêtre montre le projet.",
+    "map": {
+      "alt": "La démo cub3D en direct : la carte map.cub du dépôt, une texture différente sur chaque face de mur, et les rayons de la mini-carte en haut à droite",
+      "caption": "La démo, construite à partir de maps/map.cub du dépôt."
+    },
+    "julia": {
+      "alt": "julia.fdf avec la palette par altitude : le même ensemble de Julia, du bleu aux points les plus bas à l’orange aux plus hauts",
+      "caption": "julia.fdf avec la palette par altitude : le bleu, le cyan-vert et l’orange du site, du plus bas au plus haut."
+    },
+    "mars": {
+      "alt": "mars.fdf côte à côte : la vue isométrique à gauche, où les bords de la grille restent parallèles, et la vue en perspective à droite, où ils convergent",
+      "caption": "mars.fdf dans les deux projections : isométrique (parallèle) à gauche, perspective (conique) à droite."
+    }
+  },
   "game": {
     "title": "Mode Jeu",
     "description": "Le portfolio en mission à la première personne, construit sur cub3D : six salles, une par section du profil, des menaces à neutraliser entre elles et des terminaux qui ouvrent les démos.",

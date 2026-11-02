@@ -41,6 +41,9 @@
   --color-danger: rgb(var(--c-danger)); /* form errors, failed status: red in both themes */
   --color-timeline-past: rgb(var(--c-timeline-past)); /* the timeline's dots for past jobs */
   --color-info: rgb(var(--c-info)); /* tags */
+  /* The architecture diagrams' provisioning arrows: violet in both themes, apart from the cyan
+     network outlines (info) */
+  --color-flow-control: rgb(var(--c-flow-control));
   --color-focus: rgb(var(--c-focus)); /* keyboard focus rings */
   --color-night: rgb(var(--c-night)); /* the dark background in both themes: FdF's file colors */
   --color-ground: rgb(var(--c-ground)); /* the footer's band */
@@ -170,7 +173,7 @@
   /* Theme tokens (see @theme above): "R G B" channels for colors that take an opacity
      modifier, full colors for the translucent ones. The dark theme is the default; index.html
      sets data-theme before the first paint, and ThemeProvider keeps it in sync.
-     .scheme-dark is a dark island in either theme (the terminal's screen): it takes this whole
+     .scheme-dark is a dark island in either theme (the terminal's whole window, Game Mode): it takes this whole
      block on its own element, so every token inside it has its dark value */
   /* Dark theme, "Midnight Obsidian": a deep slate ground with a cool tint, frosted dark glass
      cards edged with a faint inner glow (no heavy shadows), soft pearl text, cool slate greys, an
@@ -197,6 +200,7 @@
     /* Past jobs' dots: slate, 3.6:1 on the page (the date in text says which job is current) */
     --c-timeline-past: 100 116 139;
     --c-info: 103 232 249;
+    --c-flow-control: 167 139 250;
     --c-line-strong: 107 114 134;
     /* FdF altitude gradient, low to high: ocean blue, cyan-green, the brand orange. Every point
        along it is >= 4.5:1 on the background, surfaces and glass (1 px lines) */
@@ -291,6 +295,7 @@
     --c-danger: 185 28 28;
     --c-timeline-past: 140 131 122;
     --c-info: 3 105 161;
+    --c-flow-control: 79 70 229;
     --c-line-strong: 140 131 122;
     /* Indigo, teal, burnt crimson: deep inks that hold >= 4.5:1 on the light glass */
     --c-fdf-low: 76 29 149;
@@ -498,9 +503,15 @@
     transform-origin: left;
     pointer-events: none;
   }
-  .link-draw:hover::after,
   .link-draw:focus-visible::after {
     transform: scaleX(1);
+  }
+  /* Hover only where there is a pointer that hovers: on a touch screen a tap leaves :hover set,
+     which kept the bar drawn after the tap */
+  @media (hover: hover) {
+    .link-draw:hover::after {
+      transform: scaleX(1);
+    }
   }
   @media (prefers-reduced-motion: no-preference) {
     .link-draw::after {
@@ -534,8 +545,13 @@
     transform: translateY(-100%);
   }
   @media (prefers-reduced-motion: no-preference) {
-    :hover > .scanline,
     :focus-within > .scanline {
+      animation: scan 1.6s ease-in-out both;
+    }
+  }
+  /* Hover only with a pointer that hovers (a tap would leave :hover set on a touch screen) */
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    :hover > .scanline {
       animation: scan 1.6s ease-in-out both;
     }
   }
@@ -691,8 +707,10 @@
 }
 
 /* The navbar's pause switch (useMotionPaused, WCAG 2.2.2) stops the CSS animations as well.
-   Outside the cascade layers, so it also beats the motion-safe:animate-pulse utility */
+   Outside the cascade layers, so it also beats the motion-safe:animate-pulse and animate-spin
+   utilities */
 :root[data-motion='paused'] .scanline,
-:root[data-motion='paused'] .animate-pulse {
+:root[data-motion='paused'] .animate-pulse,
+:root[data-motion='paused'] .animate-spin {
   animation: none;
 }
