@@ -161,7 +161,6 @@
     "runDemoAria": "Lancer la démo : {name}",
     "viewOnGithub": "Voir le code",
     "viewOnGithubAria": "Voir le code : {name} sur GitHub (s’ouvre dans un nouvel onglet)",
-    "demoFailed": "La démo n’a pas pu se charger.",
     "tags": {
       "raycasting": "Lancer de rayons",
       "isometric": "Projection isométrique"
@@ -251,5 +250,14 @@
     }
   },
   "loading": "Chargement des scènes 3D",
-  "gameMode": "Mode Jeu"
+  "gameMode": "Mode Jeu",
+  "errors": {
+    "loadFailed": {
+      "terminal": "Le terminal n’a pas pu se charger. Vérifiez votre connexion et réessayez.",
+      "games": "Les jeux n’ont pas pu se charger. Vérifiez votre connexion et réessayez.",
+      "gameMode": "Le Mode Jeu n’a pas pu se charger. Vérifiez votre connexion et réessayez.",
+      "diagram": "Le schéma n’a pas pu se charger. Vérifiez votre connexion et réessayez.",
+      "demo": "La démo n’a pas pu se charger. Vérifiez votre connexion et réessayez."
+    }
+  }
 }

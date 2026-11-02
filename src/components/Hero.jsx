@@ -132,7 +132,10 @@ const Hero = ({ onEnterGame }) => {
               rather than a fourth call to action */}
           <m.div variants={reveal()} className='mt-10 short:mt-5'>
             <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
-              <div className='grid w-full gap-3 sm:flex sm:w-auto sm:gap-4'>
+              {/* Side by side only where the column has room for both on one line each: from sm
+                  in the one-column layout, and from xl in the two-column one (between md and xl
+                  the résumé's size wrapped and both buttons grew to 67 px) */}
+              <div className='grid w-full gap-3 sm:flex sm:w-auto sm:gap-4 md:grid md:w-full md:gap-3 xl:flex xl:w-auto xl:gap-4'>
                 <Magnetic>
                   <m.a
                     href='#works'
@@ -143,12 +146,13 @@ const Hero = ({ onEnterGame }) => {
                   </m.a>
                 </Magnetic>
                 <Magnetic>
-                  <ResumeLink />
+                  {/* Below xs the size would wrap under the label: the label says it instead */}
+                  <ResumeLink metaClassName='hidden xs:inline' />
                 </Magnetic>
               </div>
               <a
                 href='#contact'
-                className='link-draw font-semibold text-foreground underline decoration-line-strong underline-offset-4 transition-colors before:absolute before:inset-x-0 before:-inset-y-2 hover:text-primary-400'
+                className='link-draw font-semibold text-foreground underline decoration-line-strong underline-offset-4 transition-colors before:absolute before:inset-x-0 before:-inset-y-2.5 hover:text-primary-400'
               >
                 {t('hero.getInTouch')}
               </a>

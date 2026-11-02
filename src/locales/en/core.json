@@ -161,7 +161,6 @@
     "runDemoAria": "Run live demo: {name}",
     "viewOnGithub": "View source",
     "viewOnGithubAria": "View source: {name} on GitHub (opens in a new tab)",
-    "demoFailed": "The demo could not load.",
     "tags": {
       "raycasting": "Raycasting",
       "isometric": "Isometric projection"
@@ -251,5 +250,14 @@
     }
   },
   "loading": "Loading 3D scenes",
-  "gameMode": "Enter Game Mode"
+  "gameMode": "Enter Game Mode",
+  "errors": {
+    "loadFailed": {
+      "terminal": "The terminal could not load. Check your connection and try again.",
+      "games": "The games could not load. Check your connection and try again.",
+      "gameMode": "Game Mode could not load. Check your connection and try again.",
+      "diagram": "The diagram could not load. Check your connection and try again.",
+      "demo": "The demo could not load. Check your connection and try again."
+    }
+  }
 }
