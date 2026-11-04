@@ -17,6 +17,7 @@ import { registerNamespace } from '../../i18n/dictionaries';
 import en from '../../locales/en/terminal.json';
 import fr from '../../locales/fr/terminal.json';
 import { useTheme } from '../../theme/context';
+import { EASE_OUT } from '../../utils/motion';
 import TerminalTyping from '../Games/TerminalTyping';
 import { CloseIcon } from '../icons';
 import { complete, findCommand, suggestCommand } from './commands';
@@ -400,7 +401,7 @@ const Terminal = ({ onClose, initialCommand = null, instant = false }) => {
       initial={fade}
       animate={{ opacity: 1 }}
       // The backdrop dims and blurs in over 250 ms, as behind every dialog
-      transition={{ duration: 0.25, ease: 'easeOut' }}
+      transition={{ duration: 0.25, ease: EASE_OUT }}
       style={viewport ? { top: viewport.top, height: viewport.height, bottom: 'auto' } : undefined}
       className='fixed inset-0 z-[60] flex bg-background/80 backdrop-blur-sm md:items-center md:justify-center md:p-6'
       // Backdrop click closes (only reachable on larger screens; phones are full screen). The
@@ -419,7 +420,7 @@ const Terminal = ({ onClose, initialCommand = null, instant = false }) => {
         aria-labelledby={titleId}
         initial={rise}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.25, ease: 'easeOut' }}
+        transition={{ duration: 0.25, ease: EASE_OUT }}
         // Focusable by script and by click (not by Tab), so a click on a non-interactive part
         // keeps focus inside the dialog and Escape and the Tab cycle keep working
         tabIndex={-1}

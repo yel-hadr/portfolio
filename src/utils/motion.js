@@ -51,4 +51,36 @@ export const wordReveal = {
 };
 
 export const SPRING = { type: 'spring', stiffness: 400, damping: 30, mass: 0.6 };
-export const pressable = { whileHover: { y: -1 }, whileTap: { scale: 0.98 }, transition: SPRING };
+// A press drops the button back from its hover lift as it gives, so a click feels physical
+export const pressable = {
+  whileHover: { y: -1 },
+  whileTap: { scale: 0.98, y: 0 },
+  transition: SPRING,
+};
+
+// SPRING as Web Animations options: a CSS linear() easing sampled once from the spring's motion,
+// for what must start before the paint (the navbar's pill) or stay out of the first-paint chunk
+// (framer's animate()). Browsers without linear() get the ease-out of the same length
+export const SPRING_TIMING = (() => {
+  const { stiffness, damping, mass } = SPRING;
+  const dt = 1 / 120;
+  let x = 0;
+  let v = 0;
+  const points = [];
+  while (points.length < 240) {
+    v += ((stiffness * (1 - x) - damping * v) / mass) * dt;
+    x += v * dt;
+    points.push(x);
+    if (Math.abs(1 - x) < 0.001 && Math.abs(v) < 0.01) break;
+  }
+  const step = Math.ceil(points.length / 40);
+  const stops = points.filter((_, i) => i % step === 0).map((p) => +p.toFixed(4));
+  const spring = `linear(0, ${stops.join(', ')}, 1)`;
+  return {
+    duration: Math.round(points.length * dt * 1000),
+    easing:
+      typeof CSS !== 'undefined' && CSS.supports('transition-timing-function', spring)
+        ? spring
+        : `cubic-bezier(${EASE_OUT.join(', ')})`,
+  };
+})();

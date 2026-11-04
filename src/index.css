@@ -86,11 +86,17 @@
   --text-eyebrow--line-height: 1rem;
   --text-eyebrow--letter-spacing: 0.14em;
 
+  /* The page's one UI easing (EASE_OUT in src/utils/motion.js), which every Tailwind transition-*
+     takes by default. The theme and pause icons keep a spring-like overshoot of their own */
+  --ease-ui: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --default-transition-timing-function: var(--ease-ui);
+
   /* Game Mode (src/components/Cub3D): used behind motion-safe, so reduced motion drops them */
   --animate-game-in: game-in 300ms ease-out;
   /* A dialog's backdrop: the page dims and blurs in over 250 ms (opacity only; the blur fades
      with it) */
-  --animate-backdrop-in: backdrop-in var(--duration-panel) ease-out;
+  --animate-backdrop-in: backdrop-in var(--duration-panel) var(--ease-ui);
   --animate-game-out: game-out 250ms ease-in forwards;
   --animate-crt-in: crt-in 280ms ease-out;
   --animate-prompt-in: prompt-in 180ms ease-out;
@@ -150,9 +156,10 @@
 }
 
 /* The page's two UI durations: small controls (hover, press, toggles, a link's bar) take 150 ms,
-   panels (dialogs and their backdrops, the navbar's fade and slide, a card's hover) 250 ms. In JSX
-   they are duration-150 and duration-250; a panel leaving (the mobile sheet) is a step quicker,
-   200 ms. Reveals, the scan line, Game Mode and the waves keep their own timings */
+   panels (dialogs and their backdrops, the navbar's fade and slide, every card's hover) 250 ms,
+   both on --ease-ui. In JSX they are duration-150 and duration-250; a panel leaving (the mobile
+   sheet) is a step quicker, 200 ms, and accelerates (ease-in). Reveals, the scan line, Game Mode
+   and the waves keep their own timings */
 :root {
   --duration-control: 150ms;
   --duration-panel: 250ms;
@@ -269,9 +276,10 @@
     /* A primary button's machined top edge: light catching the top of the orange, so it reads as
        a raised key rather than a flat swatch */
     --shadow-button: inset 0 1px 0 rgb(255 255 255 / 0.2);
-    /* Hover depth and lift: dark cards keep their edge light and stay put (the hairline brightens);
-       `none`, the resting value, so hovering starts no translate transition (and no 3D redraws) */
-    --shadow-card-hover: inset 0 1px 0 rgb(255 255 255 / 0.06);
+    /* Hover depth and lift: dark cards keep their edge light and stay put (the hairline brightens):
+       no extra shadow, and `none`, the resting value, so hovering starts no translate transition
+       (and no 3D redraws) */
+    --shadow-card-lift: none;
     --card-lift: none;
     --grain-blend: soft-light;
 
@@ -335,19 +343,19 @@
     --c-wave-3: 168 162 158;
     --wave-alpha: 0.65;
     --c-ground: 244 239 232;
-    /* Three soft warm layers (contact, near, ambient); under the pointer they deepen and the
-       card lifts 2px. Same layer count both ways, so the shadow eases rather than jumps */
+    /* Three soft warm layers (contact, near, ambient); under the pointer the card lifts 2px and
+       --shadow-card-lift, the extra depth alone, fades in over them (.card-glass::after) */
     --shadow-card:
       0 1px 2px rgb(64 42 20 / 0.03), 0 2px 4px rgb(64 42 20 / 0.03),
       0 8px 16px rgb(64 42 20 / 0.05);
-    --shadow-card-hover:
-      0 1px 2px rgb(64 42 20 / 0.04), 0 4px 8px rgb(64 42 20 / 0.05),
-      0 14px 28px rgb(64 42 20 / 0.09);
+    --shadow-card-lift:
+      0 1px 2px rgb(64 42 20 / 0.01), 0 4px 8px rgb(64 42 20 / 0.03),
+      0 14px 28px rgb(64 42 20 / 0.05);
     --card-lift: 0 -2px;
     --shadow-raised: 0 2px 4px rgb(64 42 20 / 0.05), 0 12px 32px -4px rgb(64 42 20 / 0.1);
     --shadow-modal: 0 8px 16px rgb(64 42 20 / 0.06), 0 32px 64px -12px rgb(64 42 20 / 0.2);
     --glow: 0;
-    --c-focus: 168 67 0;
+    --c-focus: var(--c-primary-400);
     /* Grain as matte paper: overlay keeps the ground's tone (a lighter blend would grey it). The
        spotlight is a warm rim in the deep orange, kept faint (a quarter strength, with a whisper
        of fill): a white sheen on these near-white cards showed nothing, a full rim read muddy */
@@ -369,7 +377,7 @@
   main,
   footer,
   nav ul {
-    transition: opacity var(--duration-control) ease;
+    transition: opacity var(--duration-control) var(--ease-ui);
   }
   .lang-switching main,
   .lang-switching footer,
@@ -384,10 +392,10 @@
   .theme-transition,
   .theme-transition * {
     transition:
-      background-color var(--duration-panel) ease,
-      border-color var(--duration-panel) ease,
-      color var(--duration-panel) ease,
-      fill var(--duration-panel) ease !important;
+      background-color var(--duration-panel) var(--ease-ui),
+      border-color var(--duration-panel) var(--ease-ui),
+      color var(--duration-panel) var(--ease-ui),
+      fill var(--duration-panel) var(--ease-ui) !important;
   }
 
   /* A two-state icon that morphs (the theme and pause toggles): both icons stacked, the current one
@@ -402,8 +410,8 @@
     align-items: center;
     justify-content: center;
     transition:
-      transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-      opacity 0.2s ease-out !important;
+      transform var(--duration-panel) var(--ease-overshoot),
+      opacity var(--duration-control) var(--ease-ui) !important;
   }
   .icon-swap[data-state='off-cw'] {
     opacity: 0;
@@ -463,7 +471,7 @@
 @layer components {
   /* Glass card: translucent surface + blur over the waves background, hairline border. */
   .card-glass {
-    @apply rounded-3xl border border-line bg-glass backdrop-blur-md;
+    @apply relative rounded-3xl border border-line bg-glass backdrop-blur-md;
     /* The card shadow set directly, not through shadow-card: v4 builds that utility from its
        @property-registered --tw-* layers, and Chrome then rasterizes the cards' content (the
        icons' edges) differently from v3. No card carries a ring utility; a shadow utility on a
@@ -473,23 +481,45 @@
       inset 0 1px 0 var(--color-edge),
       var(--shadow-card);
     transition:
-      border-color var(--duration-panel) ease,
-      box-shadow var(--duration-panel) ease,
-      translate var(--duration-panel) ease;
+      border-color var(--duration-panel) var(--ease-ui),
+      translate var(--duration-panel) var(--ease-ui);
+  }
+  /* The hover's extra depth, on a layer of its own that only fades: an opacity change the GPU
+     composites, where easing box-shadow repainted each card every frame. Behind the card's
+     content, and outside its box, so it never tints the glass. A card must not clip it (the demo
+     cards clip their scan line in .scan-clip instead). The timeline's cards have the library's
+     clearfix on this pseudo-element, so flow-root holds their floated date in its place */
+  .vertical-timeline-element-content {
+    display: flow-root;
+  }
+  .card-glass::after,
+  .vertical-timeline-element-content::after {
+    content: '';
+    display: block;
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border-radius: inherit;
+    box-shadow: var(--shadow-card-lift);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-panel) var(--ease-ui);
   }
   /* Under the pointer the hairline brightens (white 7% to 14% on dark, ink 7% to 11% on light)
-     and the shadow deepens (--shadow-card-hover), eased, never snapped. On light the card also
-     lifts 2px (--card-lift), through `translate`, which framer's inline `transform` does not
-     override; the 3D layer redraws while it eases (FrameDriver), so a bento ball keeps to its box */
+     and the extra depth fades in, eased, never snapped. On light the card also lifts 2px
+     (--card-lift), through `translate`, which framer's inline `transform` does not override; the
+     3D layer redraws while it eases (FrameDriver), so a bento ball keeps to its box */
   @media (hover: hover) {
     .card-glass:hover {
       border-color: var(--color-line-hover);
-      --shadow-card: var(--shadow-card-hover);
     }
-    /* The timeline's cards set their border and shadow inline (Experience.jsx), through vars */
+    /* The timeline's cards set their border inline (Experience.jsx), through a variable */
     .vertical-timeline-element-content:hover {
       --card-line: var(--color-line-hover);
-      --shadow-card: var(--shadow-card-hover);
+    }
+    .card-glass:hover::after,
+    .vertical-timeline-element-content:hover::after {
+      opacity: 1;
     }
   }
   @media (hover: hover) and (prefers-reduced-motion: no-preference) {
@@ -533,7 +563,7 @@
   }
   @media (prefers-reduced-motion: no-preference) {
     .link-draw::after {
-      transition: transform var(--duration-control) cubic-bezier(0.22, 1, 0.36, 1);
+      transition: transform var(--duration-control) var(--ease-ui);
     }
   }
 
@@ -546,13 +576,19 @@
   }
 
   /* The 42 demo cards: a scan line (the brand orange, with a soft trail) sweeps down the card once when it
-     is hovered or a control inside it has focus. The card clips it. Never on its own, never
-     under reduced motion */
-  .scanline {
+     is hovered or a control inside it has focus. Clipped by a layer of its own (.scan-clip), not
+     by the card, which would clip its hover shadow. Never on its own, never under reduced motion */
+  .scan-clip {
     position: absolute;
     inset: 0;
     z-index: -1; /* under the card's text (the card is isolated) */
+    overflow: hidden;
+    border-radius: inherit;
     pointer-events: none;
+  }
+  .scanline {
+    position: absolute;
+    inset: 0;
     opacity: 0;
     background: linear-gradient(
       to bottom,
@@ -563,13 +599,13 @@
     transform: translateY(-100%);
   }
   @media (prefers-reduced-motion: no-preference) {
-    :focus-within > .scanline {
+    :focus-within > .scan-clip > .scanline {
       animation: scan 1.6s ease-in-out both;
     }
   }
   /* Hover only with a pointer that hovers (a tap would leave :hover set on a touch screen) */
   @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-    :hover > .scanline {
+    :hover > .scan-clip > .scanline {
       animation: scan 1.6s ease-in-out both;
     }
   }
@@ -620,7 +656,7 @@
     border-radius: inherit;
     pointer-events: none;
     opacity: 0;
-    transition: opacity var(--duration-panel) ease;
+    transition: opacity var(--duration-panel) var(--ease-ui);
   }
   [data-lit] > .spotlight {
     opacity: 1;

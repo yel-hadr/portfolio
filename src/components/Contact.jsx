@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { m } from 'framer-motion';
 
 import { styles } from '../styles';
@@ -12,6 +13,7 @@ import { useI18n } from '../i18n/context';
 
 const Contact = () => {
   const { t } = useI18n();
+  const globeBox = useRef(null);
 
   return (
     <>
@@ -42,9 +44,10 @@ const Contact = () => {
             className='h-full w-full'
             fallback={<GlobeArt className='h-auto max-h-full w-4/5 max-w-sm' />}
             placeholder={<GlobeArt className='h-auto max-h-full w-4/5 max-w-sm opacity-30' />}
+            boxRef={globeBox}
           >
-            {/* Mounts once Contact is a viewport away */}
-            <Globe />
+            {/* Mounts once Contact is a viewport away; its arcs draw in once the box is in view */}
+            <Globe boxRef={globeBox} />
           </SceneView>
         </m.div>
       </div>

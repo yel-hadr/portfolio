@@ -19,7 +19,8 @@ const CARD_STYLE = {
   border: '1px solid var(--card-line, var(--color-line))',
   borderRadius: '1.5rem',
   boxShadow: 'inset 0 1px 0 var(--color-edge), var(--shadow-card)',
-  transition: 'border-color 0.35s ease, box-shadow 0.35s ease, translate 0.35s ease',
+  transition:
+    'border-color var(--duration-panel) var(--ease-ui), translate var(--duration-panel) var(--ease-ui)',
   padding: '1.5rem',
 };
 

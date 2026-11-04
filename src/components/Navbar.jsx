@@ -10,7 +10,7 @@ import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { styles } from '../styles';
 import { useI18n } from '../i18n/context';
 import { useTheme } from '../theme/context';
-import { SPRING } from '../utils/motion';
+import { SPRING, SPRING_TIMING } from '../utils/motion';
 import { CloseIcon, MenuIcon, MoonIcon, PauseIcon, PlayIcon, SunIcon, TerminalIcon } from './icons';
 
 // No display of its own: each button sets it (`hidden lg:inline-flex` must not meet an inline-flex).
@@ -296,6 +296,17 @@ const Navbar = ({ onOpenTerminal }) => {
   const returnFocus = useRef(true);
   const reduced = usePrefersReducedMotion();
   const pill = usePillPosition(linksRef, active);
+  const pillBar = useRef(null);
+  const pillFrom = pill?.from;
+  const pillWidth = pill?.width;
+  // The pill takes the new link's width at once and scales from the old one back to 1, from its
+  // left edge. Here, before the paint: left to framer, the first keyframe came a frame late, so
+  // the new width flashed at full size. On the bar inside the sliding <li>, since the `scale`
+  // property applies outside `transform` and would scale framer's x as well
+  useLayoutEffect(() => {
+    if (reduced || !pillWidth || pillFrom === pillWidth) return;
+    pillBar.current?.animate({ scale: [`${pillFrom / pillWidth} 1`, '1 1'] }, SPRING_TIMING);
+  }, [pillFrom, pillWidth, reduced]);
   // Until when a jump from the bar keeps the bar in view (the smooth scroll it starts goes down)
   const holdUntil = useRef(0);
   const { scrolled, down } = useNavScroll(holdUntil);
@@ -428,22 +439,27 @@ const Navbar = ({ onOpenTerminal }) => {
       {pill && (
         // The pill behind the current link: it springs from link to link, measured from the
         // link (the look of a layoutId indicator without framer's layout bundle on the first
-        // paint), and fades out when no section is current. Transforms only (a FLIP): it takes
-        // the new link's width at once and scales from the old width back to 1 from its left
-        // edge, so no frame lays out the row again; at rest the scale is 1, so its rounded ends
-        // and ring are exact. Instant under reduced motion
+        // paint), and fades out when no section is current. Its width is a FLIP on the bar inside
+        // (pillBar), so no frame lays out the row again; at rest the scale is 1, so its rounded
+        // ends and ring are exact. Instant under reduced motion
         <m.li
           aria-hidden='true'
-          className='pointer-events-none absolute inset-y-1 left-0 rounded-full bg-surface-raised ring-1 ring-line-strong'
-          style={{ width: pill.width, originX: 0 }}
+          className='pointer-events-none absolute inset-y-1 left-0'
           initial={false}
+          // Under reduced motion x is set with the width: animated, it landed a frame after it
+          style={reduced ? { x: pill.x } : undefined}
           animate={{
-            x: pill.x,
-            scaleX: [pill.from / pill.width, 1],
+            ...(reduced ? {} : { x: pill.x }),
             opacity: active && pill.shown ? 1 : 0,
           }}
           transition={reduced ? { duration: 0 } : SPRING}
-        />
+        >
+          <span
+            ref={pillBar}
+            className='block h-full origin-left rounded-full bg-surface-raised ring-1 ring-line-strong'
+            style={{ width: pill.width }}
+          />
+        </m.li>
       )}
       {navLinks.map((link) => (
         <li key={link.id}>

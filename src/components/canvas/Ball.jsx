@@ -1,7 +1,10 @@
-import { useContext } from 'react';
+import { useContext, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { Decal, Float, useTexture } from '@react-three/drei';
+import { Color, MathUtils } from 'three';
 import { useStillMotion } from '../../hooks/useMotionPaused';
 import { ThemeContext } from '../../theme/context';
+import { pointerCard } from '../../utils/pointerCard';
 import { WarmUp } from './helpers';
 
 // The ball stays light in both themes, so every logo (dark ones too: AWS's lettering, the Ansible
@@ -38,12 +41,65 @@ const paceOf = (key) => {
   return 0.8 + (h % 1000) / 2500;
 };
 
-const Ball = ({ imgUrl, warmUp = false }) => {
+// While its card is lit under the pointer (useSpotlight) a ball leans toward it, up to TILT radians
+// once the pointer is REACH px away, and answers the card's light. On the ambient ticks
+// (FrameDriver): a pointer move asks for no frame of its own. On dark it glows a little more; on
+// light it is already full white, which cannot get brighter, so it warms instead, as that theme's
+// spotlight rim does
+const TILT = 0.18;
+const REACH = 200;
+const LEAN_RATE = 8;
+const LIT = {
+  dark: { rest: new Color(BASE.dark), lit: new Color(BASE.dark), glow: 0.14 },
+  light: { rest: new Color(BASE.light), lit: new Color('#ffeedd'), glow: 0 },
+};
+
+// How lit a ball is, 0 to 1, on the material
+const light = (material, tint, rest, amount) => {
+  material.userData.lit = amount;
+  material.emissiveIntensity = rest + tint.glow * amount;
+  material.color.lerpColors(tint.rest, tint.lit, amount);
+  material.emissive.copy(material.color);
+};
+
+// Outside the component: the React Compiler rejects property writes on what it holds
+const follow = (group, material, box, tint, rest, delta) => {
+  if (!group || !material) return;
+  const { card, x, y } = pointerCard;
+  let turnX = 0;
+  let turnY = 0;
+  let lit = 0;
+  if (card && box && card.contains(box)) {
+    const { left, top, width, height } = box.getBoundingClientRect();
+    turnY = MathUtils.clamp((x - left - width / 2) / REACH, -1, 1) * TILT;
+    turnX = MathUtils.clamp((y - top - height / 2) / REACH, -1, 1) * TILT;
+    lit = 1;
+  }
+  const dt = Math.min(delta, 0.1);
+  group.rotation.x = MathUtils.damp(group.rotation.x, turnX, LEAN_RATE, dt);
+  group.rotation.y = MathUtils.damp(group.rotation.y, turnY, LEAN_RATE, dt);
+  light(material, tint, rest, MathUtils.damp(material.userData.lit ?? 0, lit, LEAN_RATE, dt));
+};
+
+// Back to rest at once (the pause switch, reduced motion)
+const settle = (group, material, tint, rest) => {
+  group?.rotation.set(0, 0, 0);
+  if (material) light(material, tint, rest, 0);
+};
+
+const Ball = ({ imgUrl, warmUp = false, boxRef }) => {
   const decal = useTexture(imgUrl);
   const reduced = useStillMotion();
   // The theme through the context the Canvas bridges (null-safe here, inside the 3D tree)
   const theme = useContext(ThemeContext)?.theme === 'light' ? 'light' : 'dark';
   const rig = RIG[theme];
+  const lean = useRef(null);
+  const surface = useRef(null);
+
+  useFrame((_, delta) => {
+    if (reduced) settle(lean.current, surface.current, LIT[theme], GLOW[theme]);
+    else follow(lean.current, surface.current, boxRef?.current, LIT[theme], GLOW[theme], delta);
+  });
 
   return (
     <>
@@ -52,28 +108,32 @@ const Ball = ({ imgUrl, warmUp = false }) => {
       <hemisphereLight args={[SKY, GROUND]} intensity={rig.sky} />
       <directionalLight position={KEY_AT} intensity={rig.key} />
       <directionalLight position={RIM_AT} color={RIM} intensity={rig.rim} />
-      <Float
-        speed={reduced ? 0 : 1.75 * paceOf(imgUrl)}
-        rotationIntensity={reduced ? 0 : 1}
-        floatIntensity={reduced ? 0 : 2}
-      >
-        {/* Detail 2: rounder than the old 20-face chip, still faceted (flat shading) */}
-        <mesh scale={2.75}>
-          <icosahedronGeometry args={[1, 2]} />
-          <meshStandardMaterial
-            color={BASE[theme]}
-            emissive={BASE[theme]}
-            emissiveIntensity={GLOW[theme]}
-            polygonOffset
-            polygonOffsetFactor={-5}
-            flatShading
-            // The Canvas's ACES tone mapping pulled the lit cream and white down to a mid-grey:
-            // without it the ball keeps the color its light gives it
-            toneMapped={false}
-          />
-          <Decal position={[0, 0, 1]} rotation={[2 * Math.PI, 0, 6.25]} scale={1} map={decal} />
-        </mesh>
-      </Float>
+      {/* The lean, outside the Float, so the two motions add up */}
+      <group ref={lean}>
+        <Float
+          speed={reduced ? 0 : 1.75 * paceOf(imgUrl)}
+          rotationIntensity={reduced ? 0 : 1}
+          floatIntensity={reduced ? 0 : 2}
+        >
+          {/* Detail 2: rounder than the old 20-face chip, still faceted (flat shading) */}
+          <mesh scale={2.75}>
+            <icosahedronGeometry args={[1, 2]} />
+            <meshStandardMaterial
+              ref={surface}
+              color={BASE[theme]}
+              emissive={BASE[theme]}
+              emissiveIntensity={GLOW[theme]}
+              polygonOffset
+              polygonOffsetFactor={-5}
+              flatShading
+              // The Canvas's ACES tone mapping pulled the lit cream and white down to a mid-grey:
+              // without it the ball keeps the color its light gives it
+              toneMapped={false}
+            />
+            <Decal position={[0, 0, 1]} rotation={[2 * Math.PI, 0, 6.25]} scale={1} map={decal} />
+          </mesh>
+        </Float>
+      </group>
     </>
   );
 };

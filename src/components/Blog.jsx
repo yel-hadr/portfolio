@@ -61,7 +61,7 @@ const PostCard = ({ slug, date, tags, title, summary }) => {
       data-spotlight
       // The whole card is its link (stretched): a press on it gives a little, like a button. In CSS
       // (the link pressed), not framer's whileTap, which makes the card itself a tab stop
-      className={`${styles.card} relative flex min-w-0 flex-col gap-4 transition-[color,background-color,border-color,box-shadow,translate,scale] duration-250 hover:border-line-strong motion-safe:has-[a:active]:scale-[0.98]`}
+      className={`${styles.card} relative flex min-w-0 flex-col gap-4 transition-[color,background-color,border-color,translate,scale] duration-250 hover:border-line-strong motion-safe:has-[a:active]:scale-[0.98]`}
     >
       <Spotlight />
       <h3 className={`${styles.cardTitle} text-pretty`}>

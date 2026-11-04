@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 
+import { setPointerAt, setPointerCard } from '../utils/pointerCard';
+
 // The cards that light up under the pointer: any [data-spotlight] element, and the timeline's
 // cards, which the library renders without a way to add an attribute
 const CARDS = '[data-spotlight], .vertical-timeline-element-content';
@@ -28,6 +30,7 @@ export function useSpotlight() {
       lit?.removeAttribute('data-lit');
       card?.setAttribute('data-lit', '');
       lit = card;
+      setPointerCard(card);
     };
     const draw = () => {
       frame = 0;
@@ -36,6 +39,7 @@ export function useSpotlight() {
       target = null;
       light(card);
       if (!card) return;
+      setPointerAt(px, py);
       const box = card.getBoundingClientRect();
       card.style.setProperty('--mx', `${px - box.left}px`);
       card.style.setProperty('--my', `${py - box.top}px`);
