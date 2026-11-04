@@ -32,6 +32,8 @@ const INNER = 'flex h-full w-full items-center justify-center';
  * @param {React.ReactNode} [fallback] - static DOM shown instead of the scene
  * @param {React.ReactNode} [placeholder] - static DOM shown while the scene is not there yet
  *   (before it mounts, while its chunk loads), so a slow load is not an empty hole
+ * @param {React.RefObject} [boxRef] - takes the outer box, for a scene that reads where it is on
+ *   the page (a ref passed to the scene as well: the scene renders in the Canvas, not in here)
  */
 const SceneView = ({
   sectionType,
@@ -41,6 +43,7 @@ const SceneView = ({
   frames = Infinity,
   fallback = null,
   placeholder = null,
+  boxRef,
   children,
 }) => {
   const webgl = useContext(WebGLContext);
@@ -48,7 +51,8 @@ const SceneView = ({
   // The 3D half (and three.js with it) loads once the page's 3D layer mounts
   const near = useContext(Near3DContext);
   const [failed, setFailed] = useState(false);
-  const box = useRef(null);
+  const ownBox = useRef(null);
+  const box = boxRef ?? ownBox;
   const [close, setClose] = useState(false);
   // Not while the context is lost: a static box does not count as a view on screen, so the frame
   // driver stops ticking a dead context
@@ -86,7 +90,7 @@ const SceneView = ({
       draw.disconnect();
       if (shown) changeViewsOnScreen(-1);
     };
-  }, [live]);
+  }, [live, box]);
 
   const a11y = label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true };
   // The static box shows no model, so it must not announce one
@@ -130,7 +134,7 @@ const SceneView = ({
   // The outer box keeps one element through every state, for the observers above. Not on paper:
   // the 3D layer is not printed, and an empty box would leave a gap (the names beside it remain)
   return (
-    <div ref={box} className={`${className} print:hidden`}>
+    <div ref={box} data-scene-view className={`${className} print:hidden`}>
       {content}
     </div>
   );

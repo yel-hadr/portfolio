@@ -33,7 +33,7 @@ const LoadingProgress = () => {
       className='fixed top-0 inset-x-0 z-[60] h-1 bg-foreground/10'
     >
       <div
-        className='h-full bg-primary transition-[width] duration-200 ease-out'
+        className='h-full bg-primary transition-[width] duration-150'
         style={{ width: `${Math.max(max, progress)}%` }}
       />
     </div>

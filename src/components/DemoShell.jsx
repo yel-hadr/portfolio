@@ -18,37 +18,10 @@ import { registerNamespace } from '../i18n/dictionaries';
 import en from '../locales/en/demos.json';
 import fr from '../locales/fr/demos.json';
 import { CloseIcon, GithubIcon } from './icons';
-import { SPRING } from '../utils/motion';
+import { SPRING_TIMING } from '../utils/motion';
 
 // The demo strings ship with the lazy demo chunks (Cub3DModal and FdfModal import this shell)
 registerNamespace('demos', { en, fr });
-
-// The panel's opening spring (the buttons' SPRING) as a CSS linear() easing, sampled once from
-// the spring's motion. The Web Animations API runs it, so framer's animate() stays out of the
-// first-paint chunk (vendor-motion). Browsers without linear() get an ease-out of the same length
-const GROW = (() => {
-  const { stiffness, damping, mass } = SPRING;
-  const dt = 1 / 120;
-  let x = 0;
-  let v = 0;
-  const points = [];
-  while (points.length < 240) {
-    v += ((stiffness * (1 - x) - damping * v) / mass) * dt;
-    x += v * dt;
-    points.push(x);
-    if (Math.abs(1 - x) < 0.001 && Math.abs(v) < 0.01) break;
-  }
-  const step = Math.ceil(points.length / 40);
-  const stops = points.filter((_, i) => i % step === 0).map((p) => +p.toFixed(4));
-  const spring = `linear(0, ${stops.join(', ')}, 1)`;
-  return {
-    duration: Math.round(points.length * dt * 1000),
-    easing:
-      typeof CSS !== 'undefined' && CSS.supports('transition-timing-function', spring)
-        ? spring
-        : 'cubic-bezier(0.22, 1, 0.36, 1)',
-  };
-})();
 
 // Closing: quick and accelerating, as the opening is a settling spring
 const SHRINK_MS = 260;
@@ -205,7 +178,7 @@ const DemoShell = ({ id, repo, onClose, origin, children }) => {
         { transform: `translate(${x}px, ${y}px) scale(${scaleX}, ${scaleY})` },
         { transform: 'none' },
       ],
-      GROW
+      SPRING_TIMING
     );
     // The content fades in once the panel has nearly settled (backwards: hidden until then)
     const content = [...panel.children].map((child) =>

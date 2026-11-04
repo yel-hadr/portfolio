@@ -44,10 +44,14 @@ const ProjectCard = ({
       variants={reveal()}
       data-spotlight
       // The two 42 demos: a blueprint grid and a scan line on hover, like a terminal's screen
-      className={`${styles.card} relative flex flex-col ${demo ? 'blueprint overflow-hidden' : ''}`}
+      className={`${styles.card} relative flex flex-col ${demo ? 'blueprint' : ''}`}
     >
       <Spotlight />
-      {demo && <span aria-hidden='true' className='scanline' />}
+      {demo && (
+        <span aria-hidden='true' className='scan-clip'>
+          <span className='scanline' />
+        </span>
+      )}
       {image && (
         <img
           src={image}

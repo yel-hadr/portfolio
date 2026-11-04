@@ -60,7 +60,7 @@
 /* Lists, cards and post meta ---------------------------------------------------------------- */
 
 .post-card {
-  @apply relative flex flex-col gap-4 p-6 transition-colors hover:border-line-strong sm:p-8;
+  @apply relative flex flex-col gap-4 p-6 transition-colors duration-250 hover:border-line-strong sm:p-8;
 }
 /* The title link covers the whole card; only one link per card */
 .stretched-link {
@@ -91,7 +91,7 @@
 }
 
 .post-nav-link {
-  @apply flex flex-col gap-2 p-5 transition-colors hover:border-line-strong;
+  @apply flex flex-col gap-2 p-5 transition-colors duration-250 hover:border-line-strong;
 }
 .post-nav-label {
   @apply flex items-center gap-2 text-sm text-foreground-muted;

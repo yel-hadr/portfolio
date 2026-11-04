@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { m } from 'framer-motion';
 
 import { SectionWrapper } from '../hoc';
@@ -29,16 +30,21 @@ const CARD = 'card-glass relative flex';
 // A card's reveal spring settles within a second; the 3D layer redraws meanwhile
 const followReveal = () => requestFrames(1200);
 
-const TechBall = ({ tech, size, warmUp }) => (
-  // The visible name labels the ball, so the 3D view itself is decorative
-  <SceneView
-    sectionType='ball'
-    className={`flex shrink-0 items-center justify-center ${BALL[size]}`}
-    fallback={<img src={tech.icon} alt='' className='h-1/2 w-1/2 object-contain' />}
-  >
-    <Ball imgUrl={tech.icon} warmUp={warmUp} />
-  </SceneView>
-);
+const TechBall = ({ tech, size, warmUp }) => {
+  // Where the ball is on the page, for it to lean toward the pointer
+  const box = useRef(null);
+  return (
+    // The visible name labels the ball, so the 3D view itself is decorative
+    <SceneView
+      sectionType='ball'
+      className={`flex shrink-0 items-center justify-center ${BALL[size]}`}
+      fallback={<img src={tech.icon} alt='' className='h-1/2 w-1/2 object-contain' />}
+      boxRef={box}
+    >
+      <Ball imgUrl={tech.icon} warmUp={warmUp} boxRef={box} />
+    </SceneView>
+  );
+};
 
 const Tech = () => {
   const { t } = useI18n();

@@ -5,6 +5,7 @@ import { m } from 'framer-motion';
 import { person } from '../constans';
 import { useI18n } from '../i18n/context';
 import { styles } from '../styles';
+import { notifyMessageSent } from '../utils/messageSent';
 import { pressable } from '../utils/motion';
 import { CheckIcon, SpinnerIcon } from './icons';
 
@@ -176,6 +177,7 @@ const ContactForm = () => {
     if (result.type === 'success') {
       setForm(EMPTY_FORM);
       keepDraft(EMPTY_FORM);
+      notifyMessageSent();
     }
     return result;
   }, null);

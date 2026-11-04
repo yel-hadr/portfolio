@@ -11,8 +11,8 @@ const AMBIENT_FPS = 30;
 /**
  * Drives the demand frameloop. Scroll and resize redraw at full rate so every View keeps up
  * with its DOM box (2 frames: drei draws a view one frame after it reports entering the
- * screen). Ambient motion (the globe's rotation, the balls' Float) ticks at ~30 fps; no scene
- * follows the pointer, so pointer moves draw nothing. Still (reduced motion, or the navbar's
+ * screen). Ambient motion (the globe's rotation, the balls' Float and their lean toward the
+ * pointer) ticks at ~30 fps; pointer moves themselves ask for no frame. Still (reduced motion, or the navbar's
  * pause switch), or with no 3D view on the screen (viewPresence): only scroll and resize redraw.
  * Hidden tabs cost nothing: requestAnimationFrame pauses.
  */
@@ -61,6 +61,8 @@ const FrameDriver = ({ reduced }) => {
   // A card lifting on hover (index.css: `translate`, light theme) moves the 3D views inside it:
   // redraw every frame for a short window after such a transition starts (longer than its
   // 250 ms), so a ball stays in its box even with the ambient ticks off (paused, or no motion).
+  // Only an element holding a view: the Contact form's card or the navbar sliding away moves no
+  // scene, and redrawing for them held the globe at 40-60 fps.
   // A window rather than counting starts and ends: a transition on an element that leaves the
   // page never ends, and a counter would then keep drawing forever. Events bubble to the document
   useEffect(() => {
@@ -75,7 +77,8 @@ const FrameDriver = ({ reduced }) => {
       if (!raf) raf = requestAnimationFrame(follow);
     };
     const onRun = (e) => {
-      if (e.propertyName === 'translate') keepDrawing(500);
+      if (e.propertyName === 'translate' && e.target.querySelector?.('[data-scene-view]'))
+        keepDrawing(500);
     };
     document.addEventListener('transitionrun', onRun);
     // A JS-driven move of a view's box (requestFrames: the bento cards' spring reveal)
