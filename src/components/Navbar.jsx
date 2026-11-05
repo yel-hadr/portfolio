@@ -16,7 +16,7 @@ import { CloseIcon, MenuIcon, MoonIcon, PauseIcon, PlayIcon, SunIcon, TerminalIc
 // No display of its own: each button sets it (`hidden lg:inline-flex` must not meet an inline-flex).
 // Hover lightens the fill and lifts the button a touch (scale 1.05), eased over 150 ms
 const ICON_BUTTON =
-  'relative h-10 w-10 items-center justify-center rounded-full text-foreground-muted transition-[color,background-color,box-shadow,transform] duration-150 ease-out hover:bg-surface-raised hover:text-foreground motion-safe:hover:scale-105';
+  'relative h-10 w-10 items-center justify-center rounded-full text-foreground-muted transition-[color,background-color,box-shadow,transform] duration-150 hover:bg-surface-raised hover:text-foreground motion-safe:hover:scale-105';
 
 // EN | FR segmented control. The accessible name ("English") contains the visible text ("EN").
 const LanguageToggle = () => {
@@ -523,13 +523,13 @@ const Navbar = ({ onOpenTerminal }) => {
         {/* The pill: blurred glass at 80%, slid away while reading down (transform only, so the
             page never shifts). The transparent border is its edge in forced colors */}
         <div
-          className={`relative isolate flex items-center justify-between gap-4 rounded-full border border-transparent bg-background/80 py-1.5 pl-2 pr-2 backdrop-blur-xl transition-transform duration-250 ease-out ${hidden ? '-translate-y-[calc(100%+1rem)]' : ''}`}
+          className={`relative isolate flex items-center justify-between gap-4 rounded-full border border-transparent bg-background/80 py-1.5 pl-2 pr-2 backdrop-blur-xl transition-transform duration-250 ${hidden ? '-translate-y-[calc(100%+1rem)]' : ''}`}
         >
           {/* Its edge: nothing at the top of the page, so it melts into the hero; a hairline (and
             the dark top highlight, the light shadow) fading in once the page scrolls */}
           <span
             aria-hidden='true'
-            className={`pointer-events-none absolute -inset-px -z-10 rounded-full border border-nav-edge shadow-card light:shadow-raised transition-opacity duration-250 ease-out ${scrolled ? 'opacity-100' : 'opacity-0'}`}
+            className={`pointer-events-none absolute -inset-px -z-10 rounded-full border border-nav-edge shadow-card light:shadow-raised transition-opacity duration-250 ${scrolled ? 'opacity-100' : 'opacity-0'}`}
           />
           {/* The page's film grain inside the glass too (the blur wipes out the page's own), so the
             pill reads as frosted glass rather than a flat sheet */}

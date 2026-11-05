@@ -254,9 +254,11 @@
 
 /* The article, and on wide screens its table of contents beside it, sticky while reading. The
    contents come right after the post's header in the page (so they are reached first, by Tab and
-   by a screen reader), and the article's grid places them in a second column */
+   by a screen reader), and the article's grid places them in a second column. Its width sets the
+   line length: 42rem leaves the card's text about 70 characters a line, as beside the contents
+   (max-w-prose on the text is wider than this, so it never applies at 18 px) */
 .post-layout {
-  @apply mx-auto max-w-3xl;
+  @apply mx-auto max-w-2xl;
 }
 @media (width >= 80rem) {
   .post-layout.has-toc {

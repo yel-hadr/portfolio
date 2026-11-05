@@ -689,7 +689,7 @@ ${rendered.html}
         ${contents ? `<p class="mt-6"><a href="#main" class="back-to-top">${ICONS.arrowUp}${escapeHtml(s.backToTop)}</a></p>` : ''}
       </article>
       </div>
-      <nav aria-label="${escapeHtml(s.morePosts)}" class="mx-auto mt-12 grid max-w-3xl gap-4 sm:grid-cols-2">
+      <nav aria-label="${escapeHtml(s.morePosts)}" class="mx-auto mt-12 grid max-w-2xl gap-4 sm:grid-cols-2">
           ${neighbor(index + 1, s.older, 'prev')}
           ${neighbor(index - 1, s.newer, 'next')}
       </nav>`;
